@@ -1,0 +1,20 @@
+{
+    "name": "JSReplace",
+    "version": "1.0",
+    "manifest_version": 2,
+    "description": "用来替换js文件",
+    "permissions": [
+        "webRequest",
+        "webRequestBlocking",
+        "http://*/*",
+        "https://*/*"
+    ],
+    "web_accessible_resources": [
+        "geetest_new.js","login_single.js"
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    }
+}
