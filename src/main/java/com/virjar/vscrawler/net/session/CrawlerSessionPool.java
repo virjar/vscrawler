@@ -45,7 +45,7 @@ public class CrawlerSessionPool {
     /**
      * 活跃session数目
      */
-    private int activeUser = 10;
+    private int activeUser = Integer.MAX_VALUE;
 
     private LoginHandler defaultLoginHandler;
 

@@ -53,7 +53,9 @@ public class VSCrawler implements Runnable {
     /**
      * 慢启动过程是10分钟默认
      */
-    protected long slowStartDuration = 10 * 60 * 1000;
+    protected long slowStartDuration = 5 * 60 * 1000;
+
+    private int slowStartTimes = 0;
 
     private static final Logger logger = LoggerFactory.getLogger(VSCrawler.class);
 
@@ -91,11 +93,9 @@ public class VSCrawler implements Runnable {
                         }
                     }
                 });
-                if (slowStart && threadPool.getThreadAlive() < threadNumber - 1) {
+                if (slowStart && slowStartTimes < threadNumber - 1) {
                     CommonUtil.sleep(slowStartDuration / threadNumber);
-                } else {
-                    // 线程满后,关闭慢启动
-                    slowStart = false;
+                    slowStartTimes++;
                 }
             }
         }
