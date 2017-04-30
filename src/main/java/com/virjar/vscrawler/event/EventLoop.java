@@ -38,7 +38,11 @@ public class EventLoop {
             log.warn("cannot find handle for event:{}", event.getTopic());
             return;
         }
-        eventQueue.offer(event);
+        if (event.isSync()) {
+            disPatch(event);
+        } else {
+            eventQueue.offer(event);
+        }
     }
 
     public synchronized static void registerHandler(String topic, EventHandler eventHandler) {
@@ -56,25 +60,26 @@ public class EventLoop {
         new Thread() {
             @Override
             public void run() {
-                disPatch();
+                while (isRunning.get()) {
+                    Event poll = eventQueue.poll();
+                    disPatch(poll);
+                }
             }
         }.start();
     }
 
-    public void disPatch() {
-        while (isRunning.get()) {
-            Event poll = eventQueue.poll();
-            String topic = poll.getTopic();
-            for (EventHandler eventHandler : allhandlers.get(topic)) {
-                try {
-                    eventHandler.handEvent(poll);
-                    if (poll.isHandled()) {
-                        break;
-                    }
-                } catch (Exception e) {
-                    log.error("error when hand event:{}", topic, e);
+    public void disPatch(Event event) {
+        String topic = event.getTopic();
+        for (EventHandler eventHandler : allhandlers.get(topic)) {
+            try {
+                eventHandler.handEvent(event);
+                if (event.isHandled()) {
+                    break;
                 }
+            } catch (Exception e) {
+                log.error("error when hand event:{}", topic, e);
             }
         }
+
     }
 }

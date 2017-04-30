@@ -8,7 +8,14 @@ public class Event {
     private int what;
     private Object data;
 
+    /**
+     * 如果事件被消费,那么不在往其他handler传递
+     */
     private boolean handled = false;
+    /**
+     * 如果同步选项打开,那么事件在触发线程同步执行,而不进入事件循环
+     */
+    private boolean sync = false;
 
     public Event(String topic) {
         this.topic = topic;
@@ -34,12 +41,20 @@ public class Event {
         return topic;
     }
 
-    public void consumed(){
+    public void consumed() {
         handled = true;
     }
 
     public boolean isHandled() {
         return handled;
+    }
+
+    public boolean isSync() {
+        return sync;
+    }
+
+    public void setSync(boolean sync) {
+        this.sync = sync;
     }
 
     public void send() {
