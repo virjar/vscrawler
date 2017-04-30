@@ -18,4 +18,9 @@ public class EmptyLoginHandler implements LoginHandler {
     public boolean testLogin(CookieStore cookieStore, CrawlerHttpClient crawlerHttpClient) {
         return true;
     }
+
+    @Override
+    public void logout(User user, CookieStore cookieStore, CrawlerHttpClient crawlerHttpClient) {
+
+    }
 }

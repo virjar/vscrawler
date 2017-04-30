@@ -1,24 +1,18 @@
 package com.virjar.vscrawler.net.session;
 
-import java.security.cert.X509Certificate;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
 import org.apache.http.client.CookieStore;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.virjar.dungproxy.client.httpclient.CrawlerHttpClient;
-import com.virjar.dungproxy.client.httpclient.CrawlerHttpClientBuilder;
-import com.virjar.dungproxy.client.ippool.config.ProxyConstant;
+import com.virjar.dungproxy.client.model.AvProxy;
+import com.virjar.vscrawler.event.systemevent.SessionCreateEvent;
+import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
+import com.virjar.vscrawler.net.DefaultHttpClientGernator;
 import com.virjar.vscrawler.net.user.User;
 
 /**
@@ -31,6 +25,11 @@ public class CrawlerSession {
      * session 持有的用户
      */
     private User user;
+
+    /**
+     * 对应代理对象
+     */
+    private AvProxy avProxy;
 
     private AtomicBoolean enable = new AtomicBoolean(false);
 
@@ -46,13 +45,16 @@ public class CrawlerSession {
 
     private long initTimeStamp = 0L;
 
-    private AtomicBoolean isLogin = new AtomicBoolean(false);
+    private CrawlerHttpClientGenerator crawlerHttpClientGenerator = new DefaultHttpClientGernator();
+
+    private AtomicBoolean isLoginning = new AtomicBoolean(false);
 
     public CrawlerSession(User user, LoginHandler loginHandler) {
         this.loginHandler = loginHandler;
         this.user = user;
         user.holdUser(this);
-        crawlerHttpClient = buildHttpClient();
+        crawlerHttpClient = crawlerHttpClientGenerator.gen(cookieStore);
+        new SessionCreateEvent(user).send();
         login();
     }
 
@@ -61,7 +63,7 @@ public class CrawlerSession {
     }
 
     public boolean login() {
-        if (isLogin.compareAndSet(false, true)) {
+        if (isLoginning.compareAndSet(false, true)) {
             try {
                 if (!user.checkHold(this)) {
                     logger.warn("当前session持有的用户被其他session占用,本session停止工作");
@@ -76,14 +78,14 @@ public class CrawlerSession {
                 }
                 return ret;
             } finally {
-                isLogin.set(false);
+                isLoginning.set(false);
             }
         }
         return false;
     }
 
     public boolean isLogin() {
-        return isLogin.get();
+        return isLoginning.get();
     }
 
     public void recordBorrow() {
@@ -155,44 +157,4 @@ public class CrawlerSession {
         enable.set(false);
     }
 
-    // TODO 重构他
-
-    /**
-     * 构建一个持有cookie空间的httpclient
-     * 
-     * @return HttpClient实例
-     */
-    private CrawlerHttpClient buildHttpClient() {
-        SocketConfig socketConfig = SocketConfig.custom().setSoKeepAlive(true).setSoLinger(-1).setSoReuseAddress(false)
-                .setSoTimeout(ProxyConstant.SOCKETSO_TIMEOUT).setTcpNoDelay(true).build();
-        X509TrustManager x509mgr = new X509TrustManager() {
-            @Override
-            public void checkClientTrusted(X509Certificate[] xcs, String string) {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] xcs, String string) {
-            }
-
-            @Override
-            public X509Certificate[] getAcceptedIssuers() {
-                return null;
-            }
-        };
-
-        SSLContext sslContext = null;
-        try {
-            sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[] { x509mgr }, null);
-        } catch (Exception e) {
-            //// TODO: 16/11/23
-        }
-
-        SSLConnectionSocketFactory sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext,
-                SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-
-        return CrawlerHttpClientBuilder.create().setMaxConnTotal(1000).setMaxConnPerRoute(50)
-                .setDefaultSocketConfig(socketConfig).setSSLSocketFactory(sslConnectionSocketFactory)
-                .setRedirectStrategy(new LaxRedirectStrategy()).setDefaultCookieStore(cookieStore).build();
-    }
 }

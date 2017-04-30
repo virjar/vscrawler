@@ -13,5 +13,12 @@
             <artifactId>dungproxy-client</artifactId>
             <version>0.0.5</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.16</version>
+        </dependency>
+
     </dependencies>
 </project>

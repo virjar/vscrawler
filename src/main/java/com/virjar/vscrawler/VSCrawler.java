@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.util.CommonUtil;
+import com.virjar.vscrawler.event.EventLoop;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.processor.CrawlResult;
@@ -184,6 +185,8 @@ public class VSCrawler implements Runnable {
         }
 
         startTime = new Date();
+        // 开启事件循环
+        EventLoop.getInstance().loop();
     }
 
     public VSCrawler setThreadNumber(int threadNumber) {

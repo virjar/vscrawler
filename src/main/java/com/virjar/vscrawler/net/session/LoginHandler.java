@@ -27,4 +27,6 @@ public interface LoginHandler {
      * @return
      */
     boolean testLogin(CookieStore cookieStore, CrawlerHttpClient crawlerHttpClient);
+
+    void logout(User user,CookieStore cookieStore, CrawlerHttpClient crawlerHttpClient);
 }
