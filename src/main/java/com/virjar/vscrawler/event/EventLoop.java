@@ -1,8 +1,8 @@
 package com.virjar.vscrawler.event;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Lists;
@@ -27,7 +27,7 @@ public class EventLoop {
     private EventLoop() {
     }
 
-    private ConcurrentLinkedQueue<Event> eventQueue = new ConcurrentLinkedQueue<>();
+    private LinkedBlockingQueue<Event> eventQueue = new LinkedBlockingQueue<>();
 
     public void offerEvent(Event event) {
         /*
@@ -41,14 +41,18 @@ public class EventLoop {
         if (event.isSync()) {
             disPatch(event);
         } else {
-            eventQueue.offer(event);
+            try {
+                eventQueue.put(event);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     public synchronized static void registerHandler(String topic, EventHandler eventHandler) {
         ConcurrentMap<String, List<EventHandler>> allhandlers = instance.allhandlers;
         List<EventHandler> eventHandlers = allhandlers.get(topic);
-        if (eventHandler == null) {
+        if (eventHandlers == null) {
             eventHandlers = Lists.newArrayList();
             allhandlers.put(topic, eventHandlers);
         }
@@ -58,15 +62,22 @@ public class EventLoop {
 
     public void loop() {
         if (isRunning.compareAndSet(false, true)) {
-            new Thread("vsCrawlerEventLoop") {
+            Thread thread = new Thread("vsCrawlerEventLoop") {
                 @Override
                 public void run() {
                     while (isRunning.get()) {
-                        Event poll = eventQueue.poll();
-                        disPatch(poll);
+                        try {
+                            Event poll = eventQueue.take();
+                            disPatch(poll);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
                     }
                 }
-            }.start();
+            };
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 

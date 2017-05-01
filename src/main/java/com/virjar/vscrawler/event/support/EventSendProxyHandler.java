@@ -12,7 +12,7 @@ import com.virjar.vscrawler.event.Event;
 /**
  * Created by virjar on 17/5/1.
  */
-public class EventProxyHandler implements InvocationHandler {
+public class EventSendProxyHandler implements InvocationHandler {
 
     @Override
     @SuppressWarnings("unchecked")

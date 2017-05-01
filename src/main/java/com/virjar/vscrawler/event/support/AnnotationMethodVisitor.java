@@ -19,11 +19,15 @@ public class AnnotationMethodVisitor implements ClassUtils.ClassVisitor {
 
     @Override
     public void visit(Class clazz) {
-        Method[] methods = clazz.getMethods();
-        for (Method method : methods) {
-            if (method.getAnnotation(annotationClazz) != null) {
-                methodSet.add(method);
+        try {
+            Method[] methods = clazz.getDeclaredMethods();
+            for (Method method : methods) {
+                if (method.getAnnotation(annotationClazz) != null) {
+                    methodSet.add(method);
+                }
             }
+        } catch (Throwable e) {
+            // do nothing 可能有classNotFoundException
         }
     }
 

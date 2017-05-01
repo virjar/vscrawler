@@ -40,10 +40,15 @@ public class ClassUtils {
     }
 
     public static <T> void scan(ClassVisitor<T> subClassVisitor) {
+        Collection<String> emptBasePackage = Lists.newArrayList();
+        scan(subClassVisitor, emptBasePackage);
+    }
+
+    public static <T> void scan(ClassVisitor<T> subClassVisitor, Collection<String> basePackages) {
 
         List<File> jarFiles = allJar();
         for (File f : jarFiles) {
-            scan(f, subClassVisitor);
+            scan(f, subClassVisitor, basePackages);
         }
     }
 
@@ -119,7 +124,7 @@ public class ClassUtils {
 
     }
 
-    public static <T> void scan(File f, ClassVisitor<T> classVisitor) {
+    public static <T> void scan(File f, ClassVisitor<T> classVisitor, Collection<String> basePackages) {
 
         if (f.isDirectory()) {
             List<File> classFileList = new ArrayList<File>();
@@ -130,8 +135,23 @@ public class ClassUtils {
                 int end = file.toString().length() - 6; // 6 == ".class".length();
 
                 String classFile = file.toString().substring(start + 1, end);
-                Class<T> clazz = classForName(classFile.replace(File.separator, "."));
-                classVisitor.visit(clazz);
+                String clasName = classFile.replace(File.separator, ".");
+                if (basePackages.size() == 0) {
+                    Class<T> clazz = classForName(clasName);
+                    classVisitor.visit(clazz);
+                } else {
+                    boolean needVisit = false;
+                    for (String basePackage : basePackages) {
+                        if (clasName.startsWith(basePackage)) {
+                            needVisit = true;
+                            break;
+                        }
+                    }
+                    if (needVisit) {
+                        Class<T> clazz = classForName(clasName);
+                        classVisitor.visit(clazz);
+                    }
+                }
             }
             return;
         }
@@ -148,7 +168,9 @@ public class ClassUtils {
                 if (!jarEntry.isDirectory() && entryName.endsWith(".class")) {
                     String className = entryName.replace("/", ".").substring(0, entryName.length() - 6);
                     Class<T> clazz = classForName(className);
-                    classVisitor.visit(clazz);
+                    if (clazz != null) {
+                        classVisitor.visit(clazz);
+                    }
                 }
             }
 
