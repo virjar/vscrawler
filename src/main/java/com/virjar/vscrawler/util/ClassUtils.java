@@ -33,20 +33,17 @@ public class ClassUtils {
 
     }
 
-    public static <T> List<Class<? extends T>> scanSubClass(Class<T> pclazz) {
+    public static <T> List<Class<? extends T>> scan(Class<T> pclazz) {
         SubClassVisitor<T> subClassVisitor = new SubClassVisitor<T>(false, pclazz);
-        scanSubClass(pclazz, subClassVisitor);
+        scan(subClassVisitor);
         return subClassVisitor.getSubClass();
     }
 
-    public static <T> void scanSubClass(Class<T> pclazz, SubClassVisitor<T> subClassVisitor) {
-        if (pclazz == null) {
-            log.error("scanClass: parent clazz is null");
-            return;
-        }
+    public static <T> void scan(ClassVisitor<T> subClassVisitor) {
+
         List<File> jarFiles = allJar();
         for (File f : jarFiles) {
-            scanSubClass(pclazz, f, subClassVisitor);
+            scan(f, subClassVisitor);
         }
     }
 
@@ -87,7 +84,7 @@ public class ClassUtils {
         return ret;
     }
 
-    public interface ClassVisitor<T> {
+    public static interface ClassVisitor<T> {
         void visit(Class<? extends T> clazz);
     }
 
@@ -122,11 +119,7 @@ public class ClassUtils {
 
     }
 
-    public static <T> void scanSubClass(Class<T> pclazz, File f, ClassVisitor<T> classVisitor) {
-        if (pclazz == null) {
-            log.error("scanClass: parent clazz is null");
-            return;
-        }
+    public static <T> void scan(File f, ClassVisitor<T> classVisitor) {
 
         if (f.isDirectory()) {
             List<File> classFileList = new ArrayList<File>();

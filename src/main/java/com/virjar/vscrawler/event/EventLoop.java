@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EventLoop {
     private static EventLoop instance = new EventLoop();
-    private AtomicBoolean isRunning = new AtomicBoolean(true);
+    private AtomicBoolean isRunning = new AtomicBoolean(false);
 
     public static EventLoop getInstance() {
         return instance;
@@ -57,15 +57,17 @@ public class EventLoop {
     }
 
     public void loop() {
-        new Thread() {
-            @Override
-            public void run() {
-                while (isRunning.get()) {
-                    Event poll = eventQueue.poll();
-                    disPatch(poll);
+        if (isRunning.compareAndSet(false, true)) {
+            new Thread("vsCrawlerEventLoop") {
+                @Override
+                public void run() {
+                    while (isRunning.get()) {
+                        Event poll = eventQueue.poll();
+                        disPatch(poll);
+                    }
                 }
-            }
-        }.start();
+            }.start();
+        }
     }
 
     public void disPatch(Event event) {
