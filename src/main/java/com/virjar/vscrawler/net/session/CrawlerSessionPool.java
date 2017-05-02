@@ -3,18 +3,22 @@ package com.virjar.vscrawler.net.session;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
+import com.googlecode.aviator.AviatorEvaluator;
 import com.virjar.vscrawler.event.support.AutoEventRegister;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.net.user.User;
 import com.virjar.vscrawler.util.SingtonObjectHolder;
+import com.virjar.vscrawler.util.VSCrawlerConstant;
 
 /**
  * Created by virjar on 17/4/15.<br/>
@@ -59,7 +63,7 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
 
     private int monitorThreadNumber = 2;
 
-    private ExecutorService monitorPool;
+    private ThreadPoolExecutor monitorPool;
 
     private AtomicInteger sessionCreateThreadNum = new AtomicInteger(0);
 
@@ -67,7 +71,8 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
         this.allUser = allUser;
         idlUser = Sets.newConcurrentHashSet(allUser);
         this.defaultLoginHandler = defaultLoginHandler;
-        monitorPool = Executors.newFixedThreadPool(monitorThreadNumber);
+        monitorPool = new ThreadPoolExecutor(monitorThreadNumber, monitorThreadNumber, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>());
         // 注册事件监听,接收配置文件变更消息,下面两句比较巧妙
         changeWithProperties(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
         AutoEventRegister.getInstance().registerObserver(this);
@@ -195,6 +200,28 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
     }
 
     private void changeWithProperties(Properties properties) {
+        activeUser = NumberUtils.toInt(
+                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_ACTIVE_USER)).toString(),
+                Integer.MAX_VALUE);
+        maxIdle = NumberUtils.toInt(
+                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_IDLE)).toString(),
+                150000);
+
+        maxDuration = NumberUtils.toInt(
+                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_DURATION)).toString(),
+                3600000);
+        maxOccurs = NumberUtils.toInt(
+                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_OCCURS)).toString(), 1);
+        minIdl = NumberUtils.toInt(
+                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MIN_IDLE)).toString(),
+                10000);
+        int newThreadNumber = NumberUtils.toInt(AviatorEvaluator
+                .exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MONTOR_THREAD_NUMBER)).toString(), 2);
+        if(newThreadNumber != monitorThreadNumber){
+            monitorThreadNumber = newThreadNumber;
+            monitorPool.setMaximumPoolSize(monitorThreadNumber);
+            monitorPool.setCorePoolSize(monitorThreadNumber);
+        }
 
     }
 

@@ -13,12 +13,18 @@
             <artifactId>dungproxy-client</artifactId>
             <version>0.0.5</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok  -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.16.16</version>
         </dependency>
 
+        <!-- 配置文件表达式计算  -->
+        <dependency>
+            <groupId>com.googlecode.aviator</groupId>
+            <artifactId>aviator</artifactId>
+            <version>2.3.4</version>
+        </dependency>
     </dependencies>
 </project>

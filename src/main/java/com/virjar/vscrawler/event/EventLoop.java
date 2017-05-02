@@ -22,7 +22,7 @@ public class EventLoop {
         return instance;
     }
 
-    private ConcurrentMap<String, Set<EventHandler>> allhandlers = Maps.newConcurrentMap();
+    private ConcurrentMap<String, Set<EventHandler>> allHandlers = Maps.newConcurrentMap();
 
     private EventLoop() {
     }
@@ -31,10 +31,10 @@ public class EventLoop {
 
     public void offerEvent(Event event) {
         /*
-         * Preconditions.checkArgument( allhandlers.containsKey(event.getTopic()) &&
-         * allhandlers.get(event.getTopic()).size() > 0, "cannot find handle for event:{}", event.getTopic());
+         * Preconditions.checkArgument( allHandlers.containsKey(event.getTopic()) &&
+         * allHandlers.get(event.getTopic()).size() > 0, "cannot find handle for event:{}", event.getTopic());
          */
-        if (!allhandlers.containsKey(event.getTopic()) || allhandlers.get(event.getTopic()).size() < 0) {
+        if (!allHandlers.containsKey(event.getTopic()) || allHandlers.get(event.getTopic()).size() < 0) {
             log.warn("cannot find handle for event:{}", event.getTopic());
             return;
         }
@@ -50,11 +50,11 @@ public class EventLoop {
     }
 
     public synchronized static void registerHandler(String topic, EventHandler eventHandler) {
-        ConcurrentMap<String, Set<EventHandler>> allhandlers = instance.allhandlers;
-        Set<EventHandler> eventHandlers = allhandlers.get(topic);
+        ConcurrentMap<String, Set<EventHandler>> allHandlers = instance.allHandlers;
+        Set<EventHandler> eventHandlers = allHandlers.get(topic);
         if (eventHandlers == null) {
             eventHandlers = Sets.newHashSet();
-            allhandlers.put(topic, eventHandlers);
+            allHandlers.put(topic, eventHandlers);
         }
         eventHandlers.add(eventHandler);
 
@@ -83,7 +83,7 @@ public class EventLoop {
 
     public void disPatch(Event event) {
         String topic = event.getTopic();
-        for (EventHandler eventHandler : allhandlers.get(topic)) {
+        for (EventHandler eventHandler : allHandlers.get(topic)) {
             try {
                 eventHandler.handEvent(event);
                 if (event.isHandled()) {
