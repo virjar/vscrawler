@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.net.session;
 
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -10,13 +11,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
+import com.virjar.vscrawler.event.support.AutoEventRegister;
+import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.net.user.User;
+import com.virjar.vscrawler.util.SingtonObjectHolder;
 
 /**
  * Created by virjar on 17/4/15.<br/>
  * 创建并管理多个用户的链接
  */
-public class CrawlerSessionPool {
+public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
 
     private static final Logger logger = LoggerFactory.getLogger(CrawlerSessionPool.class);
 
@@ -64,6 +68,9 @@ public class CrawlerSessionPool {
         idlUser = Sets.newConcurrentHashSet(allUser);
         this.defaultLoginHandler = defaultLoginHandler;
         monitorPool = Executors.newFixedThreadPool(monitorThreadNumber);
+        // 注册事件监听,接收配置文件变更消息,下面两句比较巧妙
+        changeWithProperties(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
+        AutoEventRegister.getInstance().registerObserver(this);
     }
 
     private static Set<User> mockUser(int userNumber) {
@@ -185,6 +192,21 @@ public class CrawlerSessionPool {
         }
 
         return null;
+    }
+
+    private void changeWithProperties(Properties properties) {
+
+    }
+
+    /**
+     * 当配置信息变更过来的时候,会回调这里
+     * 
+     * @param oldProperties 旧配置文件内容
+     * @param newProperties 新配置文件内容
+     */
+    @Override
+    public void configChange(Properties oldProperties, Properties newProperties) {
+        changeWithProperties(newProperties);
     }
 
     private class CreateSessionThread implements Runnable {

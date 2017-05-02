@@ -1,12 +1,12 @@
 package com.virjar.vscrawler.event;
 
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +22,7 @@ public class EventLoop {
         return instance;
     }
 
-    private ConcurrentMap<String, List<EventHandler>> allhandlers = Maps.newConcurrentMap();
+    private ConcurrentMap<String, Set<EventHandler>> allhandlers = Maps.newConcurrentMap();
 
     private EventLoop() {
     }
@@ -50,10 +50,10 @@ public class EventLoop {
     }
 
     public synchronized static void registerHandler(String topic, EventHandler eventHandler) {
-        ConcurrentMap<String, List<EventHandler>> allhandlers = instance.allhandlers;
-        List<EventHandler> eventHandlers = allhandlers.get(topic);
+        ConcurrentMap<String, Set<EventHandler>> allhandlers = instance.allhandlers;
+        Set<EventHandler> eventHandlers = allhandlers.get(topic);
         if (eventHandlers == null) {
-            eventHandlers = Lists.newArrayList();
+            eventHandlers = Sets.newHashSet();
             allhandlers.put(topic, eventHandlers);
         }
         eventHandlers.add(eventHandler);

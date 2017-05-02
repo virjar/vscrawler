@@ -19,6 +19,7 @@ import com.virjar.vscrawler.processor.IProcessor;
 import com.virjar.vscrawler.seed.SeedManager;
 import com.virjar.vscrawler.serialize.ConsolePipline;
 import com.virjar.vscrawler.serialize.Pipline;
+import com.virjar.vscrawler.util.SingtonObjectHolder;
 
 /**
  * Created by virjar on 17/4/16. <br/>
@@ -187,6 +188,9 @@ public class VSCrawler implements Runnable {
         startTime = new Date();
         // 开启事件循环
         EventLoop.getInstance().loop();
+
+        // 开启文件监听,并发送初始化配置事件
+        SingtonObjectHolder.vsCrawlerConfigFileWatcher.watchAndBindEvent();
     }
 
     public VSCrawler setThreadNumber(int threadNumber) {
