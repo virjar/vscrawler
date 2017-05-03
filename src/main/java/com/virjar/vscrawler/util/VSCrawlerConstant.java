@@ -10,4 +10,6 @@ public class VSCrawlerConstant {
     public static final String SESSION_POOL_MAX_OCCURS = "sessionPool.maxOccurs";
     public static final String SESSION_POOL_ACTIVE_USER = "sessionPool.activeUser";
     public static final String SESSION_POOL_MONTOR_THREAD_NUMBER = "sessionPool.monitorThreadNumber";
+
+    public static final String VSCRAWLER_THREAD_NUMBER = "vsCrawler.threadNumber";
 }

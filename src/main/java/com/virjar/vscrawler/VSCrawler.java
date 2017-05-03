@@ -2,15 +2,19 @@ package com.virjar.vscrawler;
 
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.Properties;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.event.EventLoop;
+import com.virjar.vscrawler.event.support.AutoEventRegister;
+import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.processor.CrawlResult;
@@ -20,12 +24,16 @@ import com.virjar.vscrawler.seed.SeedManager;
 import com.virjar.vscrawler.serialize.ConsolePipline;
 import com.virjar.vscrawler.serialize.Pipline;
 import com.virjar.vscrawler.util.SingtonObjectHolder;
+import com.virjar.vscrawler.util.VSCrawlerConstant;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/4/16. <br/>
  * 爬虫入口,目前很多逻辑参考了webmagic
  */
-public class VSCrawler implements Runnable {
+@Slf4j
+public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
 
     private CrawlerSessionPool crawlerSessionPool;
     private SeedManager seedManager;
@@ -33,8 +41,7 @@ public class VSCrawler implements Runnable {
     private List<Pipline> pipline = Lists.newArrayList();
     private int threadNumber;
 
-    protected CountableThreadPool threadPool;
-    protected ExecutorService executorService;
+    protected ThreadPoolExecutor threadPool;
     private Date startTime;
 
     protected AtomicInteger stat = new AtomicInteger(STAT_INIT);
@@ -59,8 +66,6 @@ public class VSCrawler implements Runnable {
 
     private int slowStartTimes = 0;
 
-    private static final Logger logger = LoggerFactory.getLogger(VSCrawler.class);
-
     public VSCrawler() {
 
     }
@@ -73,11 +78,12 @@ public class VSCrawler implements Runnable {
     public void run() {
         checkRunningStat();
         initComponent();
-        logger.info("Spider  started!");
+        log.info("Spider  started!");
         while (!Thread.currentThread().isInterrupted() && stat.get() == STAT_RUNNING) {
+            // TODO 在这里控制阻塞和超时,替换掉webmagic的countableThreadPool
             final String request = seedManager.consumeSeed();
             if (request == null) {
-                if (threadPool.getThreadAlive() == 0 && exitWhenComplete) {
+                if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
                     break;
                 }
                 // wait until new url added
@@ -89,7 +95,7 @@ public class VSCrawler implements Runnable {
                         try {
                             processRequest(request);
                         } catch (Exception e) {
-                            logger.error("process request {} error", request, e);
+                            log.error("process request {} error", request, e);
                         } finally {
 
                         }
@@ -155,11 +161,35 @@ public class VSCrawler implements Runnable {
         }
     }
 
+    @Override
+    public void configChange(Properties oldProperties, Properties newProperties) {
+        config(newProperties);
+    }
+
+    private void config(Properties properties) {
+        // 事件循环是单线程的,所以设计上来说,不会有并发问题
+        int newThreadNumber = NumberUtils.toInt(properties.getProperty(VSCrawlerConstant.VSCRAWLER_THREAD_NUMBER));
+        if (newThreadNumber != threadNumber) {
+            log.info("爬虫线程数目变更,由:{}  变化为:{}", threadNumber, newThreadNumber);
+            threadPool.setMaximumPoolSize(newThreadNumber);
+            threadPool.setCorePoolSize(newThreadNumber);
+            threadNumber = newThreadNumber;
+        }
+    }
+
     protected void initComponent() {
 
-        if (threadNumber == 0) {
-            threadNumber = 10;
-        }
+        // 开启事件循环
+        EventLoop.getInstance().loop();
+
+        // 开启文件监听,并发送初始化配置事件
+        SingtonObjectHolder.vsCrawlerConfigFileWatcher.watchAndBindEvent();
+
+        // 加载初始化配置
+        config(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
+
+        // 让本类监听配置问价变更事件
+        AutoEventRegister.getInstance().registerObserver(this);
 
         if (crawlerSessionPool == null) {
             crawlerSessionPool = new CrawlerSessionPool(threadNumber);
@@ -178,19 +208,13 @@ public class VSCrawler implements Runnable {
         }
 
         if (threadPool == null || threadPool.isShutdown()) {
-            if (executorService != null && !executorService.isShutdown()) {
-                threadPool = new CountableThreadPool(threadNumber, executorService);
-            } else {
-                threadPool = new CountableThreadPool(threadNumber);
-            }
+            threadPool = new ThreadPoolExecutor(threadNumber, threadNumber, 0L, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<Runnable>());
+
         }
 
         startTime = new Date();
-        // 开启事件循环
-        EventLoop.getInstance().loop();
 
-        // 开启文件监听,并发送初始化配置事件
-        SingtonObjectHolder.vsCrawlerConfigFileWatcher.watchAndBindEvent();
     }
 
     public VSCrawler setThreadNumber(int threadNumber) {

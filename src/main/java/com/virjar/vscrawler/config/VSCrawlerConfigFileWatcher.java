@@ -2,6 +2,7 @@ package com.virjar.vscrawler.config;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
@@ -76,9 +77,15 @@ public class VSCrawlerConfigFileWatcher {
     private void loadFileAndSendEvent(String filePath) {
         Properties tempProperties = new Properties();
         FileInputStream fileInputStream = null;
+        InputStream defaultConfigInput = null;
         try {
+            defaultConfigInput = Thread.currentThread().getContextClassLoader()
+                    .getResourceAsStream("/default_vsCrawler.properties");
+            tempProperties.load(defaultConfigInput);// 先加载默认配置
+
             fileInputStream = new FileInputStream(new File(filePath));
-            tempProperties.load(fileInputStream);
+            tempProperties.load(fileInputStream);// 然后使用用户热发配置覆盖
+
             // 没有报异常才发送通知
             AutoEventRegister.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class)
                     .configChange(oldProperties, tempProperties);
@@ -86,6 +93,7 @@ public class VSCrawlerConfigFileWatcher {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
+            IOUtils.closeQuietly(defaultConfigInput);
             IOUtils.closeQuietly(fileInputStream);
         }
     }
