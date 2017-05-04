@@ -4,7 +4,9 @@ import java.util.Collection;
 
 /**
  * Created by virjar on 17/4/30.
+ * @author virjar
+ * @since 0.0.1
  */
-public interface UserResouceFacade {
+public interface UserResourceFacade {
     Collection<User> importUser();
 }

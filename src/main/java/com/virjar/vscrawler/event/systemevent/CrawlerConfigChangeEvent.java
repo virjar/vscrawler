@@ -6,6 +6,8 @@ import com.virjar.vscrawler.event.support.AutoEvent;
 
 /**
  * Created by virjar on 17/5/2.
+ * @author virjar
+ * @since 0.0.1
  */
 public interface CrawlerConfigChangeEvent {
     /**

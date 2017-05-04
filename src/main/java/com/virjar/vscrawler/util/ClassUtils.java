@@ -16,6 +16,11 @@ import com.google.common.collect.Sets;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 类扫描器
+ * @author virjar
+ * @since 0.0.1
+ */
 @Slf4j
 public class ClassUtils {
 

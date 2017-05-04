@@ -17,6 +17,8 @@ import com.virjar.dungproxy.client.ippool.config.ProxyConstant;
 
 /**
  * Created by virjar on 17/4/30.
+ * @author virjar
+ * @since 0.0.1
  */
 public class DefaultHttpClientGernator implements CrawlerHttpClientGenerator {
     @Override

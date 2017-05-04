@@ -23,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by virjar on 17/4/30.<br/>
  * 处理由注解自动标注的事件绑定
+ * @author virjar
+ * @since 0.0.1
  */
 @Slf4j
 public class AutoEventRegistry {

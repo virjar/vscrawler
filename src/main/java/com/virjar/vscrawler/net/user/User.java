@@ -7,6 +7,8 @@ import com.virjar.vscrawler.net.session.CrawlerSession;
 
 /**
  * Created by virjar on 17/4/14.
+ * @author virjar
+ * @since 0.0.1
  */
 public class User {
     private String userID;
@@ -17,6 +19,8 @@ public class User {
     private Map<String, String> extInfo;
 
     private AtomicReference<CrawlerSession> nowSession = new AtomicReference<>();
+
+    private UserStatus userStatus = UserStatus.OK;
 
     public void holdUser(CrawlerSession crawlerSession) {
         nowSession.set(crawlerSession);
@@ -72,5 +76,13 @@ public class User {
 
     public void setExtInfo(Map<String, String> extInfo) {
         this.extInfo = extInfo;
+    }
+
+    public UserStatus getUserStatus() {
+        return userStatus;
+    }
+
+    public void setUserStatus(UserStatus userStatus) {
+        this.userStatus = userStatus;
     }
 }

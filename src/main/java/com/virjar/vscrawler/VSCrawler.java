@@ -6,14 +6,15 @@ import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.event.EventLoop;
+import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
@@ -31,6 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by virjar on 17/4/16. <br/>
  * 爬虫入口,目前很多逻辑参考了webmagic
+ * @author virjar
+ * @since 0.0.1
  */
 @Slf4j
 public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
@@ -74,13 +77,15 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         new Thread(this).start();
     }
 
+    private AtomicInteger activeTasks = new AtomicInteger(0);
+    private AtomicBoolean hasBlocked = new AtomicBoolean(false);
+
     @Override
     public void run() {
         checkRunningStat();
         initComponent();
         log.info("Spider  started!");
         while (!Thread.currentThread().isInterrupted() && stat.get() == STAT_RUNNING) {
-            // TODO 在这里控制阻塞和超时,替换掉webmagic的countableThreadPool
             final String request = seedManager.consumeSeed();
             if (request == null) {
                 if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
@@ -93,14 +98,34 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
                     @Override
                     public void run() {
                         try {
+                            activeTasks.incrementAndGet();
                             processRequest(request);
                         } catch (Exception e) {
                             log.error("process request {} error", request, e);
                         } finally {
-
+                            if (activeTasks.decrementAndGet() < threadPool.getMaximumPoolSize()) {
+                                synchronized (VSCrawler.this) {
+                                    if (hasBlocked.compareAndSet(true, false)) {
+                                        VSCrawler.this.notify();
+                                    }
+                                }
+                            }
                         }
                     }
                 });
+                // 当任务满的时候,暂时阻塞任务产生线程,直到有空闲线程资源
+                if (activeTasks.get() >= threadPool.getMaximumPoolSize()) {
+                    try {
+                        synchronized (this) {
+                            if (hasBlocked.compareAndSet(false, true)) {
+                                wait();
+                            }
+                        }
+                    } catch (InterruptedException e) {
+                        log.warn("爬虫线程休眠被打断", e);
+                        break;
+                    }
+                }
                 if (slowStart && slowStartTimes < threadNumber - 1) {
                     CommonUtil.sleep(slowStartDuration / threadNumber);
                     slowStartTimes++;

@@ -23,6 +23,8 @@ import com.virjar.vscrawler.util.VSCrawlerConstant;
 /**
  * Created by virjar on 17/4/15.<br/>
  * 创建并管理多个用户的链接
+ * @author virjar
+ * @since 0.0.1
  */
 public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
 

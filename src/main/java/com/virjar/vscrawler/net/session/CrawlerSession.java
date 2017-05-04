@@ -19,6 +19,8 @@ import com.virjar.vscrawler.net.user.User;
 /**
  * Created by virjar on 17/4/15. <br/>
  * 一个会话,持有到目标网站的cookie数据
+ * @author virjar
+ * @since 0.0.1
  */
 public class CrawlerSession {
     private static final Logger logger = LoggerFactory.getLogger(CrawlerSession.class);

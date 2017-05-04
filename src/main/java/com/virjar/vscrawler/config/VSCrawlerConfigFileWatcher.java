@@ -19,6 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by virjar on 17/5/2.<br/>
  * 监控vsCrawler.properties的配置变更,实现策略实时变更的功能
+ * 
+ * @author virjar
+ * @since 0.0.1
  */
 @Slf4j
 public class VSCrawlerConfigFileWatcher {

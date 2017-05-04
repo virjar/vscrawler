@@ -8,6 +8,8 @@ import com.virjar.vscrawler.event.Event;
 
 /**
  * Created by virjar on 17/5/1.
+ * @author virjar
+ * @since 0.0.1
  */
 public class EventConsumeProxyHandler implements InvocationHandler {
     private Object target;

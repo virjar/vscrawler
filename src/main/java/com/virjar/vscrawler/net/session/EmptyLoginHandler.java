@@ -7,6 +7,8 @@ import com.virjar.vscrawler.net.user.User;
 
 /**
  * Created by virjar on 17/4/16.
+ * @author virjar
+ * @since 0.0.1
  */
 public class EmptyLoginHandler implements LoginHandler {
     @Override

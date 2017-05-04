@@ -5,6 +5,8 @@ import com.virjar.dungproxy.client.model.AvProxy;
 
 /**
  * Created by virjar on 17/4/30.
+ * @author virjar
+ * @since 0.0.1
  */
 public class DefaultIpPool implements ProxyIpPool {
     private IpPool ipPool = IpPool.getInstance();
