@@ -21,9 +21,28 @@ public class EventConsumeProxyHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        if (!"handEvent".equals(method.getName())) {// 从object继承过来的方法,不代理
+            return method.invoke(this, args);
+        }
+        // TODO 特殊处理toString
         Event event = (Event) args[0];
         Map data = (Map) event.getData();
         Object[] args1 = (Object[]) data.get("args");
         return targetMethod.invoke(target, args1);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "EventConsumeProxyHandler:" + target.toString() + "#" + targetMethod.getName();
     }
 }

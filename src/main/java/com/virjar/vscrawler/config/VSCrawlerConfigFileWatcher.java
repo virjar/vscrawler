@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
 
-import com.virjar.vscrawler.event.support.AutoEventRegister;
+import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,7 @@ public class VSCrawlerConfigFileWatcher {
     public void watchAndBindEvent() {
 
         /*
-         * AutoEventRegister.getInstance().registerObserver(new CrawlerConfigChangeEvent() {
+         * AutoEventRegistry.getInstance().registerObserver(new CrawlerConfigChangeEvent() {
          * @Override public void configChange(Properties oldProperties, Properties oldProperties) { } });
          */
         if (hasStartWatch.compareAndSet(false, true)) {
@@ -87,7 +87,7 @@ public class VSCrawlerConfigFileWatcher {
             tempProperties.load(fileInputStream);// 然后使用用户热发配置覆盖
 
             // 没有报异常才发送通知
-            AutoEventRegister.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class)
+            AutoEventRegistry.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class)
                     .configChange(oldProperties, tempProperties);
             oldProperties = tempProperties;
         } catch (Exception e) {
