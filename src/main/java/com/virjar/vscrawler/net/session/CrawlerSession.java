@@ -3,6 +3,7 @@ package com.virjar.vscrawler.net.session;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import org.apache.http.client.CookieStore;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.slf4j.Logger;
@@ -54,7 +55,8 @@ public class CrawlerSession {
         this.user = user;
         user.holdUser(this);
         crawlerHttpClient = crawlerHttpClientGenerator.gen(cookieStore);
-        new SessionCreateEvent(user).send();
+        AutoEventRegistry.getInstance().findEventDeclaring(SessionCreateEvent.class).onSessionCreateEvent(user);
+        //new SessionCreateEvent(user).send();
         login();
     }
 

@@ -8,12 +8,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.event.EventLoop;
-import com.virjar.vscrawler.event.support.AutoEventRegister;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
@@ -189,7 +189,7 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         config(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
 
         // 让本类监听配置问价变更事件
-        AutoEventRegister.getInstance().registerObserver(this);
+        AutoEventRegistry.getInstance().registerObserver(this);
 
         if (crawlerSessionPool == null) {
             crawlerSessionPool = new CrawlerSessionPool(threadNumber);

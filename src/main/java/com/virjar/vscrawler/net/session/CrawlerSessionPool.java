@@ -8,13 +8,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.googlecode.aviator.AviatorEvaluator;
-import com.virjar.vscrawler.event.support.AutoEventRegister;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.net.user.User;
 import com.virjar.vscrawler.util.SingtonObjectHolder;
@@ -75,7 +75,7 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
                 new LinkedBlockingQueue<Runnable>());
         // 注册事件监听,接收配置文件变更消息,下面两句比较巧妙
         changeWithProperties(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
-        AutoEventRegister.getInstance().registerObserver(this);
+        AutoEventRegistry.getInstance().registerObserver(this);
     }
 
     private static Set<User> mockUser(int userNumber) {

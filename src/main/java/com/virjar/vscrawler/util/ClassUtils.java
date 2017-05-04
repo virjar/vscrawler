@@ -9,6 +9,8 @@ import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.apache.commons.io.IOUtils;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -135,23 +137,8 @@ public class ClassUtils {
                 int end = file.toString().length() - 6; // 6 == ".class".length();
 
                 String classFile = file.toString().substring(start + 1, end);
-                String clasName = classFile.replace(File.separator, ".");
-                if (basePackages.size() == 0) {
-                    Class<T> clazz = classForName(clasName);
-                    classVisitor.visit(clazz);
-                } else {
-                    boolean needVisit = false;
-                    for (String basePackage : basePackages) {
-                        if (clasName.startsWith(basePackage)) {
-                            needVisit = true;
-                            break;
-                        }
-                    }
-                    if (needVisit) {
-                        Class<T> clazz = classForName(clasName);
-                        classVisitor.visit(clazz);
-                    }
-                }
+                String className = classFile.replace(File.separator, ".");
+                visitClass(className, basePackages, classVisitor);
             }
             return;
         }
@@ -167,22 +154,38 @@ public class ClassUtils {
                 String entryName = jarEntry.getName();
                 if (!jarEntry.isDirectory() && entryName.endsWith(".class")) {
                     String className = entryName.replace("/", ".").substring(0, entryName.length() - 6);
-                    Class<T> clazz = classForName(className);
-                    if (clazz != null) {
-                        classVisitor.visit(clazz);
-                    }
+                    visitClass(className, basePackages, classVisitor);
                 }
             }
-
         } catch (IOException e1) {
         } finally {
-            if (jarFile != null)
-                try {
-                    jarFile.close();
-                } catch (IOException e) {
-                }
+            IOUtils.closeQuietly(jarFile);
         }
 
+    }
+
+    private static <T> void visitClass(String className, Collection<String> basePackages,
+            ClassVisitor<T> classVisitor) {
+        if (basePackages.size() == 0) {
+            Class<T> clazz = classForName(className);
+            if (clazz != null) {
+                classVisitor.visit(clazz);
+            }
+        } else {
+            boolean needVisit = false;
+            for (String basePackage : basePackages) {
+                if (className.startsWith(basePackage)) {
+                    needVisit = true;
+                    break;
+                }
+            }
+            if (needVisit) {
+                Class<T> clazz = classForName(className);
+                if (clazz != null) {
+                    classVisitor.visit(clazz);
+                }
+            }
+        }
     }
 
     private static Set<String> cannotLoadClassNames = new HashSet<>();

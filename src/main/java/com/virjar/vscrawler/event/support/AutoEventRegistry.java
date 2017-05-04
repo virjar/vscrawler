@@ -25,8 +25,8 @@ import lombok.extern.slf4j.Slf4j;
  * 处理由注解自动标注的事件绑定
  */
 @Slf4j
-public class AutoEventRegister {
-    private static AutoEventRegister instance = null;
+public class AutoEventRegistry {
+    private static AutoEventRegistry instance = null;
     private static Set<String> basePackges = Sets.newHashSet("com.virjar.vscrawler.event.systemevent");
 
     public synchronized static void addBasePackage(String basePackage) {
@@ -44,7 +44,7 @@ public class AutoEventRegister {
         basePackges.add(basePackage);
     }
 
-    private AutoEventRegister() {
+    private AutoEventRegistry() {
         scanDelegate();
     }
 
@@ -53,11 +53,11 @@ public class AutoEventRegister {
      * 
      * @return
      */
-    public static AutoEventRegister getInstance() {
+    public static AutoEventRegistry getInstance() {
         if (instance == null) {
-            synchronized (AutoEventRegister.class) {
+            synchronized (AutoEventRegistry.class) {
                 if (instance == null) {
-                    instance = new AutoEventRegister();
+                    instance = new AutoEventRegistry();
                 }
             }
         }
@@ -139,7 +139,7 @@ public class AutoEventRegister {
 
     private void registerMethod(Object obverser, Method obverserMethod, String topic) {
         EventConsumeProxyHandler eventConsumeProxyHandler = new EventConsumeProxyHandler(obverser, obverserMethod);
-        EventHandler eventHandler = (EventHandler) Proxy.newProxyInstance(AutoEventRegister.class.getClassLoader(),
+        EventHandler eventHandler = (EventHandler) Proxy.newProxyInstance(AutoEventRegistry.class.getClassLoader(),
                 new Class[] { EventHandler.class }, eventConsumeProxyHandler);
         EventLoop.registerHandler(topic, eventHandler);
     }
@@ -161,7 +161,7 @@ public class AutoEventRegister {
         }
 
         EventSendProxyHandler eventSendProxyHandler = new EventSendProxyHandler();
-        Object o = Proxy.newProxyInstance(AutoEventRegister.class.getClassLoader(), new Class[] { interfaze },
+        Object o = Proxy.newProxyInstance(AutoEventRegistry.class.getClassLoader(), new Class[] { interfaze },
                 eventSendProxyHandler);
         allAutoEventMap.put(interfaze, o);
     }

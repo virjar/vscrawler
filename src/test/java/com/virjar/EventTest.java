@@ -2,7 +2,7 @@ package com.virjar;
 
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.event.EventLoop;
-import com.virjar.vscrawler.event.support.AutoEventRegister;
+import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.UserLoginEvent;
 import com.virjar.vscrawler.net.user.User;
 
@@ -13,12 +13,12 @@ public class EventTest {
     public static void main(String[] args) {
         EventLoop.getInstance().loop();
 
-        AutoEventRegister eventRegister = AutoEventRegister.getInstance();
+        AutoEventRegistry eventRegister = AutoEventRegistry.getInstance();
 
         eventRegister.registerObserver(new UserLoginEvent() {
             @Override
             public void afterUserLogin(User user, boolean loginSucces) {
-                System.out.println("用户登录:" + (loginSucces ? "成功" : "失败"));
+                System.out.println(Thread.currentThread() + "用户登录:" + (loginSucces ? "成功" : "失败"));
             }
         });
 
