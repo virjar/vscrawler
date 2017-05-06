@@ -14,4 +14,6 @@ public class VSCrawlerConstant {
     public static final String SESSION_POOL_MONTOR_THREAD_NUMBER = "sessionPool.monitorThreadNumber";
 
     public static final String VSCRAWLER_THREAD_NUMBER = "vsCrawler.threadNumber";
+
+    public static final String USER_RESOURCE_USERINFO = "userResource.userInfo";
 }

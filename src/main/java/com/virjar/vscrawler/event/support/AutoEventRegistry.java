@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by virjar on 17/4/30.<br/>
  * 处理由注解自动标注的事件绑定
+ * 
  * @author virjar
  * @since 0.0.1
  */
@@ -72,16 +73,24 @@ public class AutoEventRegistry {
         AnnotationMethodVisitor eventVisitor = new AnnotationMethodVisitor(AutoEvent.class);
         ClassUtils.scan(eventVisitor, basePackges);
         // 所有自动事件的声明
-        Set<Method> eventMethodSet = eventVisitor.getMethodSet();
-        Multimap<Class, Method> classMethodMultimap = toClassMap(eventMethodSet);
+        registerMethods(eventVisitor.getMethodSet());
+    }
+
+    public void registerEvent(Class clazz) {
+        if (!clazz.isInterface()) {
+            throw new IllegalStateException("" + clazz + " is not a interface");
+        }
+        AnnotationMethodVisitor eventVisitor = new AnnotationMethodVisitor(AutoEvent.class);
+        eventVisitor.visit(clazz);
+        registerMethods(eventVisitor.getMethodSet());
+    }
+
+    private void registerMethods(Set<Method> methods) {
+        Multimap<Class, Method> classMethodMultimap = toClassMap(methods);
         // 为声明事件注册事件转化
         for (Class clazz : classMethodMultimap.keySet()) {
             delegateMethod(clazz, classMethodMultimap.get(clazz));
         }
-        /*
-         * AnnotationMethodVisitor eventHandlerVisitor = new AnnotationMethodVisitor(AutoEventHandler.class);
-         * ClassUtils.scan(eventHandlerVisitor); Set<Method> eventHandlerMethodSet = eventHandlerVisitor.getMethodSet();
-         */
     }
 
     /**

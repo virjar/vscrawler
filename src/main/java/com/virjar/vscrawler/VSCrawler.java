@@ -16,6 +16,7 @@ import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.event.EventLoop;
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.event.systemevent.CrawlerStartEvent;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.processor.CrawlResult;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by virjar on 17/4/16. <br/>
  * 爬虫入口,目前很多逻辑参考了webmagic
+ * 
  * @author virjar
  * @since 0.0.1
  */
@@ -117,9 +119,8 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
                 if (activeTasks.get() >= threadPool.getMaximumPoolSize()) {
                     try {
                         synchronized (this) {
-                            if (hasBlocked.compareAndSet(false, true)) {
-                                wait();
-                            }
+                            hasBlocked.set(true);
+                            wait();
                         }
                     } catch (InterruptedException e) {
                         log.warn("爬虫线程休眠被打断", e);
@@ -213,7 +214,7 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         // 加载初始化配置
         config(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
 
-        // 让本类监听配置问价变更事件
+        // 让本类监听配置文件变更事件
         AutoEventRegistry.getInstance().registerObserver(this);
 
         if (crawlerSessionPool == null) {
@@ -239,36 +240,12 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         }
 
         startTime = new Date();
+        AutoEventRegistry.getInstance().findEventDeclaring(CrawlerStartEvent.class).onCrawlerStart();
 
-    }
-
-    public VSCrawler setThreadNumber(int threadNumber) {
-        this.threadNumber = threadNumber;
-        return this;
     }
 
     public static VSCrawler create() {
         return new VSCrawler();
-    }
-
-    public VSCrawler setCrawlerSessionPool(CrawlerSessionPool crawlerSessionPool) {
-        this.crawlerSessionPool = crawlerSessionPool;
-        return this;
-    }
-
-    public VSCrawler setiProcessor(IProcessor iProcessor) {
-        this.iProcessor = iProcessor;
-        return this;
-    }
-
-    public VSCrawler addPipline(Pipline pipline) {
-        this.pipline.add(pipline);
-        return this;
-    }
-
-    public VSCrawler setSeedManager(SeedManager seedManager) {
-        this.seedManager = seedManager;
-        return this;
     }
 
 }

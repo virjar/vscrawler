@@ -5,21 +5,39 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.virjar.vscrawler.net.session.CrawlerSession;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Created by virjar on 17/4/14.
+ * 
  * @author virjar
  * @since 0.0.1
  */
 public class User {
+    @Getter
+    @Setter
     private String userID;
+    @Getter
+    @Setter
     private String password;
+    @Getter
+    @Setter
     private String phone;
+    @Getter
+    @Setter
     private String email;
+    @Getter
+    @Setter
     private boolean isValid;
+    @Getter
+    @Setter
     private Map<String, String> extInfo;
 
     private AtomicReference<CrawlerSession> nowSession = new AtomicReference<>();
 
+    @Getter
+    @Setter
     private UserStatus userStatus = UserStatus.OK;
 
     public void holdUser(CrawlerSession crawlerSession) {
@@ -30,59 +48,21 @@ public class User {
         return nowSession.get() == crawlerSession;
     }
 
-    public String getEmail() {
-        return email;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        User user = (User) o;
+
+        return getUserID().equals(user.getUserID());
+
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public boolean isValid() {
-        return isValid;
-    }
-
-    public void setValid(boolean valid) {
-        isValid = valid;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getUserID() {
-        return userID;
-    }
-
-    public void setUserID(String userID) {
-        this.userID = userID;
-    }
-
-    public Map<String, String> getExtInfo() {
-        return extInfo;
-    }
-
-    public void setExtInfo(Map<String, String> extInfo) {
-        this.extInfo = extInfo;
-    }
-
-    public UserStatus getUserStatus() {
-        return userStatus;
-    }
-
-    public void setUserStatus(UserStatus userStatus) {
-        this.userStatus = userStatus;
+    @Override
+    public int hashCode() {
+        return getUserID().hashCode();
     }
 }

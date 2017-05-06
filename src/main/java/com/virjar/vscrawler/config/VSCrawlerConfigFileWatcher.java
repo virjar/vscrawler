@@ -13,6 +13,7 @@ import org.apache.commons.io.IOUtils;
 
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.event.systemevent.CrawlerStartEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,11 +25,15 @@ import lombok.extern.slf4j.Slf4j;
  * @since 0.0.1
  */
 @Slf4j
-public class VSCrawlerConfigFileWatcher {
+public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
     private static final String configFileName = "default_vsCrawler.properties";
 
     private Properties oldProperties = null;
     private AtomicBoolean hasStartWatch = new AtomicBoolean(false);
+
+    public VSCrawlerConfigFileWatcher() {
+        AutoEventRegistry.getInstance().registerObserver(this);
+    }
 
     public Properties loadedProperties() {
         watchAndBindEvent();
@@ -99,5 +104,15 @@ public class VSCrawlerConfigFileWatcher {
             IOUtils.closeQuietly(defaultConfigInput);
             IOUtils.closeQuietly(fileInputStream);
         }
+    }
+
+    @Override
+    public void onCrawlerStart() {
+        watchAndBindEvent();
+        if (oldProperties == null) {
+            throw new IllegalStateException("不能加载配置,加载发生过异常,请排查后重新启动程序");
+        }
+        AutoEventRegistry.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class).configChange(null,
+                oldProperties);
     }
 }
