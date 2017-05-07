@@ -20,7 +20,6 @@ import com.virjar.vscrawler.event.systemevent.CrawlerStartEvent;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.processor.CrawlResult;
-import com.virjar.vscrawler.processor.HtmlDownLoadProcessor;
 import com.virjar.vscrawler.processor.IProcessor;
 import com.virjar.vscrawler.seed.SeedManager;
 import com.virjar.vscrawler.serialize.ConsolePipline;
@@ -71,7 +70,7 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
 
     private int slowStartTimes = 0;
 
-    public VSCrawler() {
+    VSCrawler() {
 
     }
 
@@ -217,18 +216,6 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         // 让本类监听配置文件变更事件
         AutoEventRegistry.getInstance().registerObserver(this);
 
-        if (crawlerSessionPool == null) {
-            crawlerSessionPool = new CrawlerSessionPool(threadNumber);
-        }
-
-        if (seedManager == null) {
-            seedManager = new SeedManager("seedConfig.properties");
-        }
-
-        if (iProcessor == null) {
-            iProcessor = new HtmlDownLoadProcessor();
-        }
-
         if (pipline.size() == 0) {
             pipline.add(new ConsolePipline());
         }
@@ -242,10 +229,6 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         startTime = new Date();
         AutoEventRegistry.getInstance().findEventDeclaring(CrawlerStartEvent.class).onCrawlerStart();
 
-    }
-
-    public static VSCrawler create() {
-        return new VSCrawler();
     }
 
 }

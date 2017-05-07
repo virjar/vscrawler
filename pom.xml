@@ -11,7 +11,8 @@
         <dependency>
             <groupId>com.virjar</groupId>
             <artifactId>dungproxy-client</artifactId>
-            <version>0.0.5</version>
+            <!--  当前为了和dungproxy更加契合,在使dungproxy提供一些改动适配vscrawler,所以接入了snapshot版本得依赖,稳定后dungproxy将会变成线上 -->
+            <version>0.0.6-SNAPSHOT</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok  -->
         <dependency>

@@ -16,4 +16,6 @@ public class VSCrawlerConstant {
     public static final String VSCRAWLER_THREAD_NUMBER = "vsCrawler.threadNumber";
 
     public static final String USER_RESOURCE_USERINFO = "userResource.userInfo";
+
+    public static final String VSCRAWLER_AVPROXY_KEY = "vsCrawler.avProxy.key";
 }

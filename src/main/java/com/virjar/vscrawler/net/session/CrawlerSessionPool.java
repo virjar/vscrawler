@@ -1,28 +1,31 @@
 package com.virjar.vscrawler.net.session;
 
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
 import com.googlecode.aviator.AviatorEvaluator;
+import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
+import com.virjar.vscrawler.net.proxy.ProxyStrategy;
 import com.virjar.vscrawler.net.user.User;
+import com.virjar.vscrawler.net.user.UserManager;
+import com.virjar.vscrawler.net.user.UserStatus;
 import com.virjar.vscrawler.util.SingtonObjectHolder;
 import com.virjar.vscrawler.util.VSCrawlerConstant;
 
 /**
  * Created by virjar on 17/4/15.<br/>
  * 创建并管理多个用户的链接
+ * 
  * @author virjar
  * @since 0.0.1
  */
@@ -55,13 +58,11 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
     /**
      * 活跃session数目
      */
-    private int activeUser = Integer.MAX_VALUE;
+    private int activeUser = 100;
 
     private LoginHandler defaultLoginHandler;
 
-    private Set<User> allUser;
-
-    private Set<User> idlUser;
+    private UserManager userManager;
 
     private int monitorThreadNumber = 2;
 
@@ -69,49 +70,34 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
 
     private AtomicInteger sessionCreateThreadNum = new AtomicInteger(0);
 
-    public CrawlerSessionPool(Set<User> allUser, LoginHandler defaultLoginHandler) {
-        this.allUser = allUser;
-        idlUser = Sets.newConcurrentHashSet(allUser);
+    private CrawlerHttpClientGenerator crawlerHttpClientGenerator;
+
+    /**
+     * 代理切换策略
+     */
+    private ProxyStrategy proxyStrategy;
+
+    public CrawlerSessionPool(UserManager userManager, LoginHandler defaultLoginHandler,
+            CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy) {
+        this.userManager = userManager;
         this.defaultLoginHandler = defaultLoginHandler;
+        this.crawlerHttpClientGenerator = crawlerHttpClientGenerator;
+        this.proxyStrategy = proxyStrategy;
         monitorPool = new ThreadPoolExecutor(monitorThreadNumber, monitorThreadNumber, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>());
+
         // 注册事件监听,接收配置文件变更消息,下面两句比较巧妙
         changeWithProperties(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
         AutoEventRegistry.getInstance().registerObserver(this);
-    }
 
-    private static Set<User> mockUser(int userNumber) {
-        Set<User> allUser = Sets.newConcurrentHashSet();
-        for (int i = 0; i < userNumber; i++) {
-            allUser.add(new User());
-        }
-        return allUser;
-    }
-
-    private synchronized void addIdlUser(User user) {
-        idlUser.add(user);
-    }
-
-    private synchronized User pollIdlUser() {
-        if (idlUser.size() == 0) {
-            logger.info("当前系统没有用户信息");
-            return null;
-        }
-        User next = idlUser.iterator().next();
-        idlUser.remove(next);
-        return next;
-    }
-
-    public CrawlerSessionPool(int userNumber) {
-        this(mockUser(userNumber), new EmptyLoginHandler());
     }
 
     private CrawlerSession createNewSession() {
-        User user = pollIdlUser();
+        User user = userManager.allocateUser();
         if (user == null) {
             return null;
         }
-        return new CrawlerSession(user, defaultLoginHandler);
+        return new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator);
     }
 
     public synchronized CrawlerSession borrowOne() {
@@ -154,8 +140,7 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
 
             if (System.currentTimeMillis() - session.getInitTimeStamp() > maxDuration) {
                 logger.info("session使用距离超过最大使用时间,暂时下线这个session", maxIdle / 1000);
-                User user = session.getUser();
-                addIdlUser(user);
+                userManager.returnUser(session.getUser());
                 allSessions.remove(session);
                 continue;
             }
@@ -165,7 +150,7 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
                 continue;
             }
 
-            if (allSessions.size() < activeUser && idlUser.size() > 0) {
+            if (allSessions.size() < activeUser) {
                 // 扩大活跃账户数量
                 monitorPool.submit(new CreateSessionThread());
             }
@@ -219,7 +204,7 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
                 10000);
         int newThreadNumber = NumberUtils.toInt(AviatorEvaluator
                 .exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MONTOR_THREAD_NUMBER)).toString(), 2);
-        if(newThreadNumber != monitorThreadNumber){
+        if (newThreadNumber != monitorThreadNumber) {
             monitorThreadNumber = newThreadNumber;
             monitorPool.setMaximumPoolSize(monitorThreadNumber);
             monitorPool.setCorePoolSize(monitorThreadNumber);
@@ -244,11 +229,11 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
         public void run() {
             try {
                 if (sessionCreateThreadNum.incrementAndGet() + allSessions.size() < activeUser) {
-                    User user = pollIdlUser();
+                    User user = userManager.allocateUser();
                     if (user == null) {
                         return;
                     }
-                    CrawlerSession session = new CrawlerSession(user, defaultLoginHandler);
+                    CrawlerSession session = new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator);
                     allSessions.offer(session);
                 }
             } finally {
@@ -283,6 +268,9 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
             if (session.login() && !session.isLogin()) {
                 logger.info("登录失败,禁用本账户");
                 allSessions.remove(session);// TODO 禁用上下线逻辑
+                User user = session.getUser();
+                user.setUserStatus(UserStatus.BLOCK);
+                userManager.returnUser(user);
             }
         }
     }

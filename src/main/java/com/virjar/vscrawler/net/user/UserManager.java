@@ -1,7 +1,11 @@
 package com.virjar.vscrawler.net.user;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.UserStateChangeEvent;
@@ -21,7 +25,7 @@ public class UserManager implements UserStateChangeEvent {
 
     private Set<User> allUser = Sets.newHashSet();
 
-    private Set<User> idleUsers = Sets.newHashSet();
+    private LinkedList<User> idleUsers = Lists.newLinkedList();
 
     private Set<User> blockUsers = Sets.newHashSet();
 
@@ -43,5 +47,62 @@ public class UserManager implements UserStateChangeEvent {
         }
     }
 
+    /**
+     * recycle user resource to user resources pool, must make user instance detach from session
+     * 
+     * @param user user instance
+     */
+    public void returnUser(User user) {
+        UserStatus userStatus = user.getUserStatus();
+        if (userStatus != UserStatus.OK) {
+            blockUsers.add(user);
+        } else {
+            idleUsers.add(user);
+        }
+    }
+
+    public User allocateUser() {
+        User poll = idleUsers.poll();
+        if (poll == null) {
+            unblock();
+            poll = idleUsers.poll();
+        }
+
+        if (poll == null) {
+            Collection<User> users = userResourceFacade.importUser();
+            if (users != null) {
+                for (User user : users) {
+                    if (!allUser.contains(user)) {
+                        allUser.add(user);
+                        idleUsers.offer(user);
+                    }
+                }
+                poll = idleUsers.poll();
+            }
+        }
+
+        while (poll != null) {
+            if (poll.getUserStatus() != UserStatus.OK || poll.getUserStatus() != UserStatus.INIT) {
+                blockUsers.add(poll);
+                poll = idleUsers.poll();
+            } else {
+                return poll;
+            }
+        }
+
+        return null;
+    }
+
+    private synchronized void unblock() {
+        // TODO sync 优化
+        Iterator<User> iterator = blockUsers.iterator();
+        while (iterator.hasNext()) {
+            User user = iterator.next();
+            if (user.getUserStatus() == UserStatus.INIT || user.getUserStatus() == UserStatus.OK) {
+                iterator.remove();
+                idleUsers.add(user);
+            }
+        }
+    }
 
 }
