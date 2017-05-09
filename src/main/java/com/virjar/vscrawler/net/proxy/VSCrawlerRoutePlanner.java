@@ -24,7 +24,6 @@ public class VSCrawlerRoutePlanner extends DefaultRoutePlanner {
 
     private ProxyBindRoutPlanner delegate;
     private ProxyStrategy proxyStrategy;
-    private CrawlerSession crawlerSession;
     private AvProxyRoutePlanner avProxyRoutePlanner;
 
     public VSCrawlerRoutePlanner(ProxyBindRoutPlanner delegate, ProxyStrategy proxyStrategy,
@@ -32,7 +31,6 @@ public class VSCrawlerRoutePlanner extends DefaultRoutePlanner {
         super(delegate.getSchemePortResolver());
         this.delegate = delegate;
         this.proxyStrategy = proxyStrategy;
-        this.crawlerSession = crawlerSession;
         this.avProxyRoutePlanner = new AvProxyRoutePlanner(crawlerSession);
     }
 

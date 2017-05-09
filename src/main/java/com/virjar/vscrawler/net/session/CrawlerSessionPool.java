@@ -97,7 +97,7 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
         if (user == null) {
             return null;
         }
-        return new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator);
+        return new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator, proxyStrategy);
     }
 
     public synchronized CrawlerSession borrowOne() {
@@ -233,7 +233,8 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
                     if (user == null) {
                         return;
                     }
-                    CrawlerSession session = new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator);
+                    CrawlerSession session = new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator,
+                            proxyStrategy);
                     allSessions.offer(session);
                 }
             } finally {

@@ -1,6 +1,7 @@
 package com.virjar.vscrawler;
 
 import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
+import com.virjar.vscrawler.net.proxy.ProxyStrategy;
 import com.virjar.vscrawler.net.session.LoginHandler;
 import com.virjar.vscrawler.net.user.UserResourceFacade;
 
@@ -27,4 +28,8 @@ public class VSCrawlerBuilder {
      */
     private UserResourceFacade userResourceFacade;
 
+    /**
+     * 代理切换策略
+     */
+    private ProxyStrategy proxyStrategy;
 }
