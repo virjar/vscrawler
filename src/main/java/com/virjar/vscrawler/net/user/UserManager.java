@@ -30,12 +30,11 @@ public class UserManager implements UserStateChangeEvent {
     private Set<User> blockUsers = Sets.newHashSet();
 
     public UserManager(UserResourceFacade userResourceFacade) {
+        if (userResourceFacade == null) {
+            userResourceFacade = new DefaultUserResource();
+        }
         this.userResourceFacade = userResourceFacade;
         AutoEventRegistry.getInstance().registerObserver(this);
-    }
-
-    public UserManager() {
-        this(new DefaultUserResource());
     }
 
     @Override

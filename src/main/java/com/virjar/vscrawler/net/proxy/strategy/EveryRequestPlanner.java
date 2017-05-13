@@ -47,7 +47,6 @@ public class EveryRequestPlanner implements ProxyPlanner {
 
         log.info("{} 当前使用IP为:{}:{}", host.getHostName(), bind.getIp(), bind.getPort());
         // 将绑定IP放置到context,用于后置拦截器统计这个IP的使用情况
-        context.setAttribute(VSCRAWLER_AVPROXY_KEY, bind);
         return bind;
     }
 }

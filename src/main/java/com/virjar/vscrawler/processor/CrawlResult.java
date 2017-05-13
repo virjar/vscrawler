@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 
 /**
  * Created by virjar on 17/4/16.
+ * 
  * @author virjar
  * @since 0.0.1
  */
@@ -13,17 +14,10 @@ public class CrawlResult {
     /**
      * 一个种子可能产生多个结果
      */
-    private List<String> result;
-    private List<String> newSeed;
+    private List<String> result = Lists.newLinkedList();
+    private List<String> newSeed = Lists.newLinkedList();
     private boolean retry = false;
     private boolean sessionEnable = true;
-
-    public static CrawlResult emptyResult() {
-        CrawlResult ret = new CrawlResult();
-        ret.setResult(Lists.<String> newArrayList());
-        ret.setNewSeed(Lists.<String> newArrayList());
-        return ret;
-    }
 
     public boolean isSessionEnable() {
         return sessionEnable;
@@ -37,16 +31,16 @@ public class CrawlResult {
         return newSeed;
     }
 
-    public void setNewSeed(List<String> newSeed) {
-        this.newSeed = newSeed;
+    public void addNewSeed(List<String> newSeed) {
+        this.newSeed.addAll(newSeed);
     }
 
     public List<String> getResult() {
         return result;
     }
 
-    public void setResult(List<String> result) {
-        this.result = result;
+    public void addResult(List<String> result) {
+        this.result.addAll(result);
     }
 
     public boolean isRetry() {

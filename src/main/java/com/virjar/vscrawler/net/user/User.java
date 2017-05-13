@@ -3,6 +3,7 @@ package com.virjar.vscrawler.net.user;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.collect.Maps;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 
 import lombok.Getter;
@@ -31,8 +32,7 @@ public class User {
     @Setter
     private boolean isValid;
     @Getter
-    @Setter
-    private Map<String, Object> extInfo;
+    private Map<String, Object> extInfo = Maps.newHashMap();
 
     private AtomicReference<CrawlerSession> nowSession = new AtomicReference<>();
 

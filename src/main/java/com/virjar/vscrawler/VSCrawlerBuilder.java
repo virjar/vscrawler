@@ -1,11 +1,16 @@
 package com.virjar.vscrawler;
 
+import java.util.List;
+
+import com.google.common.collect.Lists;
 import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.net.proxy.IPPool;
 import com.virjar.vscrawler.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.net.proxy.strategy.ProxyStrategy;
 import com.virjar.vscrawler.net.session.LoginHandler;
 import com.virjar.vscrawler.net.user.UserResourceFacade;
+import com.virjar.vscrawler.processor.IProcessor;
+import com.virjar.vscrawler.serialize.Pipline;
 
 /**
  * Created by virjar on 17/4/30.<br/>
@@ -44,4 +49,14 @@ public class VSCrawlerBuilder {
      * 自定义代理策略的时候,代理决策器
      */
     private ProxyPlanner proxyPlanner;
+
+    /**
+     * 种子处理器,负责解析页面逻辑
+     */
+    private IProcessor processor;
+
+    /**
+     * 序列化层
+     */
+    private List<Pipline> piplineList = Lists.newArrayList();
 }

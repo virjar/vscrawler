@@ -15,6 +15,8 @@ import com.googlecode.aviator.AviatorEvaluator;
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
+import com.virjar.vscrawler.net.proxy.IPPool;
+import com.virjar.vscrawler.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.net.proxy.strategy.ProxyStrategy;
 import com.virjar.vscrawler.net.user.User;
 import com.virjar.vscrawler.net.user.UserManager;
@@ -77,12 +79,18 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
      */
     private ProxyStrategy proxyStrategy;
 
+    private IPPool ipPool;
+    private ProxyPlanner proxyPlanner = null;
+
     public CrawlerSessionPool(UserManager userManager, LoginHandler defaultLoginHandler,
-            CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy) {
+            CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy, IPPool ipPool,
+            ProxyPlanner proxyPlanner) {
         this.userManager = userManager;
         this.defaultLoginHandler = defaultLoginHandler;
         this.crawlerHttpClientGenerator = crawlerHttpClientGenerator;
         this.proxyStrategy = proxyStrategy;
+        this.ipPool = ipPool;
+        this.proxyPlanner = proxyPlanner;
         monitorPool = new ThreadPoolExecutor(monitorThreadNumber, monitorThreadNumber, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>());
 
@@ -97,7 +105,8 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
         if (user == null) {
             return null;
         }
-        return new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator, proxyStrategy);
+        return new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator, proxyStrategy, ipPool,
+                proxyPlanner);
     }
 
     public synchronized CrawlerSession borrowOne() {
@@ -234,7 +243,7 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
                         return;
                     }
                     CrawlerSession session = new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator,
-                            proxyStrategy);
+                            proxyStrategy, ipPool, proxyPlanner);
                     allSessions.offer(session);
                 }
             } finally {

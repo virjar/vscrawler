@@ -1,5 +1,7 @@
 package com.virjar.vscrawler.net.session;
 
+import static com.virjar.vscrawler.util.VSCrawlerConstant.VSCRAWLER_AVPROXY_KEY;
+
 import java.io.IOException;
 
 import org.apache.http.HttpException;
@@ -9,6 +11,8 @@ import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.execchain.ClientExecChain;
+
+import com.virjar.vscrawler.net.proxy.Proxy;
 
 /**
  * Created by virjar on 17/5/13.
@@ -26,6 +30,17 @@ public class ProxyFeedBackClientExecChain implements ClientExecChain {
     @Override
     public CloseableHttpResponse execute(HttpRoute route, HttpRequestWrapper request, HttpClientContext clientContext,
             HttpExecutionAware execAware) throws IOException, HttpException {
-        return delegate.execute(route, request, clientContext, execAware);
+        Proxy proxy = (Proxy) clientContext.getAttribute(VSCRAWLER_AVPROXY_KEY);
+        if (proxy != null) {
+            proxy.recordUsage();
+        }
+        try {
+            return delegate.execute(route, request, clientContext, execAware);
+        } catch (IOException ioe) {
+            if (proxy != null) {
+                proxy.recordFailed();
+            }
+            throw ioe;
+        }
     }
 }

@@ -8,5 +8,5 @@ import com.virjar.vscrawler.net.session.CrawlerSession;
  * @since 0.0.1
  */
 public interface IProcessor {
-    CrawlResult process(String seed, CrawlerSession crawlerSession);
+    void process(String seed, CrawlerSession crawlerSession,CrawlResult crawlResult);
 }

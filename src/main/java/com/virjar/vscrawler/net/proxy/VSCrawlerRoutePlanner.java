@@ -1,5 +1,7 @@
 package com.virjar.vscrawler.net.proxy;
 
+import static com.virjar.vscrawler.util.VSCrawlerConstant.VSCRAWLER_AVPROXY_KEY;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
@@ -51,6 +53,7 @@ public class VSCrawlerRoutePlanner extends DefaultRoutePlanner {
             return null;
         }
         log.info("{} 当前使用IP为:{}:{}", host.getHostName(), proxy.getIp(), proxy.getPort());
+        context.setAttribute(VSCRAWLER_AVPROXY_KEY, proxy);
 
         if (proxy.getAuthenticationHeaders() != null) {
             for (Header header : proxy.getAuthenticationHeaders()) {
