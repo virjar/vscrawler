@@ -6,7 +6,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.CookieStore;
 import org.apache.http.conn.routing.HttpRoutePlanner;
-import org.apache.http.impl.client.BasicCookieStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,8 +15,9 @@ import com.virjar.dungproxy.client.httpclient.conn.ProxyBindRoutPlanner;
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
-import com.virjar.vscrawler.net.proxy.ProxyStrategy;
+import com.virjar.vscrawler.net.proxy.IPPool;
 import com.virjar.vscrawler.net.proxy.VSCrawlerRoutePlanner;
+import com.virjar.vscrawler.net.proxy.strategy.*;
 import com.virjar.vscrawler.net.user.User;
 
 import lombok.Getter;
@@ -42,7 +42,7 @@ public class CrawlerSession {
     private AtomicBoolean enable = new AtomicBoolean(false);
 
     @Getter
-    private CookieStore cookieStore = new BasicCookieStore();
+    private CookieStore cookieStore;
 
     private AtomicInteger borrowNumber = new AtomicInteger(0);
 
@@ -61,34 +61,68 @@ public class CrawlerSession {
 
     private ProxyStrategy proxyStrategy;
 
+    private ProxyPlanner proxyPlanner;
+
+    private IPPool ipPool;
     @Getter
     private Map<String, Object> ext = Maps.newHashMap();
 
     public CrawlerSession(User user, LoginHandler loginHandler, CrawlerHttpClientGenerator crawlerHttpClientGenerator,
-            ProxyStrategy proxyStrategy) {
+            ProxyStrategy proxyStrategy, IPPool ipPool, ProxyPlanner proxyPlanner) {
         this.loginHandler = loginHandler;
         this.user = user;
         user.holdUser(this);
-        this.crawlerHttpClient = crawlerHttpClientGenerator.gen(cookieStore);
+        this.crawlerHttpClient = crawlerHttpClientGenerator.gen(new ProxyFeedBackDecorateHttpClientBuilder());
         this.proxyStrategy = proxyStrategy;
-        // 对代理IP策略进行路由
-        crawlerHttpClient.setRoutePlanner(decorateRoutePlanner(crawlerHttpClient.getRoutePlanner()));
+        this.ipPool = ipPool;
+        this.proxyPlanner = proxyPlanner;
 
+        determineProxyPlanner();
+        // 对代理IP策略进行路由
+        decorateRoutePlanner(crawlerHttpClient);
+
+        this.cookieStore = crawlerHttpClient.getCookieStore();
         AutoEventRegistry.getInstance().findEventDeclaring(SessionCreateEvent.class).onSessionCreateEvent(this);
         // new SessionCreateEvent(user).send();
         login();
     }
 
-    private HttpRoutePlanner decorateRoutePlanner(HttpRoutePlanner routePlanner) {
-        if (proxyStrategy == ProxyStrategy.NONE) {// 如果是不代理,那么不修改
-            return routePlanner;
+    private void determineProxyPlanner() {
+        switch (proxyStrategy) {
+        case CUSTOM:
+            if (proxyPlanner == null) {
+                throw new IllegalStateException("您选择了自定义代理决策方案,但是没有设置代理决策器");
+            }
+            break;
+        case REQUEST:
+            proxyPlanner = new EveryRequestPlanner();
+            break;
+        case SESSION:
+            proxyPlanner = new EverySessionPlanner();
+            break;
+        case USER:
+            proxyPlanner = new EveryUserPlanner();
+            break;
+        case NONE:
+            proxyPlanner = new NotProxyPlanner();
+            break;
+        default:
+            proxyPlanner = new NotProxyPlanner();
         }
 
+    }
+
+    private void decorateRoutePlanner(CrawlerHttpClient crawlerHttpClient) {
+        HttpRoutePlanner routePlanner = crawlerHttpClient.getRoutePlanner();
         if (!(routePlanner instanceof ProxyBindRoutPlanner)) {
             log.warn("自定义了代理发生器,vscrawler的代理功能将不会生效");
-            return routePlanner;
+            return;
         }
-        return new VSCrawlerRoutePlanner((ProxyBindRoutPlanner) routePlanner, proxyStrategy, this);
+
+        VSCrawlerRoutePlanner vsCrawlerRoutePlanner = new VSCrawlerRoutePlanner((ProxyBindRoutPlanner) routePlanner,
+                ipPool, proxyPlanner, this);
+        crawlerHttpClient.setRoutePlanner(vsCrawlerRoutePlanner);
+
     }
 
     public boolean login() {

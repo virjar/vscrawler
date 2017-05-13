@@ -32,7 +32,7 @@ public class User {
     private boolean isValid;
     @Getter
     @Setter
-    private Map<String, String> extInfo;
+    private Map<String, Object> extInfo;
 
     private AtomicReference<CrawlerSession> nowSession = new AtomicReference<>();
 

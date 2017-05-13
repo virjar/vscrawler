@@ -1,13 +1,19 @@
 package com.virjar.vscrawler.net.proxy;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
-import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.conn.DefaultRoutePlanner;
 import org.apache.http.protocol.HttpContext;
 
 import com.virjar.dungproxy.client.httpclient.conn.ProxyBindRoutPlanner;
+import com.virjar.vscrawler.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 
 import lombok.extern.slf4j.Slf4j;
@@ -22,27 +28,42 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class VSCrawlerRoutePlanner extends DefaultRoutePlanner {
 
-    private ProxyBindRoutPlanner delegate;
-    private ProxyStrategy proxyStrategy;
-    private AvProxyRoutePlanner avProxyRoutePlanner;
+    private IPPool ipPool;
+    // private ProxyStrategy proxyStrategy;
+    private CrawlerSession crawlerSession;
+    private ProxyPlanner proxyPlanner;
 
-    public VSCrawlerRoutePlanner(ProxyBindRoutPlanner delegate, ProxyStrategy proxyStrategy,
+    public VSCrawlerRoutePlanner(ProxyBindRoutPlanner delegate, IPPool ipPool, ProxyPlanner proxyPlanner,
             CrawlerSession crawlerSession) {
         super(delegate.getSchemePortResolver());
-        this.delegate = delegate;
-        this.proxyStrategy = proxyStrategy;
-        this.avProxyRoutePlanner = new AvProxyRoutePlanner(crawlerSession);
+        this.ipPool = ipPool;
+        // this.proxyStrategy = proxyStrategy;
+        this.proxyPlanner = proxyPlanner;
+        this.crawlerSession = crawlerSession;
     }
 
     @Override
-    public HttpRoute determineRoute(final HttpHost host, final HttpRequest request, final HttpContext context)
-            throws HttpException {
-        if (proxyStrategy == ProxyStrategy.REQUEST) {// dungproxy默认方案是每次换代理
-            return delegate.determineRoute(host, request, context);
+    protected HttpHost determineProxy(HttpHost host, HttpRequest request, HttpContext context) throws HttpException {
+        HttpClientContext httpClientContext = HttpClientContext.adapt(context);
+        Proxy proxy = proxyPlanner.determineProxy(host, request, context, ipPool, crawlerSession);
+
+        if (proxy == null) {
+            return null;
         }
-        if (proxyStrategy == ProxyStrategy.SESSION || proxyStrategy == ProxyStrategy.USER) {
-            return avProxyRoutePlanner.determineRoute(host, request, context);
+        log.info("{} 当前使用IP为:{}:{}", host.getHostName(), proxy.getIp(), proxy.getPort());
+
+        if (proxy.getAuthenticationHeaders() != null) {
+            for (Header header : proxy.getAuthenticationHeaders()) {
+                request.addHeader(header);
+            }
         }
-        return null;
+
+        if (StringUtils.isNotEmpty(proxy.getUsername()) && StringUtils.isNotEmpty(proxy.getPassword())) {
+            BasicCredentialsProvider credsProvider1 = new BasicCredentialsProvider();
+            httpClientContext.setCredentialsProvider(credsProvider1);
+            credsProvider1.setCredentials(AuthScope.ANY,
+                    new UsernamePasswordCredentials(proxy.getUsername(), proxy.getPassword()));
+        }
+        return new HttpHost(proxy.getIp(), proxy.getPort());
     }
 }

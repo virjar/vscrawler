@@ -15,7 +15,7 @@ import com.googlecode.aviator.AviatorEvaluator;
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
-import com.virjar.vscrawler.net.proxy.ProxyStrategy;
+import com.virjar.vscrawler.net.proxy.strategy.ProxyStrategy;
 import com.virjar.vscrawler.net.user.User;
 import com.virjar.vscrawler.net.user.UserManager;
 import com.virjar.vscrawler.net.user.UserStatus;

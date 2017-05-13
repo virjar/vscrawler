@@ -60,4 +60,9 @@ public class VSCrawlerProxy implements Proxy {
     public void recordFailed() {
         avProxy.recordFailed();
     }
+
+    @Override
+    public boolean isDisable() {
+        return avProxy.isDisable();
+    }
 }

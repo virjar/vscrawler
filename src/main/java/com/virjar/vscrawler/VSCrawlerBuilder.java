@@ -1,7 +1,9 @@
 package com.virjar.vscrawler;
 
 import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
-import com.virjar.vscrawler.net.proxy.ProxyStrategy;
+import com.virjar.vscrawler.net.proxy.IPPool;
+import com.virjar.vscrawler.net.proxy.strategy.ProxyPlanner;
+import com.virjar.vscrawler.net.proxy.strategy.ProxyStrategy;
 import com.virjar.vscrawler.net.session.LoginHandler;
 import com.virjar.vscrawler.net.user.UserResourceFacade;
 
@@ -32,4 +34,14 @@ public class VSCrawlerBuilder {
      * 代理切换策略
      */
     private ProxyStrategy proxyStrategy;
+
+    /**
+     * 代理池对象
+     */
+    private IPPool ipPool;
+
+    /**
+     * 自定义代理策略的时候,代理决策器
+     */
+    private ProxyPlanner proxyPlanner;
 }
