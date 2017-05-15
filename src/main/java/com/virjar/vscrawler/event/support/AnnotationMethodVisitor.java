@@ -4,14 +4,14 @@ import java.lang.reflect.Method;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import com.virjar.vscrawler.util.ClassUtils;
+import com.virjar.vscrawler.util.ClassScanner;
 
 /**
  * Created by virjar on 17/4/30.
  * @author virjar
  * @since 0.0.1
  */
-public class AnnotationMethodVisitor implements ClassUtils.ClassVisitor {
+public class AnnotationMethodVisitor implements ClassScanner.ClassVisitor {
     private Class annotationClazz;
     private Set<Method> methodSet = Sets.newHashSet();
 

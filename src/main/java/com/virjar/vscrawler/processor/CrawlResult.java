@@ -1,8 +1,10 @@
 package com.virjar.vscrawler.processor;
 
+import java.util.Collection;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import com.virjar.vscrawler.seed.Seed;
 
 /**
  * Created by virjar on 17/4/16.
@@ -14,40 +16,26 @@ public class CrawlResult {
     /**
      * 一个种子可能产生多个结果
      */
-    private List<String> result = Lists.newLinkedList();
-    private List<String> newSeed = Lists.newLinkedList();
-    private boolean retry = false;
-    private boolean sessionEnable = true;
+    private List<String> results = Lists.newLinkedList();
+    private List<Seed> newSeeds = Lists.newLinkedList();
 
-    public boolean isSessionEnable() {
-        return sessionEnable;
+    public void addResult(String result) {
+        results.add(result);
     }
 
-    public void setSessionEnable(boolean sessionEnable) {
-        this.sessionEnable = sessionEnable;
+    public void addResults(Collection<String> resultsIn) {
+        results.addAll(resultsIn);
     }
 
-    public List<String> getNewSeed() {
-        return newSeed;
+    public List<String> allResul() {
+        return Lists.newArrayList(results);
     }
 
-    public void addNewSeed(List<String> newSeed) {
-        this.newSeed.addAll(newSeed);
+    public void addSeed(Seed seed) {
+        newSeeds.add(seed);
     }
 
-    public List<String> getResult() {
-        return result;
-    }
-
-    public void addResult(List<String> result) {
-        this.result.addAll(result);
-    }
-
-    public boolean isRetry() {
-        return retry;
-    }
-
-    public void setRetry(boolean retry) {
-        this.retry = retry;
+    public void addSeed(String seed) {
+        newSeeds.add(new Seed(seed));
     }
 }

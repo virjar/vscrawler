@@ -25,8 +25,8 @@ public class HtmlDownLoadProcessor implements IProcessor {
             crawlResult.setRetry(true);
             return;
         }
-        crawlResult.setResult(Lists.newArrayList(s));
-        crawlResult.setNewSeed(Lists.newArrayList(allUrl(Jsoup.parse(s, seed))));
+        //crawlResult.setResult(Lists.newArrayList(s));
+        //crawlResult.setNewSeed(Lists.newArrayList(allUrl(Jsoup.parse(s, seed))));
     }
 
     private Set<String> allUrl(Document document) {

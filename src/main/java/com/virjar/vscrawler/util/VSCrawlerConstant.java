@@ -2,6 +2,7 @@ package com.virjar.vscrawler.util;
 
 /**
  * Created by virjar on 17/5/2.
+ * 
  * @author virjar
  * @since 0.0.1
  */
@@ -18,4 +19,8 @@ public class VSCrawlerConstant {
     public static final String USER_RESOURCE_USERINFO = "userResource.userInfo";
 
     public static final String VSCRAWLER_AVPROXY_KEY = "vsCrawler.avProxy.key";
+
+    public static final String VSCRAWLER_WORKING_DIRECTORY = "vsCrawler.Working.directory";
+
+    public static final String VSCRAWLER_INIT_SEED_FILE = "vsCrawler.initSeedFile";
 }

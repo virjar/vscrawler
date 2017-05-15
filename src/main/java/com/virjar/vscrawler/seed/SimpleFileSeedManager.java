@@ -21,12 +21,13 @@ import com.google.common.hash.Funnel;
 import com.google.common.hash.PrimitiveSink;
 
 /**
- * Created by virjar on 17/4/15.
+ * Created by virjar on 17/4/15. 简单的,基于文件的种子管理,不建议使用这个
+ * 
  * @author virjar
  * @since 0.0.1
  */
-public class SeedManager {
-    private static final Logger logger = LoggerFactory.getLogger(SeedManager.class);
+public class SimpleFileSeedManager {
+    private static final Logger logger = LoggerFactory.getLogger(SimpleFileSeedManager.class);
     private AtomicLong fileCursor;
     private BloomFilter<String> processedSeeds = null;
 
@@ -44,7 +45,7 @@ public class SeedManager {
 
     private ScheduledExecutorService flushThreadPool;
 
-    public SeedManager(String seedConfigPath) {
+    public SimpleFileSeedManager(String seedConfigPath) {
 
         this.seedConfigPath = seedConfigPath;
         Properties seedConfig = new Properties();
@@ -53,11 +54,11 @@ public class SeedManager {
         try {
             if (new File(seedConfigPath).exists()) {// 尝试加载绝对路径
                 fileInputStream = new FileInputStream(new File(seedConfigPath));
-            } else if (SeedManager.class.getResource("/" + seedConfigPath) != null) {
-                this.seedConfigPath = SeedManager.class.getResource("/" + seedConfigPath).getFile();
-                fileInputStream = SeedManager.class.getResourceAsStream("/" + seedConfigPath);
+            } else if (SimpleFileSeedManager.class.getResource("/" + seedConfigPath) != null) {
+                this.seedConfigPath = SimpleFileSeedManager.class.getResource("/" + seedConfigPath).getFile();
+                fileInputStream = SimpleFileSeedManager.class.getResourceAsStream("/" + seedConfigPath);
             } else {
-                String file = SeedManager.class.getResource("/").getFile();
+                String file = SimpleFileSeedManager.class.getResource("/").getFile();
                 File conFile = new File(file, seedConfigPath);
                 this.seedConfigPath = conFile.getAbsolutePath();
                 fileInputStream = new FileInputStream(conFile);

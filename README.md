@@ -87,3 +87,11 @@ gatherplatform:没有仔细看,作者qq号码很牛逼,群里很少发言,发言
 
 seimicrawler: 这个我很佩服,可惜出身太晚了,因为他的出现套路和webmagic几乎一致(受python的Scrapy启发,因为xpath不方便把jsoup单独抽取出现实现xpath和cssQuery的结合),这是一个大神,为了解决动态网页问题,能够自己封装一个浏览器。话说其他的孩子都只能通过jdk调本地浏览器。而他这个去掉了java层,直接跨语言跨机器通信
 我个人理解是所有基于浏览器方案里面最稳定的一种。而且他的jsoupXpath比webmagic的xsoup更加完善。将是vscrawler后续架构的重点学习项目
+
+
+## 参考
+- 主架构参考了webmagic,保留了process、pipeline等概念
+- 种子管理,参考了WebCollector,使用BerkeleyDB管理URL
+- 分布式方案,将会参考elastic-job 计划中
+- 抽取器,将会接入 jsoupXpath 计划中
+- 多站点爬虫,参考geccocrawler,使用classloader热加载 计划中

@@ -16,7 +16,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.event.EventHandler;
 import com.virjar.vscrawler.event.EventLoop;
-import com.virjar.vscrawler.util.ClassUtils;
+import com.virjar.vscrawler.util.ClassScanner;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,7 +71,7 @@ public class AutoEventRegistry {
 
     private void scanDelegate() {
         AnnotationMethodVisitor eventVisitor = new AnnotationMethodVisitor(AutoEvent.class);
-        ClassUtils.scan(eventVisitor, basePackges);
+        ClassScanner.scan(eventVisitor, basePackges);
         // 所有自动事件的声明
         registerMethods(eventVisitor.getMethodSet());
     }

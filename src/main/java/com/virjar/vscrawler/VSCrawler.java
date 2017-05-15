@@ -21,7 +21,7 @@ import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.processor.CrawlResult;
 import com.virjar.vscrawler.processor.IProcessor;
-import com.virjar.vscrawler.seed.SeedManager;
+import com.virjar.vscrawler.seed.SimpleFileSeedManager;
 import com.virjar.vscrawler.serialize.ConsolePipline;
 import com.virjar.vscrawler.serialize.Pipline;
 import com.virjar.vscrawler.util.SingtonObjectHolder;
@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
 
     private CrawlerSessionPool crawlerSessionPool;
-    private SeedManager seedManager;
+    private SimpleFileSeedManager simpleFileSeedManager;
     private IProcessor iProcessor;
     private List<Pipline> pipline = Lists.newArrayList();
     private int threadNumber;
@@ -87,7 +87,7 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         initComponent();
         log.info("Spider  started!");
         while (!Thread.currentThread().isInterrupted() && stat.get() == STAT_RUNNING) {
-            final String request = seedManager.consumeSeed();
+            final String request = simpleFileSeedManager.consumeSeed();
             if (request == null) {
                 if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
                     break;
@@ -149,11 +149,11 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         }
         boolean sessionEnabled = true;
         try {
-            CrawlResult process = iProcessor.process(request, session);
+            CrawlResult process =null;// iProcessor.process(request, session);
             List<String> newSeed = process.getNewSeed();
             if (newSeed != null) {
                 for (String seed : newSeed) {
-                    seedManager.addSeed(seed);
+                    simpleFileSeedManager.addSeed(seed);
                 }
             }
             if (process.getResult() != null) {
@@ -162,7 +162,7 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
                 }
             }
             if (process.isRetry()) {
-                seedManager.addSeedFoce(request);
+                simpleFileSeedManager.addSeedFoce(request);
             }
             if (!process.isSessionEnable()) {
                 sessionEnabled = false;

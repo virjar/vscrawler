@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
-    private static final String configFileName = "default_vsCrawler.properties";
+    private static final String configFileName = "vsCrawler.properties";
 
     private Properties oldProperties = null;
     private AtomicBoolean hasStartWatch = new AtomicBoolean(false);

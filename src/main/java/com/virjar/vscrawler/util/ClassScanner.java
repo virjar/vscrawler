@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 0.0.1
  */
 @Slf4j
-public class ClassUtils {
+public class ClassScanner {
 
     private static Set<String> excludeClassLoader = Sets.newHashSet("sun.misc.Launcher$ExtClassLoader");
     private static Set<String> excludeJarFiles = Sets.newHashSet("charsets.jar", "deploy.jar", "cldrdata.jar",
@@ -60,7 +60,7 @@ public class ClassUtils {
     }
 
     private static List<File> allJar() {
-        Set<String> jars = findJars(ClassUtils.class.getClassLoader());
+        Set<String> jars = findJars(ClassScanner.class.getClassLoader());
         List<File> ret = new ArrayList<>(jars.size());
         for (String fileName : jars) {
             ret.add(new File(fileName));
