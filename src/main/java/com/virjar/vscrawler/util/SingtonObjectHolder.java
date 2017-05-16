@@ -11,4 +11,6 @@ public class SingtonObjectHolder {
 
     // 爬虫主控文件监听器
     public static final VSCrawlerConfigFileWatcher vsCrawlerConfigFileWatcher = new VSCrawlerConfigFileWatcher();
+
+    public static String workPath = null;
 }

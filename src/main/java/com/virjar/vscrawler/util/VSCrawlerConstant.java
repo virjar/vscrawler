@@ -23,4 +23,6 @@ public class VSCrawlerConstant {
     public static final String VSCRAWLER_WORKING_DIRECTORY = "vsCrawler.Working.directory";
 
     public static final String VSCRAWLER_INIT_SEED_FILE = "vsCrawler.initSeedFile";
+
+    public static final String VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER = "seedManager.expectedSeedNumber";
 }
