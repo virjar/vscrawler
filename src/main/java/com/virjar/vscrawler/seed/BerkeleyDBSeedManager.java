@@ -233,10 +233,10 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         // TODO 移植这段代码
         Properties properties = SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties();
         String workpath = properties.getProperty(VSCrawlerConstant.VSCRAWLER_WORKING_DIRECTORY, "classpath:work");
-        SingtonObjectHolder.workPath = workpath;
 
         log.info("vsCrawler配置工作目录:{}", workpath);
         workpath = PathResolver.resolveAbsolutePath(workpath);
+        SingtonObjectHolder.workPath = workpath;
         log.info("vsCrawler实际工作目录:{}", workpath);
         File workFile = new File(workpath);
         if (workFile.exists() && !workFile.isDirectory()) {
@@ -251,7 +251,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
         File dbFile = new File(workFile, "berkeleyDB");
         if (!dbFile.exists()) {
-            if (!workFile.mkdirs()) {
+            if (!dbFile.mkdirs()) {
                 throw new IllegalStateException(dbFile.getAbsolutePath() + "文件夹创建失败");
             }
         } else if (!dbFile.isDirectory()) {

@@ -5,7 +5,7 @@ import java.nio.file.FileSystems;
 
 /**
  * Created by virjar on 17/5/4.<br/>
- * context,存放上下文信息,多组件数据共享
+ * context,存放上下文信息,多组件数据共享。这个在0.2.x上面实现,他的实现代表多站点爬虫开始实现
  * 
  * @author virjar
  * @since 0.0.1

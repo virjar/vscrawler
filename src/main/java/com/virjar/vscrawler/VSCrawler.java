@@ -47,7 +47,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
     private BerkeleyDBSeedManager berkeleyDBSeedManager;
     private IProcessor iProcessor;
     private List<Pipeline> pipeline = Lists.newArrayList();
-    private int threadNumber;
+    private int threadNumber = 10;
 
     protected ThreadPoolExecutor threadPool;
     private Date startTime;
@@ -60,7 +60,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
 
     protected final static int STAT_STOPPED = 2;
 
-    protected boolean exitWhenComplete = true;
+    protected boolean exitWhenComplete = false;
 
     /**
      * 慢启动,默认为true,慢启动打开后,爬虫启动的时候线程不会瞬间变到最大,否则这个时候并发应该是最大的,因为这个时候没有线程阻塞, 另外考虑有些 资源分配问题,慢启动避免初始化的时候初始化资源请求qps过高
@@ -85,6 +85,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
 
     public void stopCrawler() {
         if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
+            log.info("爬虫停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent");
             AutoEventRegistry.getInstance().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd();
         }
     }
@@ -108,6 +109,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
                 if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
                     break;
                 }
+                CommonUtil.sleep(1000);
                 // wait until new url added
                 // waitNewUrl();
             } else {
@@ -226,6 +228,13 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
         // 开启文件监听,并发送初始化配置事件
         SingtonObjectHolder.vsCrawlerConfigFileWatcher.watchAndBindEvent();
 
+        // config 会设置 threadPool
+        if (threadPool == null || threadPool.isShutdown()) {
+            threadPool = new ThreadPoolExecutor(threadNumber, threadNumber, 0L, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<Runnable>());
+
+        }
+
         // 加载初始化配置
         config(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
 
@@ -234,12 +243,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
 
         if (pipeline.size() == 0) {
             pipeline.add(new ConsolePipeline());
-        }
-
-        if (threadPool == null || threadPool.isShutdown()) {
-            threadPool = new ThreadPoolExecutor(threadNumber, threadNumber, 0L, TimeUnit.MILLISECONDS,
-                    new LinkedBlockingQueue<Runnable>());
-
         }
 
         startTime = new Date();

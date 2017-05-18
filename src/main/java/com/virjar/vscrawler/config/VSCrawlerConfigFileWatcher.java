@@ -50,10 +50,15 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
          * @Override public void configChange(Properties oldProperties, Properties oldProperties) { } });
          */
         if (hasStartWatch.compareAndSet(false, true)) {
-            URL resource = Thread.currentThread().getContextClassLoader().getResource(configFileName);
+            URL resource = VSCrawlerConfigFileWatcher.class.getResource(configFileName);
             String dir = null;
             if (resource == null) {
-                dir = Thread.currentThread().getContextClassLoader().getResource("/").getFile();
+                URL classPathRoot = VSCrawlerConfigFileWatcher.class.getResource("/");
+                if (classPathRoot != null) {
+                    dir = classPathRoot.getFile();
+                } else {
+                    dir = System.getProperty("java.class.path ");
+                }
             } else {
                 dir = new File(resource.getFile()).getParent();
             }
@@ -87,12 +92,14 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
         FileInputStream fileInputStream = null;
         InputStream defaultConfigInput = null;
         try {
-            defaultConfigInput = Thread.currentThread().getContextClassLoader()
-                    .getResourceAsStream("/default_vsCrawler.properties");
+            defaultConfigInput = VSCrawlerConfigFileWatcher.class.getResourceAsStream("/default_vsCrawler.properties");
             tempProperties.load(defaultConfigInput);// 先加载默认配置
 
-            fileInputStream = new FileInputStream(new File(filePath));
-            tempProperties.load(fileInputStream);// 然后使用用户热发配置覆盖
+            File configFile = new File(filePath);
+            if (configFile.exists()) {
+                fileInputStream = new FileInputStream(configFile);
+                tempProperties.load(fileInputStream);// 然后使用用户热发配置覆盖
+            }
 
             // 没有报异常才发送通知
             AutoEventRegistry.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class)

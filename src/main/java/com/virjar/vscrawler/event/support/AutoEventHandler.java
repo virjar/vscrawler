@@ -7,11 +7,12 @@ import java.lang.annotation.Target;
 
 /**
  * Created by virjar on 17/4/30.
+ * 
  * @author virjar
  * @since 0.0.1
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface AutoEventHandler {
-    public String topic() default "";
+    String topic() default "";
 }

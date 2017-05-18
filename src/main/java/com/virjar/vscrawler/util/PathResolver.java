@@ -9,7 +9,7 @@ import org.apache.commons.lang3.StringUtils;
  * Created by virjar on 17/5/15.
  */
 public class PathResolver {
-    public static String resolveAbsolutePath(String pathName, ClassLoader classLoader) {
+    public static String resolveAbsolutePath(String pathName) {
         // file protocol
         if (StringUtils.startsWithIgnoreCase(pathName, "file:")) {
             return pathName.substring("file:".length());
@@ -24,11 +24,11 @@ public class PathResolver {
         if (StringUtils.startsWithIgnoreCase(pathName, "classpath:")) {
             pathName = pathName.substring("classpath:".length());
             // as classpath
-            URL url = classLoader.getResource(pathName);
+            URL url = PathResolver.class.getResource(pathName);
             if (url != null) {
                 return new File(url.getFile()).getAbsolutePath();
             } else {
-                URL classPathDirectoryRoot = classLoader.getResource("/");
+                URL classPathDirectoryRoot = PathResolver.class.getResource("/");
                 if (classPathDirectoryRoot == null) {
                     return pathName;
                 }
@@ -39,15 +39,11 @@ public class PathResolver {
         }
 
         // as classpath
-        URL url = classLoader.getResource(pathName);
+        URL url = PathResolver.class.getResource(pathName);
         if (url != null) {
             return new File(url.getFile()).getAbsolutePath();
         }
         return pathName;
-    }
-
-    public static String resolveAbsolutePath(String pathName) {
-        return resolveAbsolutePath(pathName, PathResolver.class.getClassLoader());
     }
 
 }
