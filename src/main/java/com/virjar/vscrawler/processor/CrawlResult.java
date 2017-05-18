@@ -38,4 +38,8 @@ public class CrawlResult {
     public void addSeed(String seed) {
         newSeeds.add(new Seed(seed));
     }
+
+    public List<Seed> allSeed() {
+        return Lists.newArrayList(newSeeds);
+    }
 }

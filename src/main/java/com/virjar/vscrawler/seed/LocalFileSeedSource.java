@@ -3,6 +3,7 @@ package com.virjar.vscrawler.seed;
 import java.util.Collection;
 import java.util.Properties;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 
 import com.virjar.vscrawler.util.SingtonObjectHolder;
@@ -22,6 +23,6 @@ public class LocalFileSeedSource implements InitSeedSource {
         if (StringUtils.isEmpty(seedFilePath)) {
             log.info("没有配置初始");
         }
-        return null;
+        return Lists.newArrayList();
     }
 }

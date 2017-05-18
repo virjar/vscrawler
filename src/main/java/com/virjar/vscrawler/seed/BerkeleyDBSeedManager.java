@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.Properties;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.hash.BloomFilter;
@@ -47,7 +46,14 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     private BloomFilter<Seed> bloomFilter;
 
-    private DatabaseConfig databseConfig;
+    private DatabaseConfig databaseConfig;
+
+    private Cursor cursor;
+
+    private Database iteratorDatabases;
+
+    protected DatabaseEntry iteratorKey = new DatabaseEntry();
+    protected DatabaseEntry iteratorValue = new DatabaseEntry();
 
     public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver) {
         this.initSeedSource = initSeedSource;
@@ -60,8 +66,30 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
         // 移植初始种子信息
         migrateInitSeed();
+
+        // 移植游标
+        initCursor();
         // 监听消息
         AutoEventRegistry.getInstance().registerObserver(this);
+    }
+
+    public Seed pool() {
+        while (true) {
+            if (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+                try {
+                    return VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
+                } catch (Exception ex) {
+                    log.warn("Exception when generating", ex);
+                }
+            } else {
+                return null;
+            }
+        }
+    }
+
+    private void initCursor() {
+        iteratorDatabases = env.openDatabase(null, "crawlSeed", databaseConfig);
+        cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
     }
 
     private boolean saveBloomFilterInfo() {
@@ -136,8 +164,8 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         environmentConfig.setAllowCreate(true);
         env = new Environment(new File(dbFilePath), environmentConfig);
 
-        databseConfig = new DatabaseConfig();
-        databseConfig.setAllowCreate(true);
+        databaseConfig = new DatabaseConfig();
+        databaseConfig.setAllowCreate(true);
     }
 
     /**
@@ -145,12 +173,43 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
      */
     private void migrateInitSeed() {
         Collection<Seed> seeds = initSeedSource.initSeeds();
+        if (seeds == null) {
+            return;
+        }
         log.info("import new init seeds:{}", seeds.size());
         addNewSeeds(seeds);
     }
 
+    /**
+     * 更新种子,如果种子已经处理完成,那么移动到完成库,否则修改状态
+     * 
+     * @param seed 曾经处理过的种子
+     */
+    public void updateSeed(Seed seed) {
+        DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
+        DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
+
+        if (seed.needEnd()) {
+            Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
+            finishedSeedDatabase.put(null, key, value);
+            finishedSeedDatabase.close();
+            Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
+            runningSeedDatabase.removeSequence(null, key);
+            runningSeedDatabase.close();
+        } else {
+            Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
+            runningSeedDatabase.put(null, key, value);
+            runningSeedDatabase.close();
+        }
+    }
+
+    /**
+     * 新产生的种子,如果入库,那么会消重。后加入的种子被reject
+     * 
+     * @param seeds 种子
+     */
     public void addNewSeeds(Collection<Seed> seeds) {
-        Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databseConfig);
+        Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
         for (Seed seed : seeds) {
 
             if (bloomFilter.mightContain(seed)) {
@@ -213,6 +272,18 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     @Override
     public void crawlerEnd() {
-        boolean allSuccess = BooleanUtils.and(VSCrawlerCommonUtil.closeQuietly(env), saveBloomFilterInfo());
+        // 关闭游标
+        cursor.close();
+        // 关闭数据库
+        iteratorDatabases.close();
+
+        // 1.7的低版本不支持and方法
+        // boolean allSuccess = BooleanUtils.and(VSCrawlerCommonUtil.closeQuietly(env), saveBloomFilterInfo());
+
+        // 关闭数据库环境
+        VSCrawlerCommonUtil.closeQuietly(env);
+
+        // 存储bloomFilter的数据
+        saveBloomFilterInfo();
     }
 }

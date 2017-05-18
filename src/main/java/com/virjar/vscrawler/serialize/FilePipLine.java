@@ -11,7 +11,7 @@ import java.util.Collection;
  * @author virjar
  * @since 0.0.1
  */
-public class FilePipLine implements Pipline {
+public class FilePipLine implements Pipeline {
     private String filepath;
 
     private PrintWriter printWriter;

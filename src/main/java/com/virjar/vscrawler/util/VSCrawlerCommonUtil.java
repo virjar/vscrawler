@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.util;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
@@ -18,7 +19,11 @@ public class VSCrawlerCommonUtil {
         }
     }
 
-    public static String transferSeedToString(Seed seed){
+    public static String transferSeedToString(Seed seed) {
         return JSONObject.toJSONString(seed);
+    }
+
+    public static Seed transferStringToSeed(String seed) {
+        return JSON.toJavaObject(JSONObject.parseObject(seed), Seed.class);
     }
 }

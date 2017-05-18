@@ -7,7 +7,7 @@ import java.util.Collection;
  * @author virjar
  * @since 0.0.1
  */
-public class ConsolePipline implements Pipline {
+public class ConsolePipeline implements Pipeline {
     @Override
     public void saveItem(Collection<String> itemJson) {
         for (String str : itemJson) {

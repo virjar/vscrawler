@@ -11,19 +11,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.math.NumberUtils;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.event.EventLoop;
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.event.systemevent.CrawlerEndEvent;
 import com.virjar.vscrawler.event.systemevent.CrawlerStartEvent;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.processor.CrawlResult;
 import com.virjar.vscrawler.processor.IProcessor;
-import com.virjar.vscrawler.seed.SimpleFileSeedManager;
-import com.virjar.vscrawler.serialize.ConsolePipline;
-import com.virjar.vscrawler.serialize.Pipline;
+import com.virjar.vscrawler.seed.BerkeleyDBSeedManager;
+import com.virjar.vscrawler.seed.Seed;
+import com.virjar.vscrawler.serialize.ConsolePipeline;
+import com.virjar.vscrawler.serialize.Pipeline;
 import com.virjar.vscrawler.util.SingtonObjectHolder;
 import com.virjar.vscrawler.util.VSCrawlerConstant;
 
@@ -37,12 +40,13 @@ import lombok.extern.slf4j.Slf4j;
  * @since 0.0.1
  */
 @Slf4j
-public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
+public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
 
     private CrawlerSessionPool crawlerSessionPool;
-    private SimpleFileSeedManager simpleFileSeedManager;
+    // private SimpleFileSeedManager simpleFileSeedManager;
+    private BerkeleyDBSeedManager berkeleyDBSeedManager;
     private IProcessor iProcessor;
-    private List<Pipline> pipline = Lists.newArrayList();
+    private List<Pipeline> pipeline = Lists.newArrayList();
     private int threadNumber;
 
     protected ThreadPoolExecutor threadPool;
@@ -70,8 +74,19 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
 
     private int slowStartTimes = 0;
 
-    VSCrawler() {
+    VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager, IProcessor iProcessor,
+            List<Pipeline> pipeline) {
+        this.crawlerSessionPool = crawlerSessionPool;
+        this.berkeleyDBSeedManager = berkeleyDBSeedManager;
+        this.iProcessor = iProcessor;
+        this.pipeline = pipeline;
+        setName("VSCrawler-Thread");
+    }
 
+    public void stopCrawler() {
+        if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
+            AutoEventRegistry.getInstance().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd();
+        }
     }
 
     public void start() {
@@ -87,8 +102,9 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         initComponent();
         log.info("Spider  started!");
         while (!Thread.currentThread().isInterrupted() && stat.get() == STAT_RUNNING) {
-            final String request = simpleFileSeedManager.consumeSeed();
-            if (request == null) {
+            // final String request = simpleFileSeedManager.consumeSeed();
+            final Seed seed = berkeleyDBSeedManager.pool();
+            if (seed == null) {
                 if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
                     break;
                 }
@@ -100,9 +116,9 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
                     public void run() {
                         try {
                             activeTasks.incrementAndGet();
-                            processRequest(request);
+                            processRequest(seed);
                         } catch (Exception e) {
-                            log.error("process request {} error", request, e);
+                            log.error("process request {} error", JSONObject.toJSONString(seed), e);
                         } finally {
                             if (activeTasks.decrementAndGet() < threadPool.getMaximumPoolSize()) {
                                 synchronized (VSCrawler.this) {
@@ -135,7 +151,7 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         stat.set(STAT_STOPPED);
     }
 
-    protected void processRequest(String request) {
+    private void processRequest(Seed request) {
 
         CrawlerSession session = null;
         while (true) {
@@ -147,30 +163,30 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
             }
             CommonUtil.sleep(500);
         }
-        boolean sessionEnabled = true;
+        int originRetryCount = request.getRetry();
+        CrawlResult crawlResult = new CrawlResult();
         try {
-            CrawlResult process =null;// iProcessor.process(request, session);
-            List<String> newSeed = process.getNewSeed();
-            if (newSeed != null) {
-                for (String seed : newSeed) {
-                    simpleFileSeedManager.addSeed(seed);
-                }
-            }
-            if (process.getResult() != null) {
-                for (Pipline p : pipline) {
-                    p.saveItem(process.getResult());
-                }
-            }
-            if (process.isRetry()) {
-                simpleFileSeedManager.addSeedFoce(request);
-            }
-            if (!process.isSessionEnable()) {
-                sessionEnabled = false;
+            iProcessor.process(request, session, crawlResult);
+        } catch (Exception e) {// 如果发生了异常,并且用户没有主动重试,强制重试
+            if (originRetryCount != request.getRetry()) {
+                request.retry();
             }
         } finally {
             // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
             // 如果标记session失效,则会停止分发此session,同时异步触发登录逻辑
-            session.feedback(sessionEnabled);
+            berkeleyDBSeedManager.updateSeed(request);
+        }
+
+        List<Seed> seeds = crawlResult.allSeed();
+        if (seeds != null) {
+            berkeleyDBSeedManager.addNewSeeds(seeds);
+        }
+
+        List<String> allResult = crawlResult.allResul();
+        if (allResult != null) {
+            for (Pipeline p : pipeline) {
+                p.saveItem(allResult);
+            }
         }
     }
 
@@ -202,7 +218,7 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         }
     }
 
-    protected void initComponent() {
+    void initComponent() {
 
         // 开启事件循环
         EventLoop.getInstance().loop();
@@ -216,8 +232,8 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         // 让本类监听配置文件变更事件
         AutoEventRegistry.getInstance().registerObserver(this);
 
-        if (pipline.size() == 0) {
-            pipline.add(new ConsolePipline());
+        if (pipeline.size() == 0) {
+            pipeline.add(new ConsolePipeline());
         }
 
         if (threadPool == null || threadPool.isShutdown()) {
@@ -229,6 +245,14 @@ public class VSCrawler implements Runnable, CrawlerConfigChangeEvent {
         startTime = new Date();
         AutoEventRegistry.getInstance().findEventDeclaring(CrawlerStartEvent.class).onCrawlerStart();
 
+        // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
+        // 一般请求请正常停止程序,关机拦截这是挽救方案,并不一定可以完整的实现收尾方案
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                VSCrawler.this.stopCrawler();
+            }
+        });
     }
 
 }

@@ -7,6 +7,6 @@ import java.util.Collection;
  * @author virjar
  * @since 0.0.1
  */
-public interface Pipline {
+public interface Pipeline {
     void saveItem(Collection<String> itemJson);
 }

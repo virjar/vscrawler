@@ -27,7 +27,12 @@ public class Seed implements Serializable {
     private int status = 0;
 
     @Setter
+    @Getter
     private int maxRetry = 3;
+
+    public void retry() {
+        retry++;
+    }
 
     public boolean needEnd() {
         return status == 1 || retry >= maxRetry;
