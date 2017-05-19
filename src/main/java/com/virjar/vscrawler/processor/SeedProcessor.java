@@ -9,6 +9,6 @@ import com.virjar.vscrawler.seed.Seed;
  * @author virjar
  * @since 0.0.1
  */
-public interface IProcessor {
+public interface SeedProcessor {
     void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult);
 }

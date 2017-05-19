@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.virjar.vscrawler.net.CrawlerHttpClientGenerator;
-import com.virjar.vscrawler.net.DefaultHttpClientGernator;
+import com.virjar.vscrawler.net.DefaultHttpClientGenerator;
 import com.virjar.vscrawler.net.proxy.IPPool;
 import com.virjar.vscrawler.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.net.proxy.strategy.ProxyStrategy;
@@ -15,7 +15,7 @@ import com.virjar.vscrawler.net.user.DefaultUserResource;
 import com.virjar.vscrawler.net.user.UserManager;
 import com.virjar.vscrawler.net.user.UserResourceFacade;
 import com.virjar.vscrawler.processor.HtmlDownLoadProcessor;
-import com.virjar.vscrawler.processor.IProcessor;
+import com.virjar.vscrawler.processor.SeedProcessor;
 import com.virjar.vscrawler.seed.*;
 import com.virjar.vscrawler.serialize.ConsolePipeline;
 import com.virjar.vscrawler.serialize.Pipeline;
@@ -61,7 +61,7 @@ public class VSCrawlerBuilder {
     /**
      * 种子处理器,负责解析页面逻辑
      */
-    private IProcessor processor;
+    private SeedProcessor processor;
 
     /**
      * 序列化层
@@ -107,7 +107,7 @@ public class VSCrawlerBuilder {
         return this;
     }
 
-    public VSCrawlerBuilder setProcessor(IProcessor processor) {
+    public VSCrawlerBuilder setProcessor(SeedProcessor processor) {
         this.processor = processor;
         return this;
     }
@@ -143,7 +143,7 @@ public class VSCrawlerBuilder {
         }
 
         if (crawlerHttpClientGenerator == null) {
-            crawlerHttpClientGenerator = new DefaultHttpClientGernator();
+            crawlerHttpClientGenerator = new DefaultHttpClientGenerator();
         }
 
         if (proxyStrategy == null) {

@@ -9,6 +9,7 @@ import org.apache.http.conn.routing.HttpRoutePlanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.virjar.dungproxy.client.httpclient.CrawlerHttpClient;
 import com.virjar.dungproxy.client.httpclient.conn.ProxyBindRoutPlanner;
@@ -72,7 +73,10 @@ public class CrawlerSession {
         this.loginHandler = loginHandler;
         this.user = user;
         user.holdUser(this);
-        this.crawlerHttpClient = crawlerHttpClientGenerator.gen(new ProxyFeedBackDecorateHttpClientBuilder());
+        ProxyFeedBackDecorateHttpClientBuilder proxyFeedBackDecorateHttpClientBuilder = new ProxyFeedBackDecorateHttpClientBuilder();
+        this.crawlerHttpClient = crawlerHttpClientGenerator.gen(proxyFeedBackDecorateHttpClientBuilder);
+        Preconditions.checkArgument(proxyFeedBackDecorateHttpClientBuilder.isBuild(),
+                "必须使用指定的HttpclientBuilder构造httpclient");
         this.proxyStrategy = proxyStrategy;
         this.ipPool = ipPool;
         this.proxyPlanner = proxyPlanner;

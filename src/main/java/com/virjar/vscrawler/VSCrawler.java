@@ -22,7 +22,7 @@ import com.virjar.vscrawler.event.systemevent.CrawlerStartEvent;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.processor.CrawlResult;
-import com.virjar.vscrawler.processor.IProcessor;
+import com.virjar.vscrawler.processor.SeedProcessor;
 import com.virjar.vscrawler.seed.BerkeleyDBSeedManager;
 import com.virjar.vscrawler.seed.Seed;
 import com.virjar.vscrawler.serialize.ConsolePipeline;
@@ -45,7 +45,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
     private CrawlerSessionPool crawlerSessionPool;
     // private SimpleFileSeedManager simpleFileSeedManager;
     private BerkeleyDBSeedManager berkeleyDBSeedManager;
-    private IProcessor iProcessor;
+    private SeedProcessor seedProcessor;
     private List<Pipeline> pipeline = Lists.newArrayList();
     private int threadNumber = 10;
 
@@ -74,11 +74,11 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
 
     private int slowStartTimes = 0;
 
-    VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager, IProcessor iProcessor,
+    VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager, SeedProcessor seedProcessor,
             List<Pipeline> pipeline) {
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
-        this.iProcessor = iProcessor;
+        this.seedProcessor = seedProcessor;
         this.pipeline = pipeline;
         setName("VSCrawler-Thread");
     }
@@ -168,7 +168,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
         int originRetryCount = request.getRetry();
         CrawlResult crawlResult = new CrawlResult();
         try {
-            iProcessor.process(request, session, crawlResult);
+            seedProcessor.process(request, session, crawlResult);
         } catch (Exception e) {// 如果发生了异常,并且用户没有主动重试,强制重试
             if (originRetryCount != request.getRetry()) {
                 request.retry();

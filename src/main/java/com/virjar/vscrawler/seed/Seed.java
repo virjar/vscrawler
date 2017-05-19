@@ -30,6 +30,11 @@ public class Seed implements Serializable {
     @Getter
     private int maxRetry = 3;
 
+    @Getter
+    @Setter
+    private boolean ignore = false;
+
+
     public void retry() {
         retry++;
     }

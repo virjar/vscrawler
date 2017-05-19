@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.net;
 
+import com.virjar.dungproxy.client.httpclient.CrawlerHttpClientBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 
@@ -13,9 +14,9 @@ import com.virjar.vscrawler.net.session.ProxyFeedBackDecorateHttpClientBuilder;
  * @author virjar
  * @since 0.0.1
  */
-public class DefaultHttpClientGernator implements CrawlerHttpClientGenerator {
+public class DefaultHttpClientGenerator implements CrawlerHttpClientGenerator {
     @Override
-    public CrawlerHttpClient gen(ProxyFeedBackDecorateHttpClientBuilder proxyFeedBackDecorateHttpClientBuilder) {
+    public CrawlerHttpClient gen(CrawlerHttpClientBuilder proxyFeedBackDecorateHttpClientBuilder) {
         SocketConfig socketConfig = SocketConfig.custom().setSoKeepAlive(true).setSoLinger(-1).setSoReuseAddress(false)
                 .setSoTimeout(ProxyConstant.SOCKETSO_TIMEOUT).setTcpNoDelay(true).build();
 

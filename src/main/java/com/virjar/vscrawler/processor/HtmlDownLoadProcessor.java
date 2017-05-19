@@ -17,7 +17,7 @@ import com.virjar.vscrawler.seed.Seed;
  * @author virjar
  * @since 0.0.1
  */
-public class HtmlDownLoadProcessor implements IProcessor {
+public class HtmlDownLoadProcessor implements SeedProcessor {
     private Set<String> allUrl(Document document) {
         Elements a = document.getElementsByTag("a");
         Set<String> ret = Sets.newHashSet();
