@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 类扫描器
+ * 
  * @author virjar
  * @since 0.0.1
  */
@@ -96,7 +97,7 @@ public class ClassScanner {
         return ret;
     }
 
-    public static interface ClassVisitor<T> {
+    public interface ClassVisitor<T> {
         void visit(Class<? extends T> clazz);
     }
 
