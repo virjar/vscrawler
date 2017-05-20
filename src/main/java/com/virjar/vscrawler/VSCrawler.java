@@ -74,8 +74,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
 
     private int slowStartTimes = 0;
 
-    VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager, SeedProcessor seedProcessor,
-            List<Pipeline> pipeline) {
+    VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
+            SeedProcessor seedProcessor, List<Pipeline> pipeline) {
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
         this.seedProcessor = seedProcessor;
@@ -187,7 +187,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
         List<String> allResult = crawlResult.allResul();
         if (allResult != null) {
             for (Pipeline p : pipeline) {
-                p.saveItem(allResult);
+                p.saveItem(allResult, request);
             }
         }
     }

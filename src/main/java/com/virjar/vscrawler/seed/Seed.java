@@ -1,7 +1,9 @@
 package com.virjar.vscrawler.seed;
 
 import java.io.Serializable;
+import java.util.Map;
 
+import com.google.common.collect.Maps;
 import lombok.*;
 
 /**
@@ -33,6 +35,10 @@ public class Seed implements Serializable {
     @Getter
     @Setter
     private boolean ignore = false;
+
+    @Getter
+    @Setter
+    private Map<String,String> ext  = Maps.newHashMap();
 
 
     public void retry() {

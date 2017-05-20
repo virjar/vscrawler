@@ -10,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/5/20.
+ * 
+ * @author virjar
+ * @since 0.0.1
  */
 @Slf4j
 public abstract class AutoParseSeedProcessor implements SeedProcessor {
@@ -26,7 +29,16 @@ public abstract class AutoParseSeedProcessor implements SeedProcessor {
         parse(seed, download(crawlerSession, url), crawlResult);
     }
 
-    abstract void parse(Seed seed, String result, CrawlResult crawlResult);
+    protected abstract void parse(Seed seed, String result, CrawlResult crawlResult);
 
-    abstract String download(CrawlerSession crawlerSession, URL url);
+    /**
+     * 自动解析的支持,会限制使用场景,封装意味着放弃灵活
+     * 
+     * @param crawlerSession session
+     * @param url 链接
+     * @return 下载结果
+     */
+    protected String download(CrawlerSession crawlerSession, URL url) {
+        return crawlerSession.getCrawlerHttpClient().get(url.toString());
+    }
 }
