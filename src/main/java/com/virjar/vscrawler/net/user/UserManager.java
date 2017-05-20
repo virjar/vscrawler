@@ -81,7 +81,7 @@ public class UserManager implements UserStateChangeEvent {
         }
 
         while (poll != null) {
-            if (poll.getUserStatus() != UserStatus.OK || poll.getUserStatus() != UserStatus.INIT) {
+            if (poll.getUserStatus() != UserStatus.OK && poll.getUserStatus() != UserStatus.INIT) {
                 blockUsers.add(poll);
                 poll = idleUsers.poll();
             } else {

@@ -1,5 +1,7 @@
 package com.virjar;
 
+import com.virjar.dungproxy.client.util.CommonUtil;
+import com.virjar.vscrawler.VSCrawler;
 import com.virjar.vscrawler.VSCrawlerBuilder;
 
 /**
@@ -7,6 +9,15 @@ import com.virjar.vscrawler.VSCrawlerBuilder;
  */
 public class CrawlerTest {
     public static void main(String[] args) {
-        VSCrawlerBuilder.create().build().start();
+
+        // 启动爬虫
+        VSCrawler vsCrawler = VSCrawlerBuilder.create().build();
+        vsCrawler.start();
+
+        // 休眠10s
+        CommonUtil.sleep(10000);
+
+        // 增加种子
+        vsCrawler.pushSeed("http://www.java1234.com/");
     }
 }

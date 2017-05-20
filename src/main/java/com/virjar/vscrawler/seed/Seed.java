@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
+
 import lombok.*;
 
 /**
@@ -12,7 +13,12 @@ import lombok.*;
  */
 @RequiredArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor // 反序列化需要
 public class Seed implements Serializable {
+    public static int  STATUS_INIT =0;
+    public static int  STATUS_SUCCESS =0;
+    public static int  STATUS_FAILED =0;
+    public static int  STATUS_RETRY =0;
     // 真正的种子信息,因为需要序列化,所以直接设计为字符串
     @Getter
     @Setter
@@ -38,15 +44,19 @@ public class Seed implements Serializable {
 
     @Getter
     @Setter
-    private Map<String,String> ext  = Maps.newHashMap();
-
+    private Map<String, String> ext = Maps.newHashMap();
 
     public void retry() {
         retry++;
+        if(needEnd()){
+            status = STATUS_FAILED;
+        }else{
+            status = STATUS_RETRY;
+        }
     }
 
     public boolean needEnd() {
-        return status == 1 || retry >= maxRetry;
+        return ignore || status == STATUS_SUCCESS || retry >= maxRetry;
     }
 
 }

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -18,6 +19,7 @@ import com.sleepycat.je.*;
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.event.systemevent.CrawlerEndEvent;
+import com.virjar.vscrawler.event.systemevent.FirstSeedPushEvent;
 import com.virjar.vscrawler.event.systemevent.NewSeedArrivalEvent;
 import com.virjar.vscrawler.util.PathResolver;
 import com.virjar.vscrawler.util.SingtonObjectHolder;
@@ -55,6 +57,16 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     protected DatabaseEntry iteratorKey = new DatabaseEntry();
     protected DatabaseEntry iteratorValue = new DatabaseEntry();
 
+    private AtomicBoolean isSeedEmpty = new AtomicBoolean(false);
+
+    /**
+     * 这个方法和pool必须在同一个线程里面
+     */
+    public void init() {
+        // 移植游标
+        initCursor();
+    }
+
     public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver) {
         this.initSeedSource = initSeedSource;
         this.seedKeyResolver = seedKeyResolver;
@@ -67,13 +79,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         // 移植初始种子信息
         migrateInitSeed();
 
-        // 移植游标
-        initCursor();
         // 监听消息
         AutoEventRegistry.getInstance().registerObserver(this);
     }
 
-    public Seed pool() {
+    public synchronized Seed pool() {
         while (true) {
             if (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
                 try {
@@ -82,6 +92,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                     log.warn("Exception when generating", ex);
                 }
             } else {
+                isSeedEmpty.set(true);
                 return null;
             }
         }
@@ -224,7 +235,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
             runningSeedDatabase.put(null, key, value);
             bloomFilter.put(seed);
+            if (isSeedEmpty.compareAndSet(true, false)) {
+                AutoEventRegistry.getInstance().findEventDeclaring(FirstSeedPushEvent.class).firstSeed(seed);
+            }
         }
+
         runningSeedDatabase.close();
     }
 

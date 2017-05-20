@@ -26,6 +26,7 @@ import com.google.common.hash.PrimitiveSink;
  * @author virjar
  * @since 0.0.1
  */
+@Deprecated
 public class SimpleFileSeedManager {
     private static final Logger logger = LoggerFactory.getLogger(SimpleFileSeedManager.class);
     private AtomicLong fileCursor;

@@ -6,19 +6,19 @@ import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
+import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.event.EventLoop;
 import com.virjar.vscrawler.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.event.systemevent.CrawlerConfigChangeEvent;
-import com.virjar.vscrawler.event.systemevent.CrawlerEndEvent;
-import com.virjar.vscrawler.event.systemevent.CrawlerStartEvent;
+import com.virjar.vscrawler.event.systemevent.*;
 import com.virjar.vscrawler.net.session.CrawlerSession;
 import com.virjar.vscrawler.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.processor.CrawlResult;
@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 0.0.1
  */
 @Slf4j
-public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
+public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, FirstSeedPushEvent {
 
     private CrawlerSessionPool crawlerSessionPool;
     // private SimpleFileSeedManager simpleFileSeedManager;
@@ -61,6 +61,10 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
     protected final static int STAT_STOPPED = 2;
 
     protected boolean exitWhenComplete = false;
+
+    private ReentrantLock taskDispatchLock = new ReentrantLock();
+
+    private Condition taskDispatchCondition = taskDispatchLock.newCondition();
 
     /**
      * 慢启动,默认为true,慢启动打开后,爬虫启动的时候线程不会瞬间变到最大,否则这个时候并发应该是最大的,因为这个时候没有线程阻塞, 另外考虑有些 资源分配问题,慢启动避免初始化的时候初始化资源请求qps过高
@@ -90,12 +94,19 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
         }
     }
 
+    public void pushSeed(Seed seed) {
+        this.berkeleyDBSeedManager.addNewSeeds(Lists.newArrayList(seed));
+    }
+
+    public void pushSeed(String seed) {
+        berkeleyDBSeedManager.addNewSeeds(Lists.<Seed> newArrayList(new Seed(seed)));
+    }
+
     public void start() {
         new Thread(this).start();
     }
 
     private AtomicInteger activeTasks = new AtomicInteger(0);
-    private AtomicBoolean hasBlocked = new AtomicBoolean(false);
 
     @Override
     public void run() {
@@ -106,12 +117,20 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
             // final String request = simpleFileSeedManager.consumeSeed();
             final Seed seed = berkeleyDBSeedManager.pool();
             if (seed == null) {
+                AutoEventRegistry.getInstance().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty();
                 if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
                     break;
                 }
-                CommonUtil.sleep(1000);
-                // wait until new url added
-                // waitNewUrl();
+                taskDispatchLock.lock();
+                try {// 没有任务的时候,暂停
+                    taskDispatchCondition.await();
+                } catch (InterruptedException e) {
+                    log.warn("爬虫线程休眠被打断", e);
+                    break;
+                } finally {
+                    taskDispatchLock.unlock();
+                }
+
             } else {
                 threadPool.execute(new Runnable() {
                     @Override
@@ -123,10 +142,12 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
                             log.error("process request {} error", JSONObject.toJSONString(seed), e);
                         } finally {
                             if (activeTasks.decrementAndGet() < threadPool.getMaximumPoolSize()) {
-                                synchronized (VSCrawler.this) {
-                                    if (hasBlocked.compareAndSet(true, false)) {
-                                        VSCrawler.this.notify();
-                                    }
+
+                                try {
+                                    taskDispatchLock.lock();
+                                    taskDispatchCondition.signalAll();
+                                } finally {
+                                    taskDispatchLock.unlock();
                                 }
                             }
                         }
@@ -135,10 +156,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
                 // 当任务满的时候,暂时阻塞任务产生线程,直到有空闲线程资源
                 if (activeTasks.get() >= threadPool.getMaximumPoolSize()) {
                     try {
-                        synchronized (this) {
-                            hasBlocked.set(true);
-                            wait();
-                        }
+                        taskDispatchCondition.await();
                     } catch (InterruptedException e) {
                         log.warn("爬虫线程休眠被打断", e);
                         break;
@@ -169,6 +187,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
         CrawlResult crawlResult = new CrawlResult();
         try {
             seedProcessor.process(request, session, crawlResult);
+            if (!request.isIgnore() && originRetryCount != request.getRetry()) {
+                request.setStatus(Seed.STATUS_SUCCESS);// 没有发生异常,没有手动指定重试,没有指定忽略,则认为成功
+            }
         } catch (Exception e) {// 如果发生了异常,并且用户没有主动重试,强制重试
             if (originRetryCount != request.getRetry()) {
                 request.retry();
@@ -231,7 +252,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
         // config 会设置 threadPool
         if (threadPool == null || threadPool.isShutdown()) {
             threadPool = new ThreadPoolExecutor(threadNumber, threadNumber, 0L, TimeUnit.MILLISECONDS,
-                    new LinkedBlockingQueue<Runnable>());
+                    new LinkedBlockingQueue<Runnable>(), new NamedThreadFactory("VSCrawlerWorker", false));
 
         }
 
@@ -246,6 +267,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
         }
 
         startTime = new Date();
+
+        berkeleyDBSeedManager.init();
+
         AutoEventRegistry.getInstance().findEventDeclaring(CrawlerStartEvent.class).onCrawlerStart();
 
         // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
@@ -256,6 +280,17 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent {
                 VSCrawler.this.stopCrawler();
             }
         });
+
     }
 
+    @Override
+    public void firstSeed(Seed seed) {
+        log.info("新的种子加入,激活爬虫派发线程");
+        try {
+            taskDispatchLock.lock();
+            taskDispatchCondition.signalAll();
+        } finally {
+            taskDispatchLock.unlock();
+        }
+    }
 }
