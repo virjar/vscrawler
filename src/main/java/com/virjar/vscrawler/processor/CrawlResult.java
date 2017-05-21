@@ -27,12 +27,24 @@ public class CrawlResult {
         results.addAll(resultsIn);
     }
 
-    public List<String> allResul() {
+    public List<String> allResult() {
         return Lists.newArrayList(results);
     }
 
     public void addSeed(Seed seed) {
         newSeeds.add(seed);
+    }
+
+    public void addStrSeeds(Collection<String> seeds) {
+        for (String str : seeds) {
+            addSeed(str);
+        }
+    }
+
+    public void addSeeds(Collection<Seed> seeds) {
+        for (Seed seed : seeds) {
+            addSeed(seed);
+        }
     }
 
     public void addSeed(String seed) {

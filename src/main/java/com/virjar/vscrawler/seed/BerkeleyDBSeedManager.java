@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
@@ -50,14 +51,13 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     private DatabaseConfig databaseConfig;
 
-    private Cursor cursor;
-
-    private Database iteratorDatabases;
-
-    protected DatabaseEntry iteratorKey = new DatabaseEntry();
-    protected DatabaseEntry iteratorValue = new DatabaseEntry();
+    private DatabaseEntry iteratorKey = new DatabaseEntry();
+    private DatabaseEntry iteratorValue = new DatabaseEntry();
 
     private AtomicBoolean isSeedEmpty = new AtomicBoolean(false);
+
+    private ConcurrentLinkedQueue<Seed> ramCache = new ConcurrentLinkedQueue<>();
+    private int cacheSize = 100;
 
     // 学习je的具体使用方法之后,再优化
     // private long cleanBatchSize = 100;
@@ -86,68 +86,72 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         AutoEventRegistry.getInstance().registerObserver(this);
     }
 
-    public synchronized Seed pool() {
-        Seed ret;
-        while (true) {
-            if (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-                try {
-                    ret = VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
-                    if (!ret.needEnd()) {
+    private synchronized void loadCache() {
+        Database iteratorDatabases = env.openDatabase(null, "crawlSeed", databaseConfig);
+        Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
+        Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
+        try {
+            while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+                Seed ret = VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
+                cursor.delete();// 删除当前数据
+                if (!ret.needEnd()) {
+                    ramCache.offer(ret);
+                    if (ramCache.size() >= cacheSize) {
                         break;
+                    }
+                } else {
+                    finishedSeedDatabase.put(null, iteratorKey, iteratorValue);
+                }
+            }
+        } finally {
+            IOUtils.closeQuietly(cursor);
+            IOUtils.closeQuietly(iteratorDatabases);
+            IOUtils.closeQuietly(finishedSeedDatabase);
+        }
+
+    }
+
+    public synchronized Seed pool() {
+        if (ramCache.size() == 0) {
+            loadCache();
+        }
+        if (ramCache.size() == 0) {
+            this.isSeedEmpty.set(true);
+            return null;
+        } else {
+            return ramCache.poll();
+        }
+    }
+
+    private void archive() {
+        Database iteratorDatabases = env.openDatabase(null, "crawlSeed", databaseConfig);
+        Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
+        Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
+
+        try {
+            while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+                try {
+                    Seed ret = VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
+                    if (ret.needEnd()) {
+                        finishedSeedDatabase.put(null, iteratorKey, iteratorValue);
+                        cursor.delete();
                     }
                 } catch (Exception ex) {
                     log.warn("Exception when generating", ex);
                 }
-            } else {
-                isSeedEmpty.set(true);
-                return null;
+
             }
+        } finally {
+            IOUtils.closeQuietly(cursor);
+            IOUtils.closeQuietly(iteratorDatabases);
+            IOUtils.closeQuietly(finishedSeedDatabase);
         }
 
-        return ret;
-    }
-
-    private void archive() {
-        closeCursor();
-        initCursor();
-        Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
-
-        while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-            try {
-                Seed ret = VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
-                if (ret.needEnd()) {
-                    finishedSeedDatabase.put(null, iteratorKey, iteratorValue);
-                    cursor.delete();
-                }
-            } catch (Exception ex) {
-                log.warn("Exception when generating", ex);
-            }
-
-        }
-        closeCursor();
-        finishedSeedDatabase.close();
-        initCursor();
-    }
-
-    private void closeCursor() {
-        if (cursor != null) {
-            cursor.close();
-            cursor = null;
-        }
-        if (iteratorDatabases != null) {
-            iteratorDatabases.close();
-            iteratorDatabases = null;
-        }
-    }
-
-    private void initCursor() {
-        iteratorDatabases = env.openDatabase(null, "crawlSeed", databaseConfig);
-        cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
     }
 
     private boolean saveBloomFilterInfo() {
         File bloomData = new File(SingtonObjectHolder.workPath, "bloomFilter.dat");
-        if (bloomData.exists()) {
+        if (!bloomData.exists()) {
             try {
                 if (!bloomData.createNewFile()) {
                     return false;
@@ -242,25 +246,27 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
         DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
 
-        Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
-        try {
-            runningSeedDatabase.put(null, key, value);
-        } finally {
-            VSCrawlerCommonUtil.closeQuietly(runningSeedDatabase);
-        }
-
-        // if (seed.needEnd()) {
-        // Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
-        // finishedSeedDatabase.put(null, key, value);
-        // finishedSeedDatabase.close();
         // Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
-        // runningSeedDatabase.removeSequence(null, key);
-        // runningSeedDatabase.close();
-        // } else {
-        // Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
+        // try {
         // runningSeedDatabase.put(null, key, value);
-        // runningSeedDatabase.close();
+        // } finally {
+        // IOUtils.closeQuietly(runningSeedDatabase);
         // }
+
+        if (seed.needEnd()) {
+            Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
+            finishedSeedDatabase.put(null, key, value);
+            finishedSeedDatabase.close();
+
+            // TODO 确认在crawlSeed是否还存在
+            Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
+            runningSeedDatabase.removeSequence(null, key);
+            runningSeedDatabase.close();
+        } else {
+            Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
+            runningSeedDatabase.put(null, key, value);
+            runningSeedDatabase.close();
+        }
 
     }
 
@@ -339,13 +345,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     @Override
     public void crawlerEnd() {
-        log.info("关闭db游标");
-        closeCursor();
         // 1.7的低版本不支持and方法
         // boolean allSuccess = BooleanUtils.and(VSCrawlerCommonUtil.closeQuietly(env), saveBloomFilterInfo());
 
+        log.info("收到爬虫结束消息,开始关闭Db资源");
         log.info("关闭数据库环境:{}", VSCrawlerCommonUtil.closeQuietly(env));
-
         log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
 
     }

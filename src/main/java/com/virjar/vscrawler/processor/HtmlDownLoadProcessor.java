@@ -34,6 +34,8 @@ public class HtmlDownLoadProcessor implements SeedProcessor {
             seed.retry();
             return;
         }
-        crawlResult.addResults(allUrl(Jsoup.parse(s, seed.getData())));
+        Set<String> strings = allUrl(Jsoup.parse(s, seed.getData()));
+        crawlResult.addResults(strings);
+        crawlResult.addStrSeeds(strings);
     }
 }
