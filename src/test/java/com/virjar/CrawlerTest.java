@@ -14,10 +14,12 @@ public class CrawlerTest {
         VSCrawler vsCrawler = VSCrawlerBuilder.create().build();
         vsCrawler.start();
 
+        System.out.println("休眠10s,观察爬虫阻塞等待逻辑是否正确");
         // 休眠10s
         CommonUtil.sleep(10000);
 
         // 增加种子
+        System.out.println("注入一个种子任务");
         vsCrawler.pushSeed("http://www.java1234.com/");
     }
 }

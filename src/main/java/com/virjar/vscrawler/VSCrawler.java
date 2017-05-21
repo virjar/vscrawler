@@ -91,6 +91,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
             log.info("爬虫停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent");
             AutoEventRegistry.getInstance().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd();
+        } else {
+            log.info("爬虫已经停止,不需要发生爬虫停止事件消息");
         }
     }
 
@@ -274,13 +276,20 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
         // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
         // 一般请求请正常停止程序,关机拦截这是挽救方案,并不一定可以完整的实现收尾方案
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                VSCrawler.this.stopCrawler();
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new ResourceCleanHookThread());
 
+    }
+
+    private class ResourceCleanHookThread extends Thread {
+        ResourceCleanHookThread() {
+            super("vsCrawler-resource-clean");
+        }
+
+        @Override
+        public void run() {
+            log.warn("爬虫被外部中断,尝试进行资源关闭等收尾工作");
+            VSCrawler.this.stopCrawler();
+        }
     }
 
     @Override

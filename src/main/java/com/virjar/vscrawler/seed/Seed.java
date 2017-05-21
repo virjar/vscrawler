@@ -15,10 +15,10 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor // 反序列化需要
 public class Seed implements Serializable {
-    public static int  STATUS_INIT =0;
-    public static int  STATUS_SUCCESS =0;
-    public static int  STATUS_FAILED =0;
-    public static int  STATUS_RETRY =0;
+    public static int STATUS_INIT = 0;
+    public static int STATUS_SUCCESS = 1;
+    public static int STATUS_FAILED = 2;
+    public static int STATUS_RETRY = 3;
     // 真正的种子信息,因为需要序列化,所以直接设计为字符串
     @Getter
     @Setter
@@ -48,9 +48,9 @@ public class Seed implements Serializable {
 
     public void retry() {
         retry++;
-        if(needEnd()){
+        if (needEnd()) {
             status = STATUS_FAILED;
-        }else{
+        } else {
             status = STATUS_RETRY;
         }
     }
