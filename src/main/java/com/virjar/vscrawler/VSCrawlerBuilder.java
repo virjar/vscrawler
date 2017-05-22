@@ -14,7 +14,7 @@ import com.virjar.vscrawler.net.session.LoginHandler;
 import com.virjar.vscrawler.net.user.DefaultUserResource;
 import com.virjar.vscrawler.net.user.UserManager;
 import com.virjar.vscrawler.net.user.UserResourceFacade;
-import com.virjar.vscrawler.processor.HtmlDownLoadProcessor;
+import com.virjar.vscrawler.processor.PageDownLoadProcessor;
 import com.virjar.vscrawler.processor.SeedProcessor;
 import com.virjar.vscrawler.seed.*;
 import com.virjar.vscrawler.serialize.ConsolePipeline;
@@ -107,6 +107,11 @@ public class VSCrawlerBuilder {
         return this;
     }
 
+    public VSCrawlerBuilder addPipeline(Pipeline pipeline){
+        this.pipelineList.add(pipeline);
+        return this;
+    }
+
     public VSCrawlerBuilder setProcessor(SeedProcessor processor) {
         this.processor = processor;
         return this;
@@ -168,7 +173,7 @@ public class VSCrawlerBuilder {
         BerkeleyDBSeedManager berkeleyDBSeedManager = new BerkeleyDBSeedManager(initSeedSource, seedKeyResolver);
 
         if (processor == null) {
-            processor = new HtmlDownLoadProcessor();
+            processor = new PageDownLoadProcessor();
         }
 
         if (pipelineList.isEmpty()) {

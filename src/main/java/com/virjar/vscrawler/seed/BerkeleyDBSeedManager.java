@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -13,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
+import com.google.common.collect.Maps;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.PrimitiveSink;
@@ -56,7 +58,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     private AtomicBoolean isSeedEmpty = new AtomicBoolean(false);
 
+    // 内部cache,数据加载到内存,以对象的方式存储,避免db操作带来锁的压力
     private ConcurrentLinkedQueue<Seed> ramCache = new ConcurrentLinkedQueue<>();
+    // 所有正在处理的种子
+    private Map<String, Seed> runningSeeds = Maps.newConcurrentMap();
+    private volatile boolean isClosed = false;
     private int cacheSize = 100;
 
     // 学习je的具体使用方法之后,再优化
@@ -119,7 +125,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             this.isSeedEmpty.set(true);
             return null;
         } else {
-            return ramCache.poll();
+            Seed poll = ramCache.poll();
+            if (poll != null) {
+                runningSeeds.put(seedKeyResolver.resolveSeedKey(poll), poll);
+            }
+            return poll;
         }
     }
 
@@ -242,8 +252,14 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
      * 
      * @param seed 曾经处理过的种子
      */
-    public void updateSeed(Seed seed) {
-        DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
+    public void finish(Seed seed) {
+        if (isClosed) {
+            log.info("db已经关闭,拒绝归还任务");
+            return;
+        }
+        String seedKey = seedKeyResolver.resolveSeedKey(seed);
+        runningSeeds.remove(seedKey);
+        DatabaseEntry key = new DatabaseEntry(seedKey.getBytes());
         DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
 
         // Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
@@ -270,12 +286,41 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     }
 
+    private void reSaveCache() {
+        if (ramCache.size() == 0) {
+            return;
+        }
+        Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
+        try {
+            Seed seed;
+            log.info("缓存中未分发数据重新入库...");
+            // 缓存中没有处理的
+            while ((seed = ramCache.poll()) != null) {
+                DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
+                DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
+                runningSeedDatabase.put(null, key, value);
+            }
+            log.info("正在执行的爬虫任务,不等待结果,重新入库");
+            for (Seed tempSeed : runningSeeds.values()) {
+                DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(tempSeed).getBytes());
+                DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(tempSeed).getBytes());
+                runningSeedDatabase.put(null, key, value);
+            }
+        } finally {
+            IOUtils.closeQuietly(runningSeedDatabase);
+        }
+    }
+
     /**
      * 新产生的种子,如果入库,那么会消重。后加入的种子被reject
      * 
      * @param seeds 种子
      */
     public void addNewSeeds(Collection<Seed> seeds) {
+        if (isClosed) {
+            log.warn("db已经关闭,拒绝添加新种子");
+            return;
+        }
         Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
         try {
             for (Seed seed : seeds) {
@@ -348,8 +393,12 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         // 1.7的低版本不支持and方法
         // boolean allSuccess = BooleanUtils.and(VSCrawlerCommonUtil.closeQuietly(env), saveBloomFilterInfo());
 
-        log.info("收到爬虫结束消息,开始关闭Db资源");
-        log.info("关闭数据库环境:{}", VSCrawlerCommonUtil.closeQuietly(env));
+        log.info("收到爬虫结束消息,开始关闭资源");
+        log.info("拒绝抓取结果入库");
+        isClosed = true;
+        reSaveCache();
+        log.info("关闭数据库环境:");
+        IOUtils.closeQuietly(env);
         log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
 
     }

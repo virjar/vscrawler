@@ -19,6 +19,7 @@ public class Seed implements Serializable {
     public static int STATUS_SUCCESS = 1;
     public static int STATUS_FAILED = 2;
     public static int STATUS_RETRY = 3;
+    public static int STATUS_RUNNING = 4;
     // 真正的种子信息,因为需要序列化,所以直接设计为字符串
     @Getter
     @Setter

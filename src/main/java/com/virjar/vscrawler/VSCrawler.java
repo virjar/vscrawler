@@ -112,70 +112,92 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         initComponent();
         log.info("Spider  started!");
         while (!Thread.currentThread().isInterrupted() && stat.get() == STAT_RUNNING) {
-            // final String request = simpleFileSeedManager.consumeSeed();
-            final Seed seed = berkeleyDBSeedManager.pool();
+            Seed seed = berkeleyDBSeedManager.pool();
+
+            // 种子为空处理
             if (seed == null) {
                 AutoEventRegistry.getInstance().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty();
                 if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
                     break;
                 }
-                taskDispatchLock.lock();
-                try {// 没有任务的时候,暂停
-                    log.info("没有任务,暂停");
-                    taskDispatchCondition.await();
-                } catch (InterruptedException e) {
-                    log.warn("爬虫线程休眠被打断", e);
+                if (!waitDispatchThread()) {
+                    log.warn("爬虫线程休眠被打断");
                     break;
-                } finally {
-                    taskDispatchLock.unlock();
                 }
+                continue;
+            }
 
-            } else {
-                threadPool.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            activeTasks.incrementAndGet();
-                            processRequest(seed);
-                        } catch (Exception e) {
-                            log.error("process request {} error", JSONObject.toJSONString(seed), e);
-                        } finally {
-                            if (activeTasks.decrementAndGet() < threadPool.getMaximumPoolSize()) {
+            // 执行抓取任务
+            threadPool.execute(new SeedProcessTask(seed));
 
-                                try {
-                                    taskDispatchLock.lock();
-                                    taskDispatchCondition.signalAll();
-                                } finally {
-                                    taskDispatchLock.unlock();
-                                }
-                            }
-                        }
-                    }
-                });
-                // 当任务满的时候,暂时阻塞任务产生线程,直到有空闲线程资源
-                if (activeTasks.get() >= threadPool.getMaximumPoolSize()) {
-                    try {
-                        taskDispatchLock.lock();
-                        taskDispatchCondition.await();
-                    } catch (InterruptedException e) {
-                        log.warn("爬虫线程休眠被打断", e);
-                        break;
-                    } finally {
-                        taskDispatchLock.unlock();
-                    }
-                }
-                if (slowStart && slowStartTimes < threadNumber - 1) {
-                    log.info("慢启动");
-                    CommonUtil.sleep(slowStartDuration / threadNumber);
-                    slowStartTimes++;
+            // 当任务满的时候,暂时阻塞任务产生线程,直到有空闲线程资源
+            if (activeTasks.get() >= threadPool.getMaximumPoolSize()) {
+                if (!waitDispatchThread()) {
+                    log.warn("爬虫线程休眠被打断");
+                    break;
                 }
             }
+
+            // 慢启动控制
+            if (slowStart && slowStartTimes < threadNumber - 1) {
+                log.info("慢启动:{}", slowStartTimes);
+                CommonUtil.sleep(slowStartDuration / threadNumber);
+                slowStartTimes++;
+            }
+
         }
-        stat.set(STAT_STOPPED);
+        if (!threadPool.isShutdown()) {
+            threadPool.shutdown();
+        }
+        stopCrawler();// 直接在外部终止爬虫,这里可能调两次
         log.info("爬虫结束");
     }
 
-    private void processRequest(Seed request) {
+    private void activeDispatchThread() {
+        try {
+            taskDispatchLock.lock();
+            taskDispatchCondition.signalAll();
+        } finally {
+            taskDispatchLock.unlock();
+        }
+    }
+
+    private boolean waitDispatchThread() {
+        try {
+            taskDispatchLock.lock();
+            taskDispatchCondition.await();
+        } catch (InterruptedException e) {
+            log.warn("爬虫线程休眠被打断", e);
+            return false;
+        } finally {
+            taskDispatchLock.unlock();
+        }
+        return true;
+    }
+
+    private class SeedProcessTask implements Runnable {
+        private Seed seed;
+
+        SeedProcessTask(Seed seed) {
+            this.seed = seed;
+        }
+
+        @Override
+        public void run() {
+            try {
+                activeTasks.incrementAndGet();
+                processSeed(seed);
+            } catch (Exception e) {
+                log.error("process request {} error", JSONObject.toJSONString(seed), e);
+            } finally {
+                if (activeTasks.decrementAndGet() < threadPool.getMaximumPoolSize()) {
+                    activeDispatchThread();
+                }
+            }
+        }
+    }
+
+    private void processSeed(Seed seed) {
 
         CrawlerSession session = null;
         while (true) {
@@ -187,34 +209,27 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             }
             CommonUtil.sleep(500);
         }
-        int originRetryCount = request.getRetry();
+        int originRetryCount = seed.getRetry();
         CrawlResult crawlResult = new CrawlResult();
         try {
-            seedProcessor.process(request, session, crawlResult);
-            if (originRetryCount != request.getRetry()) {
-                if (request.getRetry() > request.getMaxRetry()) {
-                    request.setStatus(Seed.STATUS_FAILED);
-                } else {
-                    request.setStatus(Seed.STATUS_RETRY);
-                }
-            } else if (!request.isIgnore()) {
-                request.setStatus(Seed.STATUS_SUCCESS);// 没有发生异常,没有手动指定重试,没有指定忽略,则认为成功
+            seedProcessor.process(seed, session, crawlResult);
+            if (seed.getStatus() == Seed.STATUS_RUNNING) {
+                seed.setStatus(Seed.STATUS_SUCCESS);
             }
         } catch (Exception e) {// 如果发生了异常,并且用户没有主动重试,强制重试
-            if (originRetryCount != request.getRetry()) {
-                request.retry();
-                if (request.getRetry() > request.getMaxRetry()) {
-                    request.setStatus(Seed.STATUS_FAILED);
-                } else {
-                    request.setStatus(Seed.STATUS_RETRY);
-                }
+            if (originRetryCount != seed.getRetry() && seed.getStatus() != Seed.STATUS_RUNNING) {
+                seed.retry();
             }
         } finally {
             // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
             // 如果标记session失效,则会停止分发此session,同时异步触发登录逻辑
-            berkeleyDBSeedManager.updateSeed(request);
+            berkeleyDBSeedManager.finish(seed);
         }
+        processResult(seed, crawlResult);
 
+    }
+
+    private void processResult(Seed origin, CrawlResult crawlResult) {
         List<Seed> seeds = crawlResult.allSeed();
         if (seeds != null) {
             berkeleyDBSeedManager.addNewSeeds(seeds);
@@ -223,20 +238,14 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         List<String> allResult = crawlResult.allResult();
         if (allResult != null) {
             for (Pipeline p : pipeline) {
-                p.saveItem(allResult, request);
+                p.saveItem(allResult, origin);
             }
         }
     }
 
     private void checkRunningStat() {
-        while (true) {
-            int statNow = stat.get();
-            if (statNow == STAT_RUNNING) {
-                throw new IllegalStateException("Spider is already running!");
-            }
-            if (stat.compareAndSet(statNow, STAT_RUNNING)) {
-                break;
-            }
+        if (!stat.compareAndSet(STAT_INIT, STAT_RUNNING)) {
+            throw new IllegalStateException("Spider is already running!");
         }
     }
 
@@ -256,7 +265,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
     }
 
-    void initComponent() {
+    private void initComponent() {
 
         // 开启事件循环
         EventLoop.getInstance().loop();

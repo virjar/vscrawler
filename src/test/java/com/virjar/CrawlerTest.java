@@ -11,7 +11,7 @@ public class CrawlerTest {
     public static void main(String[] args) {
 
         // 启动爬虫
-        VSCrawler vsCrawler = VSCrawlerBuilder.create().build();
+        VSCrawler vsCrawler = VSCrawlerBuilder.create().addPipeline(new EmptyPipeline()).build();
         vsCrawler.start();
 
         System.out.println("休眠10s,观察爬虫阻塞等待逻辑是否正确");
