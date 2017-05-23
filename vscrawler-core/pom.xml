@@ -9,9 +9,9 @@
     </parent>
     <artifactId>vscrawler-core</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>${parent.version}</version>
 
-    <name>qinxinbao</name>
+    <name>core</name>
     <url>http://maven.apache.org</url>
     <dependencies>
         <dependency>
