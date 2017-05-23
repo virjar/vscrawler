@@ -7,16 +7,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.virjar.vscrawler.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.event.systemevent.CrawlerEndEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/4/30.
+ * 
  * @author virjar
  * @since 0.0.1
  */
 @Slf4j
-public class EventLoop {
+public class EventLoop implements CrawlerEndEvent {
     private static EventLoop instance = new EventLoop();
     private AtomicBoolean isRunning = new AtomicBoolean(false);
 
@@ -27,11 +30,16 @@ public class EventLoop {
     private ConcurrentMap<String, Set<EventHandler>> allHandlers = Maps.newConcurrentMap();
 
     private EventLoop() {
+
     }
 
     private LinkedBlockingQueue<Event> eventQueue = new LinkedBlockingQueue<>();
 
     public void offerEvent(Event event) {
+        if (!isRunning.get()) {
+            log.warn("程序已停止");
+            return;
+        }
         /*
          * Preconditions.checkArgument( allHandlers.containsKey(event.getTopic()) &&
          * allHandlers.get(event.getTopic()).size() > 0, "cannot find handle for event:{}", event.getTopic());
@@ -63,6 +71,7 @@ public class EventLoop {
     }
 
     public void loop() {
+        AutoEventRegistry.getInstance().registerObserver(this);
         if (isRunning.compareAndSet(false, true)) {
             Thread thread = new Thread("vsCrawlerEventLoop") {
                 @Override
@@ -96,5 +105,12 @@ public class EventLoop {
             }
         }
 
+    }
+
+    @Override
+    public void crawlerEnd() {
+        // 事件循环本身收到了事件消息
+        isRunning.set(false);
+        log.info("收到爬虫结束消息,停止事件循环,未处理将被忽略,当前待处理事件个数:{}", eventQueue.size());
     }
 }

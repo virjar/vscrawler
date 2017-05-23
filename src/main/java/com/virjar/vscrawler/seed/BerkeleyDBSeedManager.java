@@ -300,7 +300,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
                 runningSeedDatabase.put(null, key, value);
             }
-            log.info("正在执行的爬虫任务,不等待结果,重新入库");
+            log.info("正在执行的爬虫任务,不等待结果,重新入库...");
             for (Seed tempSeed : runningSeeds.values()) {
                 DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(tempSeed).getBytes());
                 DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(tempSeed).getBytes());
@@ -394,10 +394,10 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         // boolean allSuccess = BooleanUtils.and(VSCrawlerCommonUtil.closeQuietly(env), saveBloomFilterInfo());
 
         log.info("收到爬虫结束消息,开始关闭资源");
-        log.info("拒绝抓取结果入库");
+        log.info("拒绝抓取结果入库...");
         isClosed = true;
         reSaveCache();
-        log.info("关闭数据库环境:");
+        log.info("关闭数据库环境...");
         IOUtils.closeQuietly(env);
         log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
 

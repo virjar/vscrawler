@@ -1,12 +1,11 @@
 package com.virjar.vscrawler.net;
 
-import com.virjar.dungproxy.client.httpclient.CrawlerHttpClientBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 
 import com.virjar.dungproxy.client.httpclient.CrawlerHttpClient;
+import com.virjar.dungproxy.client.httpclient.CrawlerHttpClientBuilder;
 import com.virjar.dungproxy.client.ippool.config.ProxyConstant;
-import com.virjar.vscrawler.net.session.ProxyFeedBackDecorateHttpClientBuilder;
 
 /**
  * Created by virjar on 17/4/30.
