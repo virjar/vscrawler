@@ -6,8 +6,8 @@
     <packaging>pom</packaging>
     <version>0.0.1-SNAPSHOT</version>
     <modules>
-        <module>samples</module>
-        <module>core</module>
+        <module>vscrawler-core</module>
+        <module>vscrawler-samples</module>
     </modules>
     <name>vscrawler</name>
     <url>http://maven.apache.org</url>

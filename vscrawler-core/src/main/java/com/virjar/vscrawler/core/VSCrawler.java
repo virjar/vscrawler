@@ -10,25 +10,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.virjar.vscrawler.core.event.EventLoop;
-import com.virjar.vscrawler.core.event.systemevent.*;
-import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
-import com.virjar.vscrawler.core.processor.CrawlResult;
-import com.virjar.vscrawler.core.seed.BerkeleyDBSeedManager;
-import com.virjar.vscrawler.core.serialize.Pipeline;
-import com.virjar.vscrawler.core.util.SingtonObjectHolder;
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
 import com.virjar.dungproxy.client.util.CommonUtil;
+import com.virjar.vscrawler.core.event.EventLoop;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.core.event.systemevent.*;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
+import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
+import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
+import com.virjar.vscrawler.core.seed.BerkeleyDBSeedManager;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
+import com.virjar.vscrawler.core.serialize.Pipeline;
+import com.virjar.vscrawler.core.util.SingtonObjectHolder;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 import lombok.extern.slf4j.Slf4j;
 

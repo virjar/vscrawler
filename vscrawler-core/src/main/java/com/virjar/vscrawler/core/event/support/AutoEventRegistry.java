@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AutoEventRegistry {
     private static AutoEventRegistry instance = null;
-    private static Set<String> basePackges = Sets.newHashSet("com.virjar.vscrawler.event.systemevent");
+    private static Set<String> basePackges = Sets.newHashSet("com.virjar.vscrawler.core.event.systemevent");
 
     public synchronized static void addBasePackage(String basePackage) {
         Iterator<String> iterator = basePackges.iterator();
