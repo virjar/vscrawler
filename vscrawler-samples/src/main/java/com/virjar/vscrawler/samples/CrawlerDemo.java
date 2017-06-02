@@ -1,4 +1,4 @@
-package com.virjar;
+package com.virjar.vscrawler.samples;
 
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.VSCrawler;
@@ -7,7 +7,7 @@ import com.virjar.vscrawler.core.VSCrawlerBuilder;
 /**
  * Created by virjar on 17/5/18.
  */
-public class CrawlerTest {
+public class CrawlerDemo {
     public static void main(String[] args) {
 
         // 启动爬虫

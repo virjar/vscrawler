@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.support.webmagic.select;
+package com.virjar.vscrawler.over.webmagic7.select;
 
 import org.jsoup.nodes.Document;
 

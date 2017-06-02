@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.support.webmagic;
+package com.virjar.vscrawler.over.webmagic7;
 
 import java.util.Map;
 import java.util.UUID;

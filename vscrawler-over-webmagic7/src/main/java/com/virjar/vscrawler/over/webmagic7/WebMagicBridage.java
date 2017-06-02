@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.support.webmagic;
+package com.virjar.vscrawler.over.webmagic7;
 
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.serialize.Pipeline;

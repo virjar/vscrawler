@@ -1,12 +1,12 @@
-package com.virjar.vscrawler.core.support.webmagic;
+package com.virjar.vscrawler.over.webmagic7;
 
 import java.util.Collection;
 import java.util.Map;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.virjar.vscrawler.core.serialize.Pipeline;
 import com.virjar.vscrawler.core.seed.Seed;
+import com.virjar.vscrawler.core.serialize.Pipeline;
 
 import lombok.extern.slf4j.Slf4j;
 import us.codecraft.webmagic.ResultItems;

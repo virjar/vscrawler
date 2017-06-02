@@ -1,11 +1,10 @@
-package com.virjar.vscrawler.core.support.webmagic;
+package com.virjar.vscrawler.over.webmagic7;
 
 import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
-import com.virjar.vscrawler.core.processor.CrawlResult;
-import com.virjar.vscrawler.core.support.webmagic.select.JsoupXpathPage;
 import com.virjar.vscrawler.core.processor.AutoParseSeedProcessor;
+import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.seed.Seed;
 
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +12,7 @@ import us.codecraft.webmagic.Request;
 import us.codecraft.webmagic.ResultItems;
 import us.codecraft.webmagic.processor.PageProcessor;
 import us.codecraft.webmagic.selector.PlainText;
+import com.virjar.vscrawler.over.webmagic7.select.JsoupXpathPage;
 
 /**
  * Created by virjar on 17/5/20.

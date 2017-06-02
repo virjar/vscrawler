@@ -1,4 +1,4 @@
-package com.virjar;
+package com.virjar.vscrawler.samples;
 
 import java.util.Collection;
 
