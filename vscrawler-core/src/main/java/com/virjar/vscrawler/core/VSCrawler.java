@@ -78,6 +78,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     private int slowStartTimes = 0;
 
+    private List<CrawlerStartCallBack> allStartCallBacks = Lists.newLinkedList();
+
     VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
             SeedProcessor seedProcessor, List<Pipeline> pipeline) {
         super("VSCrawler-Dispatch");
@@ -294,6 +296,10 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
         berkeleyDBSeedManager.init();
 
+        for (CrawlerStartCallBack crawlerStartCallBack : allStartCallBacks) {
+            crawlerStartCallBack.onCrawlerStart(this);
+        }
+
         AutoEventRegistry.getInstance().findEventDeclaring(CrawlerStartEvent.class).onCrawlerStart();
 
         // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
@@ -323,5 +329,14 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         } finally {
             taskDispatchLock.unlock();
         }
+    }
+
+   public  interface CrawlerStartCallBack {
+        void onCrawlerStart(VSCrawler vsCrawler);
+    }
+
+    public VSCrawler addCrawlerStartCallBack(CrawlerStartCallBack crawlerStartCallBack){
+        allStartCallBacks.add(crawlerStartCallBack);
+        return this;
     }
 }

@@ -9,8 +9,8 @@ import com.virjar.vscrawler.core.net.proxy.IPPool;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyStrategy;
 import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
-import com.virjar.vscrawler.core.net.session.EmptyLoginHandler;
 import com.virjar.vscrawler.core.net.session.LoginHandler;
+import com.virjar.vscrawler.core.net.user.AutoLoginPlugin;
 import com.virjar.vscrawler.core.net.user.DefaultUserResource;
 import com.virjar.vscrawler.core.net.user.UserManager;
 import com.virjar.vscrawler.core.net.user.UserResourceFacade;
@@ -78,8 +78,15 @@ public class VSCrawlerBuilder {
      */
     private SeedKeyResolver seedKeyResolver;
 
+    private boolean loginOnSessionCreate = false;
+
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
+    }
+
+    public VSCrawlerBuilder setLoginOnSessionCreate(boolean loginOnSessionCreate) {
+        this.loginOnSessionCreate = loginOnSessionCreate;
+        return this;
     }
 
     public VSCrawlerBuilder setCrawlerHttpClientGenerator(CrawlerHttpClientGenerator crawlerHttpClientGenerator) {
@@ -107,7 +114,7 @@ public class VSCrawlerBuilder {
         return this;
     }
 
-    public VSCrawlerBuilder addPipeline(Pipeline pipeline){
+    public VSCrawlerBuilder addPipeline(Pipeline pipeline) {
         this.pipelineList.add(pipeline);
         return this;
     }
@@ -138,14 +145,6 @@ public class VSCrawlerBuilder {
     }
 
     public VSCrawler build() {
-        if (userResourceFacade == null) {
-            userResourceFacade = new DefaultUserResource();
-        }
-        UserManager userManager = new UserManager(userResourceFacade);
-
-        if (loginHandler == null) {
-            loginHandler = new EmptyLoginHandler();
-        }
 
         if (crawlerHttpClientGenerator == null) {
             crawlerHttpClientGenerator = new DefaultHttpClientGenerator();
@@ -159,8 +158,8 @@ public class VSCrawlerBuilder {
             throw new IllegalStateException("proxyPlanner must exist if proxyStrategy is custom");
         }
 
-        CrawlerSessionPool crawlerSessionPool = new CrawlerSessionPool(userManager, loginHandler,
-                crawlerHttpClientGenerator, proxyStrategy, ipPool, proxyPlanner);
+        CrawlerSessionPool crawlerSessionPool = new CrawlerSessionPool(crawlerHttpClientGenerator, proxyStrategy,
+                ipPool, proxyPlanner);
 
         if (initSeedSource == null) {
             initSeedSource = new LocalFileSeedSource();
@@ -180,6 +179,20 @@ public class VSCrawlerBuilder {
             pipelineList.add(new ConsolePipeline());
         }
 
-        return new VSCrawler(crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList);
+        VSCrawler vsCrawler = new VSCrawler(crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList);
+        if (loginOnSessionCreate) {
+            if (userResourceFacade == null) {
+                userResourceFacade = new DefaultUserResource();
+            }
+        }
+        if (userResourceFacade != null) {
+            if (loginHandler == null) {
+                throw new IllegalStateException("login handler is null ,but open login switch");
+            }
+            UserManager userManager = new UserManager(userResourceFacade);
+            vsCrawler.addCrawlerStartCallBack(new AutoLoginPlugin(loginHandler, userManager));
+        }
+
+        return vsCrawler;
     }
 }

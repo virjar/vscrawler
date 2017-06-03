@@ -1,11 +1,10 @@
 package com.virjar.vscrawler.core.net.session;
 
 import java.util.Properties;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -14,63 +13,42 @@ import org.slf4j.LoggerFactory;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
+import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyStrategy;
-import com.virjar.vscrawler.core.net.user.User;
-import com.virjar.vscrawler.core.net.user.UserManager;
-import com.virjar.vscrawler.core.net.user.UserStatus;
 import com.virjar.vscrawler.core.util.SingtonObjectHolder;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 /**
  * Created by virjar on 17/4/15.<br/>
- * 创建并管理多个用户的链接
+ * 创建并管理多个用户的链接,pool逻辑大概是模仿druid实现的
  * 
  * @author virjar
  * @since 0.0.1
  */
-public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
+public class CrawlerSessionPool implements CrawlerConfigChangeEvent, CrawlerEndEvent {
 
     private static final Logger logger = LoggerFactory.getLogger(CrawlerSessionPool.class);
 
-    private ConcurrentLinkedQueue<CrawlerSession> allSessions = new ConcurrentLinkedQueue<>();
+    private LinkedBlockingQueue<CrawlerSession> allSessions = new LinkedBlockingQueue<>();
 
-    /**
-     * 最大空闲时间,默认25分钟
-     */
-    private long maxIdle = 25 * 60 * 1000;
+    private long maxIdle = 10;
 
-    /**
-     * 至少等待事件,默认10s
-     */
-    private long minIdl = 10 * 1000;
+    private long minIdle = 0;
 
-    /**
-     * 最多连续使用时间
-     */
-    private long maxDuration = 60 * 60 * 1000;
+    private long reuseDuration = 60 * 60 * 1000;
 
-    /**
-     * 一个用户最大并发数
-     */
     private int maxOccurs = 1;
 
-    /**
-     * 活跃session数目
-     */
-    private int activeUser = 100;
+    private int maxActive = 100;
 
-    private LoginHandler defaultLoginHandler;
+    private int initialSize = 0;
 
-    private UserManager userManager;
-
-    private int monitorThreadNumber = 2;
-
-    private ThreadPoolExecutor monitorPool;
-
-    private AtomicInteger sessionCreateThreadNum = new AtomicInteger(0);
+    // 分发session最多等待时间
+    private long maxWait = -1L;
 
     private CrawlerHttpClientGenerator crawlerHttpClientGenerator;
 
@@ -82,17 +60,21 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
     private IPPool ipPool;
     private ProxyPlanner proxyPlanner = null;
 
-    public CrawlerSessionPool(UserManager userManager, LoginHandler defaultLoginHandler,
-            CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy, IPPool ipPool,
-            ProxyPlanner proxyPlanner) {
-        this.userManager = userManager;
-        this.defaultLoginHandler = defaultLoginHandler;
+    // 是否初始化
+    protected volatile boolean inited = false;
+
+    private ReentrantLock lock = new ReentrantLock();
+    protected Condition notEmpty = lock.newCondition();
+    protected Condition empty = lock.newCondition();
+
+    private CreateSessionThread createSessionThread;
+
+    public CrawlerSessionPool(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
+            IPPool ipPool, ProxyPlanner proxyPlanner) {
         this.crawlerHttpClientGenerator = crawlerHttpClientGenerator;
         this.proxyStrategy = proxyStrategy;
         this.ipPool = ipPool;
         this.proxyPlanner = proxyPlanner;
-        monitorPool = new ThreadPoolExecutor(monitorThreadNumber, monitorThreadNumber, 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>());
 
         // 注册事件监听,接收配置文件变更消息,下面两句比较巧妙
         changeWithProperties(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
@@ -100,125 +82,120 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
 
     }
 
-    private CrawlerSession createNewSession() {
-        User user = userManager.allocateUser();
-        if (user == null) {
-            return null;
+    public void init() {
+        if (inited) {
+            return;
         }
-        return new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator, proxyStrategy, ipPool,
-                proxyPlanner);
+        try {
+            lock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+
+            if (inited) {
+                return;
+            }
+
+            if (maxActive <= 0) {
+                throw new IllegalArgumentException("illegal maxActive " + maxActive);
+            }
+
+            if (maxActive < minIdle) {
+                throw new IllegalArgumentException("illegal maxActive " + maxActive);
+            }
+
+            if (initialSize > maxActive) {
+                throw new IllegalArgumentException(
+                        "illegal initialSize " + this.initialSize + ", maxActive " + maxActive);
+            }
+
+            createSessionThread = new CreateSessionThread();
+            createSessionThread.start();
+        } finally {
+            inited = true;
+            lock.unlock();
+        }
     }
 
-    public synchronized CrawlerSession borrowOne() {
-        logger.info("当前会话池中,共有:{}个用户可用", allSessions.size());
-        CrawlerSession session = allSessions.poll();
-        if (session == null) {
-            session = allSessions.poll();
-            if (session == null) {
-                // 第一个session同步创建,后面的可以异步创建,所以这里这么写
-                logger.info("第一个用户开始登录");
-                session = createNewSession();
-                if (session == null) {
-                    logger.info("当前系统没有用户信息");
-                    return null;
-                }
-                // allSessions.offer(session);
-            }
+    private CrawlerSession createNewSession() {
+        CrawlerSession crawlerSession = new CrawlerSession(crawlerHttpClientGenerator, proxyStrategy, ipPool,
+                proxyPlanner);
+        AutoEventRegistry.getInstance().findEventDeclaring(SessionCreateEvent.class)
+                .onSessionCreateEvent(crawlerSession);
+        if (crawlerSession.isValid()) {
+            return crawlerSession;
         }
-
-        for (int i = 0; i < allSessions.size() + 1; i++, session = allSessions.poll()) {
-            if (session == null) {
-                break;
-            }
-            allSessions.offer(session);
-            if (!session.getEnable()) {
-                monitorPool.submit(new LoginThread(session));
-                continue;
-            }
-
-            if (System.currentTimeMillis() - session.getLastActiveTimeStamp() > maxIdle) {
-                logger.info("session使用距离上次时间超过:{}秒,检查session是否存在", maxIdle / 1000);
-                monitorPool.submit(new SessionTestThread(session));
-                continue;
-            }
-
-            if (System.currentTimeMillis() - session.getLastActiveTimeStamp() < minIdl) {
-                logger.info("session使用距离上次小于超过:{}秒,检查session是否存在,暂时放弃使用这个账号", minIdl / 1000);
-                continue;
-            }
-
-            if (System.currentTimeMillis() - session.getInitTimeStamp() > maxDuration) {
-                logger.info("session使用距离超过最大使用时间,暂时下线这个session", maxIdle / 1000);
-                userManager.returnUser(session.getUser());
-                allSessions.remove(session);
-                continue;
-            }
-
-            if (session.borrowTimes() >= maxOccurs) {
-                logger.info("当前session超过最大并发数:{} 不能被使用", maxOccurs);
-                continue;
-            }
-
-            if (allSessions.size() < activeUser) {
-                // 扩大活跃账户数量
-                monitorPool.submit(new CreateSessionThread());
-            }
-
-            session.recordBorrow();
-            return session;
-        }
-
-        //
-        if (session == null) {
-            session = createNewSession();
-            if (session == null) {
-                return null;
-            }
-        }
-
-        if (session.getEnable()) {
-            allSessions.offer(session);
-            session.recordBorrow();
-            return session;
-        }
-
-        session = createNewSession();
-        if (session == null) {
-            return null;
-        }
-        if (session.getEnable()) {
-            allSessions.offer(session);
-            session.recordBorrow();
-            return session;
-        }
-
         return null;
     }
 
+    public CrawlerSession borrowOne(long maxWaitMillis) {
+        init();
+        long lessTimeMillis = maxWaitMillis;
+
+        // logger.info("当前会话池中,共有:{}个用户可用", allSessions.size());
+        for (;;) {
+            long startRequestTimeStamp = System.currentTimeMillis();
+            CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
+            if (crawlerSession == null && lessTimeMillis < 0) {
+                return null;
+            }
+            if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
+                crawlerSession = createNewSession();
+            }
+            lessTimeMillis = lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp);
+            if (crawlerSession == null) {
+                continue;
+            }
+
+            // 各种check
+
+            return crawlerSession;
+        }
+    }
+
+    private CrawlerSession getSessionInternal(long maxWait) {
+        try {
+            lock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            throw new PoolException("lock interrupted", e);
+        }
+
+        try {
+            if (allSessions.size() == 0) {
+                empty.signal();
+            }
+            if (maxWait > 0) {
+                return allSessions.poll(maxWait, TimeUnit.MILLISECONDS);
+            } else {
+                return allSessions.poll();
+            }
+        } catch (InterruptedException interruptedException) {
+            throw new PoolException("lock interrupted", interruptedException);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     private void changeWithProperties(Properties properties) {
-        activeUser = NumberUtils.toInt(
+        maxActive = NumberUtils.toInt(
                 AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_ACTIVE_USER)).toString(),
                 Integer.MAX_VALUE);
         maxIdle = NumberUtils.toInt(
                 AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_IDLE)).toString(),
                 150000);
 
-        maxDuration = NumberUtils.toInt(
+        reuseDuration = NumberUtils.toInt(
                 AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_DURATION)).toString(),
                 3600000);
         maxOccurs = NumberUtils.toInt(
                 AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_OCCURS)).toString(), 1);
-        minIdl = NumberUtils.toInt(
+        minIdle = NumberUtils.toInt(
                 AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MIN_IDLE)).toString(),
                 10000);
         int newThreadNumber = NumberUtils.toInt(AviatorEvaluator
                 .exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MONTOR_THREAD_NUMBER)).toString(), 2);
-        if (newThreadNumber != monitorThreadNumber) {
-            monitorThreadNumber = newThreadNumber;
-            monitorPool.setMaximumPoolSize(monitorThreadNumber);
-            monitorPool.setCorePoolSize(monitorThreadNumber);
-        }
-
     }
 
     /**
@@ -232,56 +209,20 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent {
         changeWithProperties(newProperties);
     }
 
-    private class CreateSessionThread implements Runnable {
-
-        @Override
-        public void run() {
-            try {
-                if (sessionCreateThreadNum.incrementAndGet() + allSessions.size() < activeUser) {
-                    User user = userManager.allocateUser();
-                    if (user == null) {
-                        return;
-                    }
-                    CrawlerSession session = new CrawlerSession(user, defaultLoginHandler, crawlerHttpClientGenerator,
-                            proxyStrategy, ipPool, proxyPlanner);
-                    allSessions.offer(session);
-                }
-            } finally {
-                sessionCreateThreadNum.decrementAndGet();
-            }
-        }
+    @Override
+    public void crawlerEnd() {
+        createSessionThread.interrupt();
     }
 
-    private class SessionTestThread implements Runnable {
-        private CrawlerSession session;
-
-        public SessionTestThread(CrawlerSession session) {
-            this.session = session;
+    private class CreateSessionThread extends Thread {
+        CreateSessionThread() {
+            super("createNewSession");
+            setDaemon(true);
         }
 
         @Override
         public void run() {
-            session.testLoginState();
-        }
-    }
-
-    private class LoginThread implements Runnable {
-        private CrawlerSession session;
-
-        public LoginThread(CrawlerSession session) {
-            this.session = session;
-        }
-
-        @Override
-        public void run() {
-            logger.info("账号:{}当前登录状态不可用,尝试重新登录", session.getUser().getUserID());
-            if (session.login() && !session.isLogin()) {
-                logger.info("登录失败,禁用本账户");
-                allSessions.remove(session);// TODO 禁用上下线逻辑
-                User user = session.getUser();
-                user.setUserStatus(UserStatus.BLOCK);
-                userManager.returnUser(user);
-            }
+            super.run();
         }
     }
 }
