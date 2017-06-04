@@ -1,7 +1,5 @@
 package com.virjar.vscrawler.core.net.proxy.strategy;
 
-import com.virjar.vscrawler.core.net.proxy.IPPool;
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.HttpGet;
@@ -11,13 +9,18 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.protocol.HttpContext;
 
 import com.virjar.dungproxy.client.util.PoolUtil;
+import com.virjar.vscrawler.core.net.proxy.IPPool;
 import com.virjar.vscrawler.core.net.proxy.Proxy;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/5/13.
+ * 
+ * @author virjar
+ * @since 0.0.1
  */
 @Slf4j
 public class EveryRequestPlanner implements ProxyPlanner {

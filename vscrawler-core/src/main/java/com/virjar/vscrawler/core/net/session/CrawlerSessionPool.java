@@ -1,11 +1,16 @@
 package com.virjar.vscrawler.core.net.session;
 
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
@@ -57,6 +62,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     protected Condition empty = lock.newCondition();
 
     private CreateSessionThread createSessionThread;
+    private TreeSet<ForbidSessionHolder> forbidSessionHolderTreeSet = new TreeSet<>();
+    private AtomicBoolean isHandleForbidSession = new AtomicBoolean(false);
 
     public CrawlerSessionPool(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
             IPPool ipPool, ProxyPlanner proxyPlanner, int maxSize, int coreSize, int initialSize, long reuseDuration,
@@ -137,6 +144,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     }
 
     public void recycle(CrawlerSession crawlerSession) {
+        crawlerSession.setLastActiveTimeStamp(System.currentTimeMillis());
         if (allSessions.size() > maxSize || !crawlerSession.isValid()) {
             crawlerSession.destroy();
         } else {
@@ -185,10 +193,59 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
                 AutoEventRegistry.getInstance().findEventDeclaring(SessionBorrowEvent.class)
                         .onSessionBorrow(crawlerSession);
+                log.debug("当前session数量:{}", allSessions.size());
                 return crawlerSession;
             }
         } finally {
-            allSessions.addAll(tempCrawlerSession);
+            handleForbidSessions(tempCrawlerSession);
+        }
+    }
+
+    private void handleForbidSessions(List<CrawlerSession> newForbidSessions) {
+        LinkedList<CrawlerSession> recoverSessions = Lists.newLinkedList();
+
+        if (isHandleForbidSession.compareAndSet(false, true)) {
+            try {
+                // 老的session解禁
+                Iterator<ForbidSessionHolder> iterator = forbidSessionHolderTreeSet.iterator();
+                while (iterator.hasNext()) {
+                    ForbidSessionHolder next = iterator.next();
+                    if (System.currentTimeMillis() - next.crawlerSession.getLastActiveTimeStamp() > reuseDuration) {
+                        recoverSessions.add(next.crawlerSession);
+                        iterator.remove();
+                    }
+                }
+
+                // 新加入的session封禁
+                if (newForbidSessions.size() != 0) {
+                    forbidSessionHolderTreeSet.addAll(
+                            Lists.transform(newForbidSessions, new Function<CrawlerSession, ForbidSessionHolder>() {
+                                @Override
+                                public ForbidSessionHolder apply(CrawlerSession input) {
+                                    return new ForbidSessionHolder(input);
+                                }
+                            }));
+                }
+            } finally {
+                isHandleForbidSession.set(false);
+            }
+        }
+        if (recoverSessions.size() != 0) {
+            allSessions.addAll(recoverSessions);
+        }
+    }
+
+    private class ForbidSessionHolder implements Comparable<ForbidSessionHolder> {
+        private CrawlerSession crawlerSession;
+
+        ForbidSessionHolder(CrawlerSession crawlerSession) {
+            this.crawlerSession = crawlerSession;
+        }
+
+        @Override
+        public int compareTo(ForbidSessionHolder o) {
+            return Long.valueOf(crawlerSession.getLastActiveTimeStamp())
+                    .compareTo(o.crawlerSession.getLastActiveTimeStamp());
         }
     }
 

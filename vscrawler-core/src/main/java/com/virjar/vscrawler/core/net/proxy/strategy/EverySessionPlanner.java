@@ -19,6 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/5/13.
+ * 
+ * @author virjar
+ * @since 0.0.1
  */
 @Slf4j
 public class EverySessionPlanner implements ProxyPlanner {

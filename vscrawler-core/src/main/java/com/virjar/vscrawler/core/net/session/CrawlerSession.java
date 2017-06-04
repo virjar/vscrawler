@@ -2,7 +2,6 @@ package com.virjar.vscrawler.core.net.session;
 
 import java.util.Map;
 
-import com.virjar.vscrawler.core.net.proxy.ProxyFeedBackDecorateHttpClientBuilder;
 import org.apache.http.client.CookieStore;
 import org.apache.http.conn.routing.HttpRoutePlanner;
 
@@ -15,6 +14,7 @@ import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
+import com.virjar.vscrawler.core.net.proxy.ProxyFeedBackDecorateHttpClientBuilder;
 import com.virjar.vscrawler.core.net.proxy.VSCrawlerRoutePlanner;
 import com.virjar.vscrawler.core.net.proxy.strategy.*;
 
@@ -131,6 +131,7 @@ public class CrawlerSession {
      * 清空session
      */
     public void destroy() {
+        log.debug("session销毁");
         AutoEventRegistry.getInstance().findEventDeclaring(SessionDestroyEvent.class).onSessionDestroy(this);
         cookieStore.clear();
     }

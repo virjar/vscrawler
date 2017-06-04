@@ -7,6 +7,7 @@ import com.virjar.vscrawler.core.net.user.User;
 
 /**
  * Created by virjar on 17/4/15.
+ * 
  * @author virjar
  * @since 0.0.1
  */
@@ -30,5 +31,6 @@ public interface LoginHandler {
      */
     boolean testLogin(CookieStore cookieStore, CrawlerHttpClient crawlerHttpClient);
 
-    void logout(User user,CookieStore cookieStore, CrawlerHttpClient crawlerHttpClient);
+    // TODO
+    void logout(User user, CookieStore cookieStore, CrawlerHttpClient crawlerHttpClient);
 }
