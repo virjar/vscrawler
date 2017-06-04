@@ -11,8 +11,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.virjar.vscrawler.core.util.SingtonObjectHolder;
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
@@ -27,7 +25,9 @@ import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
 import com.virjar.vscrawler.core.event.systemevent.FirstSeedPushEvent;
 import com.virjar.vscrawler.core.event.systemevent.NewSeedArrivalEvent;
 import com.virjar.vscrawler.core.util.PathResolver;
+import com.virjar.vscrawler.core.util.SingtonObjectHolder;
 import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,10 +63,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     // 所有正在处理的种子
     private Map<String, Seed> runningSeeds = Maps.newConcurrentMap();
     private volatile boolean isClosed = false;
-    private int cacheSize = 100;
-
-    // 学习je的具体使用方法之后,再优化
-    // private long cleanBatchSize = 100;
+    private int cacheSize;
 
     /**
      * 这个方法和pool必须在同一个线程里面
@@ -76,9 +73,10 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         archive();
     }
 
-    public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver) {
+    public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver, int cacheSize) {
         this.initSeedSource = initSeedSource;
         this.seedKeyResolver = seedKeyResolver;
+        this.cacheSize = cacheSize;
         // 配置数据库环境
         configEnv();
 

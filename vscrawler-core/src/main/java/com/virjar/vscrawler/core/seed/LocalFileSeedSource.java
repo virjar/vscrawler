@@ -3,10 +3,11 @@ package com.virjar.vscrawler.core.seed;
 import java.util.Collection;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.util.SingtonObjectHolder;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
-import org.apache.commons.lang3.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,7 +21,7 @@ public class LocalFileSeedSource implements InitSeedSource {
         Properties properties = SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties();
         String seedFilePath = properties.getProperty(VSCrawlerConstant.VSCRAWLER_INIT_SEED_FILE);
         if (StringUtils.isEmpty(seedFilePath)) {
-            log.info("没有配置初始");
+            log.info("没有配置初始种子");
         }
         return Lists.newArrayList();
     }

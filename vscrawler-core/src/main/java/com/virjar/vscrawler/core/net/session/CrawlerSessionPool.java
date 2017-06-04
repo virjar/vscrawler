@@ -166,7 +166,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 }
 
                 // 各种check
-                if (crawlerSession.isValid()) {
+                if (!crawlerSession.isValid()) {
                     crawlerSession.destroy();
                     continue;
                 }
@@ -229,11 +229,14 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
         @Override
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
+                lock.lock();
                 try {
                     empty.await();
                 } catch (InterruptedException e) {
                     log.warn("wait interrupted", e);
                     break;
+                } finally {
+                    lock.unlock();
                 }
                 int expected = coreSize - allSessions.size();
 

@@ -105,6 +105,8 @@ public class VSCrawlerBuilder {
      */
     private long sessionPoolMaxOnlineDuration = Long.MAX_VALUE;
 
+    private int seedManagerCacheSize = 1024;
+
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
     }
@@ -215,6 +217,11 @@ public class VSCrawlerBuilder {
         return this;
     }
 
+    public VSCrawlerBuilder setSeedManagerCacheSize(int seedManagerCacheSize) {
+        this.seedManagerCacheSize = seedManagerCacheSize;
+        return this;
+    }
+
     public VSCrawler build() {
 
         if (crawlerHttpClientGenerator == null) {
@@ -241,7 +248,8 @@ public class VSCrawlerBuilder {
             seedKeyResolver = new DefaultSeedKeyResolver();
         }
 
-        BerkeleyDBSeedManager berkeleyDBSeedManager = new BerkeleyDBSeedManager(initSeedSource, seedKeyResolver);
+        BerkeleyDBSeedManager berkeleyDBSeedManager = new BerkeleyDBSeedManager(initSeedSource, seedKeyResolver,
+                seedManagerCacheSize);
 
         if (processor == null) {
             processor = new PageDownLoadProcessor();

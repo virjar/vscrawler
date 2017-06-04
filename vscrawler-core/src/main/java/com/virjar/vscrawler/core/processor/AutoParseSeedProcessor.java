@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public abstract class AutoParseSeedProcessor implements SeedProcessor {
+    private InheritableThreadLocal<CrawlerSession> crawlerSessionInheritableThreadLocal = new InheritableThreadLocal<>();
+
     @Override
     public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
         URL url;
@@ -26,7 +28,12 @@ public abstract class AutoParseSeedProcessor implements SeedProcessor {
             seed.setIgnore(true);
             return;
         }
-        parse(seed, download(crawlerSession, url), crawlResult);
+        try {
+            crawlerSessionInheritableThreadLocal.set(crawlerSession);
+            parse(seed, download(crawlerSession, url), crawlResult);
+        } finally {
+            crawlerSessionInheritableThreadLocal.remove();
+        }
     }
 
     protected abstract void parse(Seed seed, String result, CrawlResult crawlResult);
@@ -40,5 +47,9 @@ public abstract class AutoParseSeedProcessor implements SeedProcessor {
      */
     protected String download(CrawlerSession crawlerSession, URL url) {
         return crawlerSession.getCrawlerHttpClient().get(url.toString());
+    }
+
+    public CrawlerSession getCrawlerSession() {
+        return crawlerSessionInheritableThreadLocal.get();
     }
 }

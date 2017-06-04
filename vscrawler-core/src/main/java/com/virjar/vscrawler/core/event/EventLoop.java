@@ -45,7 +45,7 @@ public class EventLoop implements CrawlerEndEvent {
          * allHandlers.get(event.getTopic()).size() > 0, "cannot find handle for event:{}", event.getTopic());
          */
         if (!allHandlers.containsKey(event.getTopic()) || allHandlers.get(event.getTopic()).size() < 0) {
-            log.warn("cannot find handle for event:{}", event.getTopic());
+            log.debug("cannot find handle for event:{}", event.getTopic());
             return;
         }
         if (event.isSync()) {
