@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.net.session;
+package com.virjar.vscrawler.core.net.proxy;
 
 import org.apache.http.impl.execchain.ClientExecChain;
 

@@ -1,13 +1,10 @@
 package com.virjar.vscrawler.core.net.session;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import com.virjar.vscrawler.core.net.proxy.ProxyFeedBackDecorateHttpClientBuilder;
 import org.apache.http.client.CookieStore;
 import org.apache.http.conn.routing.HttpRoutePlanner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -15,6 +12,7 @@ import com.virjar.dungproxy.client.httpclient.CrawlerHttpClient;
 import com.virjar.dungproxy.client.httpclient.conn.ProxyBindRoutPlanner;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
+import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
 import com.virjar.vscrawler.core.net.proxy.VSCrawlerRoutePlanner;
@@ -33,22 +31,19 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class CrawlerSession {
-    private static final Logger logger = LoggerFactory.getLogger(CrawlerSession.class);
-
-    private AtomicBoolean enable = new AtomicBoolean(false);
 
     @Getter
     private CookieStore cookieStore;
-
-    private AtomicInteger borrowNumber = new AtomicInteger(0);
 
     @Getter
     private CrawlerHttpClient crawlerHttpClient;
 
     @Getter
+    @Setter
     private long lastActiveTimeStamp = 0L;
 
     @Getter
+    @Setter
     private long initTimeStamp = 0L;
 
     @Getter
@@ -60,15 +55,16 @@ public class CrawlerSession {
 
     private IPPool ipPool;
 
+    private CrawlerSessionPool crawlerSessionPool;
+
     @Getter
     @Setter
     private boolean valid = true;
 
     private Map<String, Object> ext = Maps.newHashMap();
 
-
     public CrawlerSession(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
-            IPPool ipPool, ProxyPlanner proxyPlanner) {
+            IPPool ipPool, ProxyPlanner proxyPlanner, CrawlerSessionPool crawlerSessionPool) {
         ProxyFeedBackDecorateHttpClientBuilder proxyFeedBackDecorateHttpClientBuilder = new ProxyFeedBackDecorateHttpClientBuilder();
         this.crawlerHttpClient = crawlerHttpClientGenerator.gen(proxyFeedBackDecorateHttpClientBuilder);
         Preconditions.checkArgument(proxyFeedBackDecorateHttpClientBuilder.isBuild(),
@@ -76,7 +72,7 @@ public class CrawlerSession {
         this.proxyStrategy = proxyStrategy;
         this.ipPool = ipPool;
         this.proxyPlanner = proxyPlanner;
-
+        this.crawlerSessionPool = crawlerSessionPool;
         determineProxyPlanner();
         // 对代理IP策略进行路由
         decorateRoutePlanner(crawlerHttpClient);
@@ -85,13 +81,12 @@ public class CrawlerSession {
         AutoEventRegistry.getInstance().findEventDeclaring(SessionCreateEvent.class).onSessionCreateEvent(this);
     }
 
-
-    public Object getExtInfo(String key){
+    public Object getExtInfo(String key) {
         return ext.get(key);
     }
 
-    public void setExtInfo(String key,Object obj){
-        ext.put(key,obj);
+    public void setExtInfo(String key, Object obj) {
+        ext.put(key, obj);
     }
 
     private void determineProxyPlanner() {
@@ -132,32 +127,11 @@ public class CrawlerSession {
 
     }
 
-    public void recordBorrow() {
-        lastActiveTimeStamp = System.currentTimeMillis();
-        borrowNumber.incrementAndGet();
-    }
-
-    public int borrowTimes() {
-        return borrowNumber.get();
-    }
-
-    /**
-     * 归还session
-     *
-     */
-    public void feedback() {
-        borrowNumber.decrementAndGet();
-    }
-
     /**
      * 清空session
      */
-    public void destory() {
+    public void destroy() {
+        AutoEventRegistry.getInstance().findEventDeclaring(SessionDestroyEvent.class).onSessionDestroy(this);
         cookieStore.clear();
-        enable.set(false);
-    }
-
-    public boolean getEnable() {
-        return enable.get();
     }
 }

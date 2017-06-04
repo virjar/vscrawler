@@ -27,7 +27,7 @@ public class EverySessionPlanner implements ProxyPlanner {
             CrawlerSession crawlerSession) {
         HttpClientContext httpClientContext = HttpClientContext.adapt(context);
 
-        Proxy proxy = (Proxy) crawlerSession.getExt().get(VSCRAWLER_AVPROXY_KEY);
+        Proxy proxy = (Proxy) crawlerSession.getExtInfo(VSCRAWLER_AVPROXY_KEY);
         if (proxy == null) {
             String accessUrl = null;
             if (request instanceof HttpRequestWrapper || request instanceof HttpGet) {
@@ -41,7 +41,7 @@ public class EverySessionPlanner implements ProxyPlanner {
             if (proxy == null) {
                 return null;
             }
-            crawlerSession.getExt().put(VSCRAWLER_AVPROXY_KEY, proxy);
+            crawlerSession.setExtInfo(VSCRAWLER_AVPROXY_KEY, proxy);
         }
 
         return proxy;

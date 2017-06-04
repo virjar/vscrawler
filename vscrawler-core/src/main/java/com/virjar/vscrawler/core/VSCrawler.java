@@ -201,16 +201,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     private void processSeed(Seed seed) {
 
-        CrawlerSession session = null;
-        while (true) {
-            // 暂时死循环等待,对于一个完善产品不应该这样
-            // 从session池里面获取一个session,如果需要登录,那么得到的session必然是登录成功的
-            session = crawlerSessionPool.borrowOne();
-            if (session != null) {
-                break;
-            }
-            CommonUtil.sleep(500);
-        }
+        CrawlerSession session = crawlerSessionPool.borrowOne(-1);
         int originRetryCount = seed.getRetry();
         CrawlResult crawlResult = new CrawlResult();
         try {
@@ -224,8 +215,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             }
         } finally {
             // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
-            // 如果标记session失效,则会停止分发此session,同时异步触发登录逻辑
             berkeleyDBSeedManager.finish(seed);
+            crawlerSessionPool.recycle(session);
         }
         processResult(seed, crawlResult);
 
@@ -331,11 +322,11 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
     }
 
-   public  interface CrawlerStartCallBack {
+    public interface CrawlerStartCallBack {
         void onCrawlerStart(VSCrawler vsCrawler);
     }
 
-    public VSCrawler addCrawlerStartCallBack(CrawlerStartCallBack crawlerStartCallBack){
+    public VSCrawler addCrawlerStartCallBack(CrawlerStartCallBack crawlerStartCallBack) {
         allStartCallBacks.add(crawlerStartCallBack);
         return this;
     }

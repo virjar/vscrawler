@@ -1,8 +1,7 @@
-package com.virjar.vscrawler.core.net.session;
+package com.virjar.vscrawler.core.net.proxy;
 
 import java.io.IOException;
 
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import org.apache.http.HttpException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpExecutionAware;
@@ -12,6 +11,7 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.execchain.ClientExecChain;
 
 import com.virjar.vscrawler.core.net.proxy.Proxy;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 /**
  * Created by virjar on 17/5/13.

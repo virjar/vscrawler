@@ -6,7 +6,6 @@ import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.LoginHandler;
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,17 +45,18 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
         boolean loginSuccess = loginHandler.onLogin(user, crawlerSession.getCookieStore(),
                 crawlerSession.getCrawlerHttpClient());
         if (loginSuccess) {
-            crawlerSession.setExtInfo(VSCrawlerConstant.SEEION_POOL_USER_KEY, user);
+            UserUtil.setUser(crawlerSession, user);
         } else {
+            userManager.returnUser(user);
             log.warn("用户:{} 登录失败", user);
         }
     }
 
     @Override
     public void onSessionDestroy(CrawlerSession crawlerSession) {
-        Object extInfo = crawlerSession.getExtInfo(VSCrawlerConstant.SEEION_POOL_USER_KEY);
-        if (extInfo != null) {
-            // TODO
+        User user = UserUtil.getUser(crawlerSession);
+        if (user != null) {
+            userManager.returnUser(user);
         }
     }
 }

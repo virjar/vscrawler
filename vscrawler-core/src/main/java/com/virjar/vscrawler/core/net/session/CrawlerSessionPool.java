@@ -1,26 +1,22 @@
 package com.virjar.vscrawler.core.net.session;
 
-import java.util.Properties;
+import java.util.LinkedList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.commons.lang3.math.NumberUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.googlecode.aviator.AviatorEvaluator;
+import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
+import com.virjar.vscrawler.core.event.systemevent.SessionBorrowEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyStrategy;
-import com.virjar.vscrawler.core.util.SingtonObjectHolder;
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/4/15.<br/>
@@ -29,26 +25,20 @@ import com.virjar.vscrawler.core.util.VSCrawlerConstant;
  * @author virjar
  * @since 0.0.1
  */
-public class CrawlerSessionPool implements CrawlerConfigChangeEvent, CrawlerEndEvent {
-
-    private static final Logger logger = LoggerFactory.getLogger(CrawlerSessionPool.class);
+@Slf4j
+public class CrawlerSessionPool implements CrawlerEndEvent {
 
     private LinkedBlockingQueue<CrawlerSession> allSessions = new LinkedBlockingQueue<>();
 
-    private long maxIdle = 10;
+    private int maxSize = 10;
 
-    private long minIdle = 0;
-
-    private long reuseDuration = 60 * 60 * 1000;
-
-    private int maxOccurs = 1;
-
-    private int maxActive = 100;
+    private int coreSize = 0;
 
     private int initialSize = 0;
 
-    // 分发session最多等待时间
-    private long maxWait = -1L;
+    private long reuseDuration = 60 * 60 * 1000;
+
+    private long maxOnlineDuration = Long.MAX_VALUE;
 
     private CrawlerHttpClientGenerator crawlerHttpClientGenerator;
 
@@ -64,22 +54,22 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent, CrawlerEndE
     protected volatile boolean inited = false;
 
     private ReentrantLock lock = new ReentrantLock();
-    protected Condition notEmpty = lock.newCondition();
     protected Condition empty = lock.newCondition();
 
     private CreateSessionThread createSessionThread;
 
     public CrawlerSessionPool(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
-            IPPool ipPool, ProxyPlanner proxyPlanner) {
+            IPPool ipPool, ProxyPlanner proxyPlanner, int maxSize, int coreSize, int initialSize, long reuseDuration,
+            long maxOnlineDuration) {
         this.crawlerHttpClientGenerator = crawlerHttpClientGenerator;
         this.proxyStrategy = proxyStrategy;
         this.ipPool = ipPool;
         this.proxyPlanner = proxyPlanner;
-
-        // 注册事件监听,接收配置文件变更消息,下面两句比较巧妙
-        changeWithProperties(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
-        AutoEventRegistry.getInstance().registerObserver(this);
-
+        this.maxSize = maxSize;
+        this.coreSize = coreSize;
+        this.initialSize = initialSize;
+        this.reuseDuration = reuseDuration;
+        this.maxOnlineDuration = maxOnlineDuration;
     }
 
     public void init() {
@@ -98,17 +88,32 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent, CrawlerEndE
                 return;
             }
 
-            if (maxActive <= 0) {
-                throw new IllegalArgumentException("illegal maxActive " + maxActive);
+            if (maxSize < coreSize) {
+                throw new IllegalArgumentException("maxSize " + maxSize + "  must grater than coreSize " + coreSize);
             }
-
-            if (maxActive < minIdle) {
-                throw new IllegalArgumentException("illegal maxActive " + maxActive);
-            }
-
-            if (initialSize > maxActive) {
+            if (initialSize > maxSize) {
                 throw new IllegalArgumentException(
-                        "illegal initialSize " + this.initialSize + ", maxActive " + maxActive);
+                        "maxSize " + maxSize + "  must grater than initialSize " + initialSize);
+            }
+
+            if (reuseDuration < 0) {
+                reuseDuration = 0;
+            }
+
+            if (initialSize > 0) {
+                int totalTry = 0;
+                for (int i = 0; i < initialSize; i++) {
+                    totalTry++;
+                    CrawlerSession newSession = createNewSession();
+                    if (newSession == null) {
+                        i--;
+                    } else {
+                        allSessions.add(newSession);
+                    }
+                    if (totalTry > initialSize * 3) {
+                        throw new IllegalStateException("can not create session ,all session create failed");
+                    }
+                }
             }
 
             createSessionThread = new CreateSessionThread();
@@ -121,37 +126,69 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent, CrawlerEndE
 
     private CrawlerSession createNewSession() {
         CrawlerSession crawlerSession = new CrawlerSession(crawlerHttpClientGenerator, proxyStrategy, ipPool,
-                proxyPlanner);
+                proxyPlanner, this);
         AutoEventRegistry.getInstance().findEventDeclaring(SessionCreateEvent.class)
                 .onSessionCreateEvent(crawlerSession);
         if (crawlerSession.isValid()) {
+            crawlerSession.setInitTimeStamp(System.currentTimeMillis());
             return crawlerSession;
         }
         return null;
     }
 
+    public void recycle(CrawlerSession crawlerSession) {
+        if (allSessions.size() > maxSize || !crawlerSession.isValid()) {
+            crawlerSession.destroy();
+        } else {
+            allSessions.add(crawlerSession);
+        }
+    }
+
     public CrawlerSession borrowOne(long maxWaitMillis) {
         init();
         long lessTimeMillis = maxWaitMillis;
+        LinkedList<CrawlerSession> tempCrawlerSession = Lists.newLinkedList();
 
         // logger.info("当前会话池中,共有:{}个用户可用", allSessions.size());
-        for (;;) {
-            long startRequestTimeStamp = System.currentTimeMillis();
-            CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
-            if (crawlerSession == null && lessTimeMillis < 0) {
-                return null;
-            }
-            if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
-                crawlerSession = createNewSession();
-            }
-            lessTimeMillis = lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp);
-            if (crawlerSession == null) {
-                continue;
-            }
+        try {
+            for (;;) {
+                long startRequestTimeStamp = System.currentTimeMillis();
+                CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
+                if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
+                    crawlerSession = createNewSession();
+                }
+                if (crawlerSession == null && lessTimeMillis < 0 && maxWaitMillis > 0) {
+                    return null;
+                }
+                lessTimeMillis = lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp);
+                if (crawlerSession == null) {
+                    continue;
+                }
 
-            // 各种check
+                // 各种check
+                if (crawlerSession.isValid()) {
+                    crawlerSession.destroy();
+                    continue;
+                }
 
-            return crawlerSession;
+                // 单个session使用太频繁
+                if (System.currentTimeMillis() - crawlerSession.getLastActiveTimeStamp() < reuseDuration) {
+                    tempCrawlerSession.add(crawlerSession);
+                    continue;
+                }
+
+                // 单个session使用太久了
+                if (System.currentTimeMillis() - crawlerSession.getInitTimeStamp() > maxOnlineDuration) {
+                    crawlerSession.destroy();
+                    continue;
+                }
+
+                AutoEventRegistry.getInstance().findEventDeclaring(SessionBorrowEvent.class)
+                        .onSessionBorrow(crawlerSession);
+                return crawlerSession;
+            }
+        } finally {
+            allSessions.addAll(tempCrawlerSession);
         }
     }
 
@@ -163,7 +200,7 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent, CrawlerEndE
         }
 
         try {
-            if (allSessions.size() == 0) {
+            if (allSessions.size() < coreSize) {
                 empty.signal();
             }
             if (maxWait > 0) {
@@ -176,37 +213,6 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent, CrawlerEndE
         } finally {
             lock.unlock();
         }
-    }
-
-    private void changeWithProperties(Properties properties) {
-        maxActive = NumberUtils.toInt(
-                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_ACTIVE_USER)).toString(),
-                Integer.MAX_VALUE);
-        maxIdle = NumberUtils.toInt(
-                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_IDLE)).toString(),
-                150000);
-
-        reuseDuration = NumberUtils.toInt(
-                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_DURATION)).toString(),
-                3600000);
-        maxOccurs = NumberUtils.toInt(
-                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MAX_OCCURS)).toString(), 1);
-        minIdle = NumberUtils.toInt(
-                AviatorEvaluator.exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MIN_IDLE)).toString(),
-                10000);
-        int newThreadNumber = NumberUtils.toInt(AviatorEvaluator
-                .exec(properties.getProperty(VSCrawlerConstant.SESSION_POOL_MONTOR_THREAD_NUMBER)).toString(), 2);
-    }
-
-    /**
-     * 当配置信息变更过来的时候,会回调这里
-     * 
-     * @param oldProperties 旧配置文件内容
-     * @param newProperties 新配置文件内容
-     */
-    @Override
-    public void configChange(Properties oldProperties, Properties newProperties) {
-        changeWithProperties(newProperties);
     }
 
     @Override
@@ -222,7 +228,28 @@ public class CrawlerSessionPool implements CrawlerConfigChangeEvent, CrawlerEndE
 
         @Override
         public void run() {
-            super.run();
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    empty.await();
+                } catch (InterruptedException e) {
+                    log.warn("wait interrupted", e);
+                    break;
+                }
+                int expected = coreSize - allSessions.size();
+
+                for (int i = 0; i < expected * 2; i++) {
+                    CrawlerSession newSession = createNewSession();
+                    if (newSession != null) {
+                        allSessions.add(newSession);
+                    }
+                    if (allSessions.size() >= coreSize) {
+                        break;
+                    }
+                }
+                if (allSessions.size() < coreSize) {
+                    log.warn("many of sessions create failed,please check  your config");
+                }
+            }
         }
     }
 }

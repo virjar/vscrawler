@@ -80,6 +80,31 @@ public class VSCrawlerBuilder {
 
     private boolean loginOnSessionCreate = false;
 
+    /**
+     * session池,初始化大小
+     */
+    private int sessionPoolInitialSize = 0;
+
+    /**
+     * session池,核心大小
+     */
+    private int sessionPoolCoreSize = 5;
+
+    /**
+     * session池,最大大小
+     */
+    private int sessionPoolMaxSize = 30;
+
+    /**
+     * session池,重用时间间隔,太短了可能被封
+     */
+    private long sessionPoolReuseDuration = 0L;
+
+    /**
+     * session池,seesion最大在线时长,太长了则可能封
+     */
+    private long sessionPoolMaxOnlineDuration = Long.MAX_VALUE;
+
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
     }
@@ -144,6 +169,52 @@ public class VSCrawlerBuilder {
         return this;
     }
 
+    public VSCrawlerBuilder setSessionPoolCoreSize(int sessionPoolCoreSize) {
+        this.sessionPoolCoreSize = sessionPoolCoreSize;
+
+        if (sessionPoolMaxSize < sessionPoolCoreSize) {
+            sessionPoolMaxSize = sessionPoolCoreSize;
+        }
+        if (sessionPoolInitialSize > sessionPoolMaxSize) {
+            sessionPoolInitialSize = sessionPoolMaxSize;
+        }
+        return this;
+    }
+
+    public VSCrawlerBuilder setSessionPoolInitialSize(int sessionPoolInitialSize) {
+        this.sessionPoolInitialSize = sessionPoolInitialSize;
+
+        if (sessionPoolInitialSize > sessionPoolMaxSize) {
+            sessionPoolMaxSize = sessionPoolInitialSize;
+        }
+        if (sessionPoolCoreSize > sessionPoolMaxSize) {
+            sessionPoolCoreSize = sessionPoolMaxSize;
+        }
+        return this;
+    }
+
+    public VSCrawlerBuilder setSessionPoolMaxOnlineDuration(long sessionPoolMaxOnlineDuration) {
+        this.sessionPoolMaxOnlineDuration = sessionPoolMaxOnlineDuration;
+        return this;
+    }
+
+    public VSCrawlerBuilder setSessionPoolMaxSize(int sessionPoolMaxSize) {
+        this.sessionPoolMaxSize = sessionPoolMaxSize;
+
+        if (sessionPoolCoreSize > sessionPoolMaxSize) {
+            sessionPoolCoreSize = sessionPoolMaxSize;
+        }
+        if (sessionPoolInitialSize > sessionPoolMaxSize) {
+            sessionPoolInitialSize = sessionPoolMaxSize;
+        }
+        return this;
+    }
+
+    public VSCrawlerBuilder setSessionPoolReuseDuration(long sessionPoolReuseDuration) {
+        this.sessionPoolReuseDuration = sessionPoolReuseDuration;
+        return this;
+    }
+
     public VSCrawler build() {
 
         if (crawlerHttpClientGenerator == null) {
@@ -159,7 +230,8 @@ public class VSCrawlerBuilder {
         }
 
         CrawlerSessionPool crawlerSessionPool = new CrawlerSessionPool(crawlerHttpClientGenerator, proxyStrategy,
-                ipPool, proxyPlanner);
+                ipPool, proxyPlanner, sessionPoolMaxSize, sessionPoolCoreSize, sessionPoolInitialSize,
+                sessionPoolReuseDuration, sessionPoolMaxOnlineDuration);
 
         if (initSeedSource == null) {
             initSeedSource = new LocalFileSeedSource();
