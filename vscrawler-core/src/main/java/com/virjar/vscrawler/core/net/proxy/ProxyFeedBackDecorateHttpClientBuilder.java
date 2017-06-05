@@ -20,7 +20,7 @@ public class ProxyFeedBackDecorateHttpClientBuilder extends CrawlerHttpClientBui
     }
 
     @Override
-    public CrawlerHttpClient build() {
+    public final CrawlerHttpClient build() {
         build = true;
         return super.build();
     }

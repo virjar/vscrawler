@@ -150,6 +150,12 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
         if (!threadPool.isShutdown()) {
             threadPool.shutdown();
+            try {
+                // 如果是主动停止爬虫,那么等待10分钟,等待爬虫任务执行结束
+                threadPool.awaitTermination(10, TimeUnit.MINUTES);
+            } catch (InterruptedException e) {
+                log.error("crawler shop wait failed");
+            }
         }
         stopCrawler();// 直接在外部终止爬虫,这里可能调两次
         log.info("爬虫结束");
@@ -296,6 +302,13 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
         // 一般请求请正常停止程序,关机拦截这是挽救方案,并不一定可以完整的实现收尾方案
         Runtime.getRuntime().addShutdownHook(new ResourceCleanHookThread());
+        System.err.println("################################################");
+        System.err.println("##############     VSCrawler      ##############");
+        System.err.println("##############       0.0.1        ##############");
+        System.err.println("############## 你有一个有意思的灵魂 ##############");
+        System.err.println("################################################");
+        System.err.println("##############       virjar       ##############");
+        System.err.println("################################################");
 
     }
 
