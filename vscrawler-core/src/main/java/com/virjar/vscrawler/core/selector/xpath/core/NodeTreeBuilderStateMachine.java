@@ -8,7 +8,7 @@ package com.virjar.vscrawler.core.selector.xpath.core;
  * License.
  */
 
-import com.virjar.vscrawler.core.selector.xpath.model.Node;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
 import com.virjar.vscrawler.core.selector.xpath.util.EmMap;
 
@@ -36,7 +36,7 @@ public class NodeTreeBuilderStateMachine {
                 while (stateMachine.cur < xpath.length) {
                     if (!(xpath[stateMachine.cur] == '/' || xpath[stateMachine.cur] == '.')) {
                         stateMachine.state = AXIS;// 轴只会有一次?,xpath标准应该支持多重的轴?
-                        Node xn = new Node();
+                        XpathNode xn = new XpathNode();
                         stateMachine.context.getXpathTr().add(xn);
                         xn.setScopeEm(EmMap.getInstance().scopeEmMap.get(stateMachine.accum.toString()));
                         stateMachine.accum = new StringBuilder();
@@ -122,8 +122,8 @@ public class NodeTreeBuilderStateMachine {
     /**
      * 根据谓语字符串初步生成谓语体
      * 
-     * @param pre
-     * @return
+     * @param pre 谓语文本
+     * @return 谓语对象
      */
     public Predicate genPredicate(String pre) {
         StringBuilder op = new StringBuilder();

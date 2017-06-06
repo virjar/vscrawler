@@ -8,63 +8,59 @@ package com.virjar.vscrawler.core.selector.xpath.core;
  * License.
  */
 
-import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.xpath.exception.NoSuchAxisException;
-import com.virjar.vscrawler.core.selector.xpath.exception.NoSuchFunctionException;
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
-import com.virjar.vscrawler.core.selector.xpath.model.Node;
 import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 import com.virjar.vscrawler.core.selector.xpath.util.CommonUtil;
 import com.virjar.vscrawler.core.selector.xpath.util.ScopeEm;
 
+import lombok.Getter;
+
 /**
  * @author github.com/zhegexiaohuozi [seimimaster@gmail.com]
- * @since 14-3-12
+ * @author virjar
+ * @since 0.0.1
  */
 public class XpathEvaluator {
-    private Map<String, Method> emFuncs;
-    private Map<String, Method> axisFuncs;
+    private List<List<XpathNode>> xpathNodes = Lists.newLinkedList();
+    @Getter
+    private String originXpath;
+    private static final Splitter combineXpathSplitter = Splitter.on("|").omitEmptyStrings().trimResults();
 
-    public XpathEvaluator() {
-        emFuncs = new HashMap<String, Method>();
-        axisFuncs = new HashMap<String, Method>();
-        for (Method m : Functions.class.getDeclaredMethods()) {
-            emFuncs.put(renderFuncKey(m.getName(), m.getParameterTypes()), m);
+    private XpathEvaluator(String xpathStr) {
+        originXpath = xpathStr;
+        for (String sampleXpath : combineXpathSplitter.split(xpathStr)) {
+            xpathNodes.add(getXpathNodeTree(sampleXpath));
         }
-        for (Method m : AxisSelector.class.getDeclaredMethods()) {
-            axisFuncs.put(renderFuncKey(m.getName(), m.getParameterTypes()), m);
-        }
+    }
+
+    public static XpathEvaluator compile(String xpath) {
+        return new XpathEvaluator(xpath);
     }
 
     /**
      * xpath解析器的总入口，同时预处理，如‘|’
      *
-     * @param xpath
      * @param root
      * @return
      */
-    public List<JXNode> xpathParser(String xpath, Elements root) throws NoSuchAxisException, NoSuchFunctionException {
-        if (xpath.contains("|")) {
-            List<JXNode> rs = new LinkedList<JXNode>();
-            String[] chiXpaths = xpath.split("\\|");
-            for (String chiXp : chiXpaths) {
-                if (chiXp.length() > 0) {
-                    rs.addAll(evaluate(chiXp.trim(), root));
-                }
-            }
-            return rs;
-        } else {
-            return evaluate(xpath, root);
+    public List<JXNode> xpathSelect(Elements root) {
+        List<JXNode> rs = Lists.newLinkedList();
+        for (List<XpathNode> chiXp : xpathNodes) {
+            rs.addAll(evaluate(chiXp, root));
         }
+        return rs;
+
     }
 
     /**
@@ -73,7 +69,7 @@ public class XpathEvaluator {
      * @param xpath
      * @return
      */
-    public List<Node> getXpathNodeTree(String xpath) {
+    public List<XpathNode> getXpathNodeTree(String xpath) {
         char[] chars = xpath.toCharArray();
         NodeTreeBuilderStateMachine st = new NodeTreeBuilderStateMachine();
         while (st.state != NodeTreeBuilderStateMachine.BuilderState.END) {
@@ -85,17 +81,17 @@ public class XpathEvaluator {
     /**
      * 根据xpath求出结果
      *
-     * @param xpath
      * @param root
      * @return
      */
-    public List<JXNode> evaluate(String xpath, Elements root) throws NoSuchAxisException, NoSuchFunctionException {
+    private List<JXNode> evaluate(List<XpathNode> simpleNodes, Elements root) {
         List<JXNode> res = new LinkedList<JXNode>();
         Elements context = root;
-        List<Node> xpathNodes = getXpathNodeTree(xpath);
-        for (int i = 0; i < xpathNodes.size(); i++) {
-            Node n = xpathNodes.get(i);
+        for (int i = 0; i < simpleNodes.size(); i++) {
+            XpathNode n = simpleNodes.get(i);
             LinkedList<Element> contextTmp = new LinkedList<Element>();
+
+            // 递归查找
             if (n.getScopeEm() == ScopeEm.RECURSIVE || n.getScopeEm() == ScopeEm.CURREC) {
                 if (n.getTagName().startsWith("@")) {
                     for (Element e : context) {
@@ -121,6 +117,8 @@ public class XpathEvaluator {
                             }
                         }
                     }
+                    // 这里是抽取动作,应该结束才对
+
                 } else if (n.getTagName().endsWith("()")) {
                     // 递归执行方法默认只支持text()
                     res.add(JXNode.t(context.text()));
@@ -154,7 +152,10 @@ public class XpathEvaluator {
                         }
                     }
                 } else if (n.getTagName().endsWith("()")) {
-                    res = (List<JXNode>) callFunc(n.getTagName().substring(0, n.getTagName().length() - 2), context);
+                    // TODO 函数是否存在的check
+                    res = FunctionEnv.getSelectFunction(n.getTagName().substring(0, n.getTagName().length() - 2))
+                            .call(context);
+                    // res = (List<JXNode>) callFunc(n.getTagName().substring(0, n.getTagName().length() - 2), context);
                 } else {
                     for (Element e : context) {
                         Elements filterScope = e.children();
@@ -184,13 +185,13 @@ public class XpathEvaluator {
      * 元素过滤器
      *
      * @param e
-     * @param node
+     * @param xpathNode
      * @return
      */
-    public Element filter(Element e, Node node) throws NoSuchFunctionException, NoSuchAxisException {
-        if (node.getTagName().equals("*") || node.getTagName().equals(e.nodeName())) {
-            if (node.getPredicate() != null && StringUtils.isNotBlank(node.getPredicate().getValue())) {
-                Predicate p = node.getPredicate();
+    public Element filter(Element e, XpathNode xpathNode) {
+        if (xpathNode.getTagName().equals("*") || xpathNode.getTagName().equals(e.nodeName())) {
+            if (xpathNode.getPredicate() != null && StringUtils.isNotBlank(xpathNode.getPredicate().getValue())) {
+                Predicate p = xpathNode.getPredicate();
                 if (p.getOpEm() == null) {
                     if (p.getValue().matches("\\d+") && getElIndex(e) == Integer.parseInt(p.getValue())) {
                         return e;
@@ -223,7 +224,7 @@ public class XpathEvaluator {
                         // 操作符左边不是函数、属性默认就是xpath表达式了
                         List<Element> eltmp = new LinkedList<Element>();
                         eltmp.add(e);
-                        List<JXNode> rstmp = evaluate(p.getLeft(), new Elements(eltmp));
+                        List<JXNode> rstmp = XpathEvaluator.compile(p.getLeft()).xpathSelect(new Elements(eltmp));
                         if ((Boolean) p.getOpEm().excute(StringUtils.join(rstmp, ""), p.getRight())) {
                             return e;
                         }
@@ -244,14 +245,15 @@ public class XpathEvaluator {
      * @return
      * @throws NoSuchAxisException
      */
-    public Elements getAxisScopeEls(String axis, Element e) throws NoSuchAxisException {
-        try {
-            String functionName = CommonUtil.getJMethodNameFromStr(axis);
-            Method axisSelector = axisFuncs.get(renderFuncKey(functionName, e.getClass()));
-            return (Elements) axisSelector.invoke(SingletonProducer.getInstance().getAxisSelector(), e);
-        } catch (Exception e1) {
-            throw new NoSuchAxisException("this axis is not supported,plase use other instead of '" + axis + "'");
-        }
+    public Elements getAxisScopeEls(String axis, Element e) {
+        // try {
+        // String functionName = CommonUtil.getJMethodNameFromStr(axis);
+        // Method axisSelector = axisFuncs.get(renderFuncKey(functionName, e.getClass()));
+        // return (Elements) axisSelector.invoke(FunctionEnv.getInstance().getAxisSelector(), e);
+        // } catch (Exception e1) {
+        // throw new NoSuchAxisException("this axis is not supported,plase use other instead of '" + axis + "'");
+        // }
+        return FunctionEnv.getAxisFunction(axis).call(e);
     }
 
     /**
@@ -260,15 +262,17 @@ public class XpathEvaluator {
      * @param funcname
      * @param context
      * @return
-     * @throws NoSuchFunctionException
+     * @deprecated
      */
-    public Object callFunc(String funcname, Elements context) throws NoSuchFunctionException {
-        try {
-            Method function = emFuncs.get(renderFuncKey(funcname, context.getClass()));
-            return function.invoke(SingletonProducer.getInstance().getFunctions(), context);
-        } catch (Exception e) {
-            throw new NoSuchFunctionException("This function is not supported");
-        }
+    public Object callFunc(String funcname, Elements context) {
+
+        // try {
+        // Method function = emFuncs.get(renderFuncKey(funcname, context.getClass()));
+        // return function.invoke(FunctionEnv.getInstance().getFunctions(), context);
+        // } catch (Exception e) {
+        // throw new NoSuchFunctionException("This function is not supported");
+        // }
+        return FunctionEnv.getSelectFunction(funcname).call(context);
     }
 
     /**
@@ -277,15 +281,15 @@ public class XpathEvaluator {
      * @param funcname
      * @param el
      * @return
-     * @throws NoSuchFunctionException
      */
-    public Object callFilterFunc(String funcname, Element el) throws NoSuchFunctionException {
-        try {
-            Method function = emFuncs.get(renderFuncKey(funcname, el.getClass()));
-            return function.invoke(SingletonProducer.getInstance().getFunctions(), el);
-        } catch (Exception e) {
-            throw new NoSuchFunctionException("This function is not supported");
-        }
+    public Object callFilterFunc(String funcname, Element el) {
+        // try {
+        // Method function = emFuncs.get(renderFuncKey(funcname, el.getClass()));
+        // return function.invoke(FunctionEnv.getInstance().getFunctions(), el);
+        // } catch (Exception e) {
+        // throw new NoSuchFunctionException("This function is not supported");
+        // }
+        return FunctionEnv.getFilterFunction(funcname).call(el);
     }
 
     public int getElIndex(Element e) {

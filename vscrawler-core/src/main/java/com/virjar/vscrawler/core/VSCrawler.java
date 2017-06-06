@@ -93,6 +93,18 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
             log.info("爬虫停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent");
             AutoEventRegistry.getInstance().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd();
+            System.out.flush();//刷新系统buffer,避免影响队形
+            synchronized (System.out) {
+                System.err.println("                      江城子 . 程序员之歌");
+                System.err.println("");
+                System.err.println("                  十年生死两茫茫，写程序，到天亮。");
+                System.err.println("                      千行代码，Bug何处藏。");
+                System.err.println("                  纵使上线又怎样，朝令改，夕断肠。");
+                System.err.println("");
+                System.err.println("                  领导每天新想法，天天改，日日忙。");
+                System.err.println("                      相顾无言，惟有泪千行。");
+                System.err.println("                  每晚灯火阑珊处，夜难寐，加班狂。");
+            }
         } else {
             log.info("爬虫已经停止,不需要发生爬虫停止事件消息");
         }
@@ -302,7 +314,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
         // 一般请求请正常停止程序,关机拦截这是挽救方案,并不一定可以完整的实现收尾工作
         Runtime.getRuntime().addShutdownHook(new ResourceCleanHookThread());
-        synchronized (System.out) {//血可流头可断,队形不能乱
+        synchronized (System.out) {// 血可流头可断,队形不能乱
             System.err.println("################################################");
             System.err.println("##############     VSCrawler      ##############");
             System.err.println("##############       0.0.1        ##############");

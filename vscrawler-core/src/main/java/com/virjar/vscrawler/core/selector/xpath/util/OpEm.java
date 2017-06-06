@@ -1,162 +1,159 @@
 package com.virjar.vscrawler.core.selector.xpath.util;
+
 /*
-   Copyright 2014 Wang Haomiao<et.tw@163.com>
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+ * Copyright 2014 Wang Haomiao<et.tw@163.com> Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and limitations under the
+ * License.
  */
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * 操作符
+ * 
  * @author github.com/zhegexiaohuozi [seimimaster@gmail.com]
  * @since 14-3-7
  */
 public enum OpEm {
-    PLUS("+"){
+    PLUS("+") {
         @Override
-        public Object excute(String left,String right) {
+        public Object excute(String left, String right) {
             int li = 0;
-            if (StringUtils.isNotBlank(left)){
+            if (StringUtils.isNotBlank(left)) {
                 li = Integer.parseInt(left);
             }
             int ri = 0;
-            if (StringUtils.isNotBlank(right)){
-                ri=Integer.parseInt(right);
+            if (StringUtils.isNotBlank(right)) {
+                ri = Integer.parseInt(right);
             }
             return li + ri;
         }
     },
-    MINUS("-"){
+    MINUS("-") {
         @Override
         public Object excute(String left, String right) {
             int li = 0;
-            if (StringUtils.isNotBlank(left)){
+            if (StringUtils.isNotBlank(left)) {
                 li = Integer.parseInt(left);
             }
             int ri = 0;
-            if (StringUtils.isNotBlank(right)){
-                ri=Integer.parseInt(right);
+            if (StringUtils.isNotBlank(right)) {
+                ri = Integer.parseInt(right);
             }
             return li - ri;
         }
     },
-    EQ("="){
+    EQ("=") {
         @Override
         public Object excute(String left, String right) {
             return left.equals(right);
         }
     },
-    NE("!="){
+    NE("!=") {
         @Override
         public Object excute(String left, String right) {
             return !left.equals(right);
         }
     },
-    GT(">"){
+    GT(">") {
         @Override
         public Object excute(String left, String right) {
             int li = 0;
-            if (StringUtils.isNotBlank(left)){
+            if (StringUtils.isNotBlank(left)) {
                 li = Integer.parseInt(left);
             }
             int ri = 0;
-            if (StringUtils.isNotBlank(right)){
-                ri=Integer.parseInt(right);
+            if (StringUtils.isNotBlank(right)) {
+                ri = Integer.parseInt(right);
             }
             return li > ri;
         }
     },
-    LT("<"){
+    LT("<") {
         @Override
         public Object excute(String left, String right) {
             int li = 0;
-            if (StringUtils.isNotBlank(left)){
+            if (StringUtils.isNotBlank(left)) {
                 li = Integer.parseInt(left);
             }
             int ri = 0;
-            if (StringUtils.isNotBlank(right)){
-                ri=Integer.parseInt(right);
+            if (StringUtils.isNotBlank(right)) {
+                ri = Integer.parseInt(right);
             }
             return li < ri;
         }
     },
-    GE(">="){
+    GE(">=") {
         @Override
         public Object excute(String left, String right) {
             int li = 0;
-            if (StringUtils.isNotBlank(left)){
+            if (StringUtils.isNotBlank(left)) {
                 li = Integer.parseInt(left);
             }
             int ri = 0;
-            if (StringUtils.isNotBlank(right)){
-                ri=Integer.parseInt(right);
+            if (StringUtils.isNotBlank(right)) {
+                ri = Integer.parseInt(right);
             }
             return li >= ri;
         }
     },
-    LE("<="){
+    LE("<=") {
         @Override
         public Object excute(String left, String right) {
             int li = 0;
-            if (StringUtils.isNotBlank(left)){
+            if (StringUtils.isNotBlank(left)) {
                 li = Integer.parseInt(left);
             }
             int ri = 0;
-            if (StringUtils.isNotBlank(right)){
-                ri=Integer.parseInt(right);
+            if (StringUtils.isNotBlank(right)) {
+                ri = Integer.parseInt(right);
             }
             return li <= ri;
         }
     },
-    STARTWITH("^="){
+    STARTWITH("^=") {
         @Override
         public Object excute(String left, String right) {
             return left.startsWith(right);
         }
     },
-    ENDWITH("$="){
+    ENDWITH("$=") {
         @Override
         public Object excute(String left, String right) {
             return left.endsWith(right);
         }
     },
-    CONTAIN("*="){
+    CONTAIN("*=") {
         @Override
         public Object excute(String left, String right) {
             return left.contains(right);
         }
     },
-    REGEX("~="){
+    REGEX("~=") {
         @Override
         public Object excute(String left, String right) {
             return left.matches(right);
         }
     },
-    NOTMATCH("!~"){
+    NOTMATCH("!~") {
         @Override
         public Object excute(String left, String right) {
             return !left.matches(right);
         }
     };
     private String val;
-    private OpEm(String type){
+
+    private OpEm(String type) {
         this.val = type;
     }
+
     public String val() {
         return this.val;
     }
 
-    public Object excute(String left,String right){
+    public Object excute(String left, String right) {
         return null;
     }
 }

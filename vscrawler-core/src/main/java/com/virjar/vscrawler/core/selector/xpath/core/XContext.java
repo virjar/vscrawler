@@ -11,7 +11,7 @@ package com.virjar.vscrawler.core.selector.xpath.core;
 import java.util.LinkedList;
 
 import com.google.common.collect.Lists;
-import com.virjar.vscrawler.core.selector.xpath.model.Node;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 
 import lombok.Getter;
 
@@ -21,7 +21,7 @@ import lombok.Getter;
  */
 public class XContext {
     @Getter
-    private LinkedList<Node> xpathTr = Lists.newLinkedList();
+    private LinkedList<XpathNode> xpathTr = Lists.newLinkedList();
 
     public XContext() {
     }
