@@ -1,18 +1,11 @@
 package com.virjar.vscrawler.core.selector.xpath.core;
 /*
-   Copyright 2014 Wang Haomiao<et.tw@163.com>
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+ * Copyright 2014 Wang Haomiao<et.tw@163.com> Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and limitations under the
+ * License.
  */
 
 import java.lang.reflect.Method;
@@ -25,10 +18,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.virjar.vscrawler.core.selector.xpath.core.AxisSelector;
-import com.virjar.vscrawler.core.selector.xpath.core.Functions;
-import com.virjar.vscrawler.core.selector.xpath.core.NodeTreeBuilderStateMachine;
-import com.virjar.vscrawler.core.selector.xpath.core.SingletonProducer;
 import com.virjar.vscrawler.core.selector.xpath.exception.NoSuchAxisException;
 import com.virjar.vscrawler.core.selector.xpath.exception.NoSuchFunctionException;
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
@@ -85,11 +74,12 @@ public class XpathEvaluator {
      * @return
      */
     public List<Node> getXpathNodeTree(String xpath) {
+        char[] chars = xpath.toCharArray();
         NodeTreeBuilderStateMachine st = new NodeTreeBuilderStateMachine();
         while (st.state != NodeTreeBuilderStateMachine.BuilderState.END) {
-            st.state.parser(st, xpath.toCharArray());
+            st.state.parser(st, chars);
         }
-        return st.context.xpathTr;
+        return st.context.getXpathTr();
     }
 
     /**
@@ -109,7 +99,7 @@ public class XpathEvaluator {
             if (n.getScopeEm() == ScopeEm.RECURSIVE || n.getScopeEm() == ScopeEm.CURREC) {
                 if (n.getTagName().startsWith("@")) {
                     for (Element e : context) {
-                        //处理上下文自身节点
+                        // 处理上下文自身节点
                         String key = n.getTagName().substring(1);
                         if (key.equals("*")) {
                             res.add(JXNode.t(e.attributes().toString()));
@@ -119,7 +109,7 @@ public class XpathEvaluator {
                                 res.add(JXNode.t(value));
                             }
                         }
-                        //处理上下文子代节点
+                        // 处理上下文子代节点
                         for (Element dep : e.getAllElements()) {
                             if (key.equals("*")) {
                                 res.add(JXNode.t(dep.attributes().toString()));
@@ -132,7 +122,7 @@ public class XpathEvaluator {
                         }
                     }
                 } else if (n.getTagName().endsWith("()")) {
-                    //递归执行方法默认只支持text()
+                    // 递归执行方法默认只支持text()
                     res.add(JXNode.t(context.text()));
                 } else {
                     Elements searchRes = context.select(n.getTagName());
@@ -204,18 +194,23 @@ public class XpathEvaluator {
                 if (p.getOpEm() == null) {
                     if (p.getValue().matches("\\d+") && getElIndex(e) == Integer.parseInt(p.getValue())) {
                         return e;
-                    } else if (p.getValue().endsWith("()") && (Boolean) callFilterFunc(p.getValue().substring(0, p.getValue().length() - 2), e)) {
+                    } else if (p.getValue().endsWith("()")
+                            && (Boolean) callFilterFunc(p.getValue().substring(0, p.getValue().length() - 2), e)) {
                         return e;
-                    } else if (p.getValue().startsWith("@") && e.hasAttr(StringUtils.substringAfter(p.getValue(), "@"))) {
+                    } else if (p.getValue().startsWith("@")
+                            && e.hasAttr(StringUtils.substringAfter(p.getValue(), "@"))) {
                         return e;
                     }
-                    //todo p.value ~= contains(./@href,'renren.com')
+                    // todo p.value ~= contains(./@href,'renren.com')
                 } else {
                     if (p.getLeft().matches("[^/]+\\(\\)")) {
-                        Object filterRes = p.getOpEm().excute(callFilterFunc(p.getLeft().substring(0, p.getLeft().length() - 2), e).toString(), p.getRight());
+                        Object filterRes = p.getOpEm().excute(
+                                callFilterFunc(p.getLeft().substring(0, p.getLeft().length() - 2), e).toString(),
+                                p.getRight());
                         if (filterRes instanceof Boolean && (Boolean) filterRes) {
                             return e;
-                        } else if (filterRes instanceof Integer && e.siblingIndex() == Integer.parseInt(filterRes.toString())) {
+                        } else if (filterRes instanceof Integer
+                                && e.siblingIndex() == Integer.parseInt(filterRes.toString())) {
                             return e;
                         }
                     } else if (p.getLeft().startsWith("@")) {
