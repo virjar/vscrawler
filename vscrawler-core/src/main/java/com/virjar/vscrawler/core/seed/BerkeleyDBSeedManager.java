@@ -70,7 +70,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
      */
     public void init() {
         // 移植游标
-        archive();
+        //archive(); //大量数据会导致程序很慢,而且似乎没有意义
     }
 
     public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver, int cacheSize) {
