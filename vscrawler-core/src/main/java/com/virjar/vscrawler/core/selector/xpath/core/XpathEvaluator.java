@@ -10,6 +10,8 @@ package com.virjar.vscrawler.core.selector.xpath.core;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
@@ -17,11 +19,10 @@ import org.jsoup.select.Elements;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import com.virjar.vscrawler.core.selector.xpath.exception.NoSuchAxisException;
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
 import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
-import com.virjar.vscrawler.core.selector.xpath.util.CommonUtil;
+import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 import com.virjar.vscrawler.core.selector.xpath.util.ScopeEm;
 
 import lombok.Getter;
@@ -31,6 +32,7 @@ import lombok.Getter;
  * @author virjar
  * @since 0.0.1
  */
+@Deprecated
 public class XpathEvaluator {
     private List<List<XpathNode>> xpathNodes = Lists.newLinkedList();
     @Getter
@@ -72,10 +74,10 @@ public class XpathEvaluator {
     public List<XpathNode> getXpathNodeTree(String xpath) {
         char[] chars = xpath.toCharArray();
         NodeTreeBuilderStateMachine st = new NodeTreeBuilderStateMachine();
-        while (st.state != NodeTreeBuilderStateMachine.BuilderState.END) {
-            st.state.parser(st, chars);
+        while (st.getState() != NodeTreeBuilderStateMachine.BuilderState.END) {
+            st.getState().parser(st, chars);
         }
-        return st.context.getXpathTr();
+        return st.context.getOrXpathNodes();
     }
 
     /**
@@ -151,11 +153,11 @@ public class XpathEvaluator {
                             }
                         }
                     }
+                    return res;// 抽取就应该结束了?
                 } else if (n.getTagName().endsWith("()")) {
                     // TODO 函数是否存在的check
-                    res = FunctionEnv.getSelectFunction(n.getTagName().substring(0, n.getTagName().length() - 2))
+                    return FunctionEnv.getSelectFunction(n.getTagName().substring(0, n.getTagName().length() - 2))
                             .call(context);
-                    // res = (List<JXNode>) callFunc(n.getTagName().substring(0, n.getTagName().length() - 2), context);
                 } else {
                     for (Element e : context) {
                         Elements filterScope = e.children();
@@ -189,51 +191,53 @@ public class XpathEvaluator {
      * @return
      */
     public Element filter(Element e, XpathNode xpathNode) {
-        if (xpathNode.getTagName().equals("*") || xpathNode.getTagName().equals(e.nodeName())) {
-            if (xpathNode.getPredicate() != null && StringUtils.isNotBlank(xpathNode.getPredicate().getValue())) {
-                Predicate p = xpathNode.getPredicate();
-                if (p.getOpEm() == null) {
-                    if (p.getValue().matches("\\d+") && getElIndex(e) == Integer.parseInt(p.getValue())) {
-                        return e;
-                    } else if (p.getValue().endsWith("()")
-                            && (Boolean) callFilterFunc(p.getValue().substring(0, p.getValue().length() - 2), e)) {
-                        return e;
-                    } else if (p.getValue().startsWith("@")
-                            && e.hasAttr(StringUtils.substringAfter(p.getValue(), "@"))) {
-                        return e;
-                    }
-                    // todo p.value ~= contains(./@href,'renren.com')
-                } else {
-                    if (p.getLeft().matches("[^/]+\\(\\)")) {
-                        Object filterRes = p.getOpEm().excute(
-                                callFilterFunc(p.getLeft().substring(0, p.getLeft().length() - 2), e).toString(),
-                                p.getRight());
-                        if (filterRes instanceof Boolean && (Boolean) filterRes) {
-                            return e;
-                        } else if (filterRes instanceof Integer
-                                && e.siblingIndex() == Integer.parseInt(filterRes.toString())) {
-                            return e;
-                        }
-                    } else if (p.getLeft().startsWith("@")) {
-                        String lValue = e.attr(p.getLeft().substring(1));
-                        Object filterRes = p.getOpEm().excute(lValue, p.getRight());
-                        if ((Boolean) filterRes) {
-                            return e;
-                        }
-                    } else {
-                        // 操作符左边不是函数、属性默认就是xpath表达式了
-                        List<Element> eltmp = new LinkedList<Element>();
-                        eltmp.add(e);
-                        List<JXNode> rstmp = XpathEvaluator.compile(p.getLeft()).xpathSelect(new Elements(eltmp));
-                        if ((Boolean) p.getOpEm().excute(StringUtils.join(rstmp, ""), p.getRight())) {
-                            return e;
-                        }
-                    }
-                }
-            } else {
+        if (!StringUtils.equals("*", xpathNode.getTagName())
+                || !StringUtils.equals(xpathNode.getTagName(), e.nodeName())) {
+            return null;//// meta[@charset] meta必须匹配
+        }
+        if (xpathNode.getPredicate() == null || StringUtils.isEmpty(xpathNode.getPredicate().getValue())) {
+            return e;//
+        }
+
+        // 存在谓语
+        Predicate p = xpathNode.getPredicate();
+        if (p.getOpEm() == null) {// 没有操作符
+            if (p.getValue().matches("\\d+") && getElIndex(e) == Integer.parseInt(p.getValue())) {
+                return e;// 数字当偏移处理
+            } else if (p.getValue().endsWith("()")// 函数判断
+                    && (Boolean) callFilterFunc(p.getValue().substring(0, p.getValue().length() - 2), e)) {
+                return e;
+            } else if (p.getValue().startsWith("@") && e.hasAttr(StringUtils.substringAfter(p.getValue(), "@"))) {
+                // 属性判断存在与否
                 return e;
             }
+            // todo p.value ~= contains(./@href,'renren.com')
+        } else {
+            if (p.getLeft().matches("[^/]+\\(\\)")) {
+                Object filterRes = p.getOpEm().excute(
+                        callFilterFunc(p.getLeft().substring(0, p.getLeft().length() - 2), e).toString(), p.getRight());
+                if (filterRes instanceof Boolean && (Boolean) filterRes) {
+                    return e;
+                } else if (filterRes instanceof Integer && e.siblingIndex() == Integer.parseInt(filterRes.toString())) {
+                    return e;
+                }
+            } else if (p.getLeft().startsWith("@")) {
+                String lValue = e.attr(p.getLeft().substring(1));
+                Object filterRes = p.getOpEm().excute(lValue, p.getRight());
+                if ((Boolean) filterRes) {
+                    return e;
+                }
+            } else {
+                // 操作符左边不是函数、属性默认就是xpath表达式了
+                List<Element> eltmp = Lists.newLinkedList();
+                eltmp.add(e);
+                List<JXNode> rstmp = XpathEvaluator.compile(p.getLeft()).xpathSelect(new Elements(eltmp));
+                if ((Boolean) p.getOpEm().excute(StringUtils.join(rstmp, ""), p.getRight())) {
+                    return e;
+                }
+            }
         }
+
         return null;
     }
 
@@ -243,17 +247,21 @@ public class XpathEvaluator {
      * @param axis
      * @param e
      * @return
-     * @throws NoSuchAxisException
      */
     public Elements getAxisScopeEls(String axis, Element e) {
-        // try {
-        // String functionName = CommonUtil.getJMethodNameFromStr(axis);
-        // Method axisSelector = axisFuncs.get(renderFuncKey(functionName, e.getClass()));
-        // return (Elements) axisSelector.invoke(FunctionEnv.getInstance().getAxisSelector(), e);
-        // } catch (Exception e1) {
-        // throw new NoSuchAxisException("this axis is not supported,plase use other instead of '" + axis + "'");
-        // }
-        return FunctionEnv.getAxisFunction(axis).call(e);
+        if (!axis.endsWith(")")) {// 空参数函数
+            return FunctionEnv.getAxisFunction(axis).call(e);
+        } else {
+            // 增加了css轴函数
+            // TODO 优化,
+            Pattern pattern = Pattern.compile("(\\s+)\\((.+)\\)");
+            Matcher matcher = pattern.matcher(axis);
+            boolean b = matcher.find();
+            String funcName = matcher.group(1);
+            String params = matcher.group(2);
+            return FunctionEnv.getAxisFunction(funcName).call(e,
+                    Splitter.on(",").splitToList(params).toArray(new String[] {}));
+        }
     }
 
     /**
@@ -294,7 +302,7 @@ public class XpathEvaluator {
 
     public int getElIndex(Element e) {
         if (e != null) {
-            return CommonUtil.getElIndexInSameTags(e);
+            return XpathUtil.getElIndexInSameTags(e);
         }
         return 1;
     }

@@ -12,7 +12,7 @@ import org.jsoup.select.Elements;
  */
 public class AncestorFunction implements AxisFunction {
     @Override
-    public Elements call(Element e) {
+    public Elements call(Element e, String... args) {
         return e.parents();
     }
 

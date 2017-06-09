@@ -11,7 +11,7 @@ import org.jsoup.select.Elements;
  */
 public class PrecedingSiblingFunction implements AxisFunction {
     @Override
-    public Elements call(Element e) {
+    public Elements call(Element e, String... args) {
         Elements rs = new Elements();
         Element tmp = e.previousElementSibling();
         while (tmp != null) {

@@ -22,6 +22,10 @@ import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorExcept
  * @since 2016/5/12.
  */
 public class JXNode {
+    public enum NodeType {
+        NODE, TEST
+    }
+
     private Element element;
     private boolean isText;
     private String textVal;

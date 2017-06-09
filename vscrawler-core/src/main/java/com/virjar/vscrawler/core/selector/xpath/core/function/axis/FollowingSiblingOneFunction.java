@@ -11,7 +11,7 @@ import org.jsoup.select.Elements;
  */
 public class FollowingSiblingOneFunction implements AxisFunction {
     @Override
-    public Elements call(Element e) {
+    public Elements call(Element e, String... args) {
         Elements rs = new Elements();
         if (e.nextElementSibling() != null) {
             rs.add(e.nextElementSibling());

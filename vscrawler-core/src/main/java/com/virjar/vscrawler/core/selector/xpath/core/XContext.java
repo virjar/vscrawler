@@ -20,8 +20,10 @@ import lombok.Getter;
  * @since 14-3-10
  */
 public class XContext {
+
+
     @Getter
-    private LinkedList<XpathNode> xpathTr = Lists.newLinkedList();
+    private LinkedList<XpathNode> OrXpathNodes = Lists.newLinkedList();
 
     public XContext() {
     }

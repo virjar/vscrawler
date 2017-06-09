@@ -145,7 +145,7 @@ public enum OpEm {
     };
     private String val;
 
-    private OpEm(String type) {
+    OpEm(String type) {
         this.val = type;
     }
 

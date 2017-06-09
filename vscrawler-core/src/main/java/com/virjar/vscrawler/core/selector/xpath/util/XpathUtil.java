@@ -8,13 +8,20 @@ package com.virjar.vscrawler.core.selector.xpath.util;
  * either express or implied. See the License for the specific language governing permissions and limitations under the
  * License.
  */
+
+import java.util.Collection;
+
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
+import com.virjar.vscrawler.core.selector.xpath.exception.FinalTypeNotSameException;
+import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 
 /**
  * @author: github.com/zhegexiaohuozi [seimimaster@gmail.com] Date: 14-3-15
  */
-public class CommonUtil {
+public class XpathUtil {
     public static String getJMethodNameFromStr(String str) {
         if (str.contains("-")) {
             String[] pies = str.split("-");
@@ -58,5 +65,17 @@ public class CommonUtil {
     public static int sameTagElNums(Element e) {
         Elements els = e.parent().getElementsByTag(e.tagName());
         return els.size();
+    }
+
+    public static void checkSameResultType(Collection<XpathEvaluator> xpathEvaluators)
+            throws FinalTypeNotSameException {
+        JXNode.NodeType nodeType = null;
+        for (XpathEvaluator xpathEvaluator : xpathEvaluators) {
+            if (nodeType == null) {
+                nodeType = xpathEvaluator.judeNodeType();
+            } else if (nodeType != xpathEvaluator.judeNodeType()) {
+                throw new FinalTypeNotSameException();
+            }
+        }
     }
 }

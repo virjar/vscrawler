@@ -4,21 +4,19 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 /**
- * Created by virjar on 17/6/6.
+ * Created by virjar on 17/6/8.
  * 
- * @author virjar
- * @since 0.0.1 全部祖先节点和自身节点
+ * @since 0.0.1
+ * @author virjar 将css Query的功能,变成一个xpath的轴函数
  */
-public class AncestorOrSelfFunction implements AxisFunction {
+public class CSSFunction implements AxisFunction {
     @Override
     public Elements call(Element e, String... args) {
-        Elements rs = e.parents();
-        rs.add(e);
-        return rs;
+        return e.select(args[0]);
     }
 
     @Override
     public String getName() {
-        return "ancestorOrSelf";
+        return "css";
     }
 }

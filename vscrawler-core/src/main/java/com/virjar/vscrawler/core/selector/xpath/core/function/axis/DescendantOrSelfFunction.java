@@ -11,7 +11,7 @@ import org.jsoup.select.Elements;
  */
 public class DescendantOrSelfFunction implements AxisFunction {
     @Override
-    public Elements call(Element e) {
+    public Elements call(Element e, String... args) {
         Elements rs = e.getAllElements();
         rs.add(e);
         return rs;

@@ -13,5 +13,5 @@ import com.virjar.vscrawler.core.selector.xpath.core.function.NameAware;
  * @see "https://github.com/zhegexiaohuozi"
  */
 public interface AxisFunction extends NameAware {
-    Elements call(Element e);
+    Elements call(Element e, String... args);
 }

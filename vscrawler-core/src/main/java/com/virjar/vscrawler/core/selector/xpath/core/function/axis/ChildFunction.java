@@ -11,7 +11,7 @@ import org.jsoup.select.Elements;
  */
 public class ChildFunction implements AxisFunction {
     @Override
-    public Elements call(Element e) {
+    public Elements call(Element e, String... args) {
         return e.children();
     }
 

@@ -2,7 +2,7 @@ package com.virjar.vscrawler.core.selector.xpath.core.function.filter;
 
 import org.jsoup.nodes.Element;
 
-import com.virjar.vscrawler.core.selector.xpath.util.CommonUtil;
+import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 
 /**
  * Created by virjar on 17/6/6.
@@ -13,7 +13,7 @@ import com.virjar.vscrawler.core.selector.xpath.util.CommonUtil;
 public class PositionFunction implements FilterFunction {
     @Override
     public Object call(Element element) {
-        return CommonUtil.getElIndexInSameTags(element);
+        return XpathUtil.getElIndexInSameTags(element);
     }
 
     @Override

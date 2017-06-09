@@ -8,9 +8,11 @@ package com.virjar.vscrawler.core.selector.xpath.core;
  * License.
  */
 
-import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 import com.virjar.vscrawler.core.selector.xpath.util.EmMap;
+
+import lombok.Getter;
 
 /**
  * 用于生成xpath语法树的有限状态机
@@ -19,7 +21,8 @@ import com.virjar.vscrawler.core.selector.xpath.util.EmMap;
  * @since 13-12-26
  */
 public class NodeTreeBuilderStateMachine {
-    BuilderState state = BuilderState.SCOPE;
+    @Getter
+    private BuilderState state = BuilderState.SCOPE;
     XContext context = new XContext();
     // 游标
     private int cur = 0;
@@ -27,7 +30,7 @@ public class NodeTreeBuilderStateMachine {
     // 当前遇到的字符
     private StringBuilder accum = new StringBuilder();
 
-    enum BuilderState {
+    public enum BuilderState {
 
         // 解析起始
         SCOPE {
@@ -37,7 +40,7 @@ public class NodeTreeBuilderStateMachine {
                     if (!(xpath[stateMachine.cur] == '/' || xpath[stateMachine.cur] == '.')) {
                         stateMachine.state = AXIS;// 轴只会有一次?,xpath标准应该支持多重的轴?
                         XpathNode xn = new XpathNode();
-                        stateMachine.context.getXpathTr().add(xn);
+                        stateMachine.context.getOrXpathNodes().add(xn);
                         xn.setScopeEm(EmMap.getInstance().scopeEmMap.get(stateMachine.accum.toString()));
                         stateMachine.accum = new StringBuilder();
                         break;
@@ -54,7 +57,7 @@ public class NodeTreeBuilderStateMachine {
                 StringBuilder accumTmp = new StringBuilder();
                 while (curtmp < xpath.length && xpath[curtmp] != '[' && xpath[curtmp] != '/') {
                     if (xpath[curtmp] == ':') {
-                        stateMachine.context.getXpathTr().getLast().setAxis(accumTmp.toString());
+                        stateMachine.context.getOrXpathNodes().getLast().setAxis(accumTmp.toString());
                         stateMachine.cur = curtmp + 2;
                         stateMachine.state = TAG;
                         break;
@@ -73,7 +76,7 @@ public class NodeTreeBuilderStateMachine {
                     stateMachine.accum.append(xpath[stateMachine.cur]);
                     stateMachine.cur += 1;
                 }
-                stateMachine.context.getXpathTr().getLast().setTagName(stateMachine.accum.toString());
+                stateMachine.context.getOrXpathNodes().getLast().setTagName(stateMachine.accum.toString());
                 stateMachine.accum = new StringBuilder();
                 if (stateMachine.cur == xpath.length) {
                     stateMachine.state = END;
@@ -100,7 +103,7 @@ public class NodeTreeBuilderStateMachine {
                     stateMachine.cur += 1;
                 }
                 Predicate predicate = stateMachine.genPredicate(stateMachine.accum.toString());
-                stateMachine.context.getXpathTr().getLast().setPredicate(predicate);
+                stateMachine.context.getOrXpathNodes().getLast().setPredicate(predicate);
                 stateMachine.accum = new StringBuilder();
                 if (stateMachine.cur < xpath.length - 1) {
                     stateMachine.cur += 1;
