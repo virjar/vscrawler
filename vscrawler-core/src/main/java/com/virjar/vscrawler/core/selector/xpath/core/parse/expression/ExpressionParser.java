@@ -34,7 +34,6 @@ public class ExpressionParser {
             tokenStream.add(tokenHolder);
             tokenHolder.expression = subExpression;
             tokenHolder.type = TokenHolder.TokenType.EXPRESSION;
-            expressionTokenQueue.consumeWhitespace();
             return true;
         }
         return false;
@@ -48,7 +47,6 @@ public class ExpressionParser {
             tokenStream.add(tokenHolder);
             tokenHolder.type = TokenHolder.TokenType.NUMBER;
             tokenHolder.expression = number;
-            expressionTokenQueue.consumeWhitespace();
             return true;
         }
         return false;
@@ -63,7 +61,6 @@ public class ExpressionParser {
             tokenStream.add(tokenHolder);
             tokenHolder.type = TokenHolder.TokenType.ATTRIBUTE_ACTION;
             tokenHolder.expression = attributeKey;
-            expressionTokenQueue.consumeWhitespace();
             return true;
         }
         return false;
@@ -77,7 +74,6 @@ public class ExpressionParser {
             tokenStream.add(tokenHolder);
             tokenHolder.type = TokenHolder.TokenType.XPATH;
             tokenHolder.expression = xpathStr;
-            expressionTokenQueue.consumeWhitespace();
             return true;
         }
         return false;
@@ -94,7 +90,6 @@ public class ExpressionParser {
             tokenStream.add(tokenHolder);
             tokenHolder.type = TokenHolder.TokenType.CONSTANT;
             tokenHolder.expression = TokenQueue.unescape(subStr);
-            expressionTokenQueue.consumeWhitespace();
             return true;
         }
         return false;
@@ -111,7 +106,6 @@ public class ExpressionParser {
                 tokenStream.add(tokenHolder);
                 tokenHolder.type = TokenHolder.TokenType.SYMBOL;
                 tokenHolder.expression = holder.getKey();
-                expressionTokenQueue.consumeWhitespace();
                 return true;
             }
         }
@@ -125,7 +119,6 @@ public class ExpressionParser {
             tokenStream.add(tokenHolder);
             tokenHolder.type = TokenHolder.TokenType.FUNCTION;
             tokenHolder.expression = function;
-            expressionTokenQueue.consumeWhitespace();
             return true;
         }
         return false;
@@ -133,8 +126,9 @@ public class ExpressionParser {
 
     private List<TokenHolder> tokenStream() {
         List<TokenHolder> tokenStream = Lists.newLinkedList();
-        expressionTokenQueue.consumeWhitespace();
-        while (!expressionTokenQueue.isEmpty()) {
+        // java不支持逗号表达式,这么做达到了逗号表达式的效果
+        while ((expressionTokenQueue.consumeWhitespace() || !expressionTokenQueue.consumeWhitespace())
+                && !expressionTokenQueue.isEmpty()) {
             if (testExpression(tokenStream)) {
                 continue;
             }
