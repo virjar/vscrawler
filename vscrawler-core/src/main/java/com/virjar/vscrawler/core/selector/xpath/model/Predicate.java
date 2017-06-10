@@ -16,6 +16,7 @@ import org.jsoup.nodes.Element;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
 import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Predicate {
 
     private SyntaxNode syntaxNode;
+    @Getter
     private String predicateStr;
 
     public Predicate(String predicateStr, SyntaxNode syntaxNode) {

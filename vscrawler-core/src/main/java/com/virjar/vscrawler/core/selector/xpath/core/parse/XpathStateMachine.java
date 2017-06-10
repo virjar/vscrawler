@@ -7,8 +7,11 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.xpath.core.FunctionEnv;
 import com.virjar.vscrawler.core.selector.xpath.core.function.axis.AxisFunction;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.ExpressionParser;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
 import com.virjar.vscrawler.core.selector.xpath.exception.NoSuchAxisException;
 import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
+import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathChain;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
@@ -189,7 +192,9 @@ public class XpathStateMachine {
                 if (stateMachine.tokenQueue.matches("[")) {
                     // 谓语串
                     String predicate = stateMachine.tokenQueue.chompBalanced('[', ']');
-                    // TODO handle predicate
+                    SyntaxNode predicateTree = new ExpressionParser(new TokenQueue(predicate)).parse();
+                    stateMachine.xpathChain.getXpathNodeList().getLast()
+                            .setPredicate(new Predicate(predicate, predicateTree));
                 }
                 // check
                 if (!stateMachine.tokenQueue.isEmpty() || !stateMachine.tokenQueue.matches("/")) {
