@@ -1,10 +1,12 @@
 package com.virjar.vscrawler.core.selector.xpath.core.parse;
 
 import java.util.LinkedList;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.selector.xpath.core.FunctionEnv;
 import com.virjar.vscrawler.core.selector.xpath.core.function.axis.AxisFunction;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.ExpressionParser;
@@ -15,7 +17,7 @@ import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathChain;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
-import com.virjar.vscrawler.core.selector.xpath.util.EmMap;
+import com.virjar.vscrawler.core.selector.xpath.util.ScopeEm;
 
 import lombok.Getter;
 
@@ -23,6 +25,13 @@ import lombok.Getter;
  * Created by virjar on 17/6/9.
  */
 public class XpathStateMachine {
+    private static Map<String, ScopeEm> scopeEmMap = Maps.newHashMap();
+    static {
+        scopeEmMap.put("/", ScopeEm.INCHILREN);
+        scopeEmMap.put("//", ScopeEm.RECURSIVE);
+        scopeEmMap.put("./", ScopeEm.CUR);
+        scopeEmMap.put(".//", ScopeEm.CURREC);
+    }
     @Getter
     private BuilderState state = BuilderState.SCOPE;
     private TokenQueue tokenQueue;
@@ -92,7 +101,7 @@ public class XpathStateMachine {
                 XpathNode xpathNode = new XpathNode();
                 if (stateMachine.tokenQueue.matchesAny("./", "//", "/", "//")) {
                     String scope = stateMachine.tokenQueue.consumeToAny(".//", "./", "//", "/");
-                    xpathNode.setScopeEm(EmMap.getInstance().scopeEmMap.get(scope));
+                    xpathNode.setScopeEm(scopeEmMap.get(scope));
                 }
                 stateMachine.xpathChain.getXpathNodeList().add(xpathNode);
                 stateMachine.state = AXIS;
