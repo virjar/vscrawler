@@ -28,11 +28,11 @@ public class XpathStateMachine {
 
     private XpathChain xpathChain = new XpathChain();
 
-    public XpathStateMachine(TokenQueue tokenQueue) {
+    XpathStateMachine(TokenQueue tokenQueue) {
         this.tokenQueue = tokenQueue;
     }
 
-    public enum BuilderState {
+    enum BuilderState {
 
         // 解析起始
         SCOPE {

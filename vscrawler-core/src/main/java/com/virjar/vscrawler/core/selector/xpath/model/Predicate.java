@@ -8,50 +8,57 @@ package com.virjar.vscrawler.core.selector.xpath.model;
  * either express or implied. See the License for the specific language governing permissions and limitations under the
  * License.
  */
-import com.virjar.vscrawler.core.selector.xpath.util.OpEm;
+
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Element;
+
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
+import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * xpath语法节点的谓语部分，即要满足的限定条件
  * 
  * @author github.com/zhegexiaohuozi [seimimaster@gmail.com]
  */
-@Deprecated
+@Slf4j
 public class Predicate {
 
-    private OpEm opEm;
-    private String left;
-    private String right;
-    private String value;
+    private SyntaxNode syntaxNode;
+    private String predicateStr;
 
-    public OpEm getOpEm() {
-        return opEm;
+    public Predicate(String predicateStr, SyntaxNode syntaxNode) {
+        this.predicateStr = predicateStr;
+        this.syntaxNode = syntaxNode;
     }
 
-    public void setOpEm(OpEm opEm) {
-        this.opEm = opEm;
-    }
+    public boolean isValid(Element element) {
+        Object ret = syntaxNode.calc(JXNode.e(element));
+        if (ret == null) {
+            return false;
+        }
 
-    public String getLeft() {
-        return left;
-    }
+        if (ret instanceof Number) {
+            int i = ((Number) ret).intValue();
+            return XpathUtil.getElIndexInSameTags(element) == i;
+        }
 
-    public void setLeft(String left) {
-        this.left = left;
-    }
+        if (ret instanceof Boolean) {
+            return (boolean) ret;
+        }
 
-    public String getRight() {
-        return right;
-    }
+        if (ret instanceof CharSequence) {
+            String s = ret.toString();
+            Boolean booleanValue = BooleanUtils.toBooleanObject(s);
+            if (booleanValue != null) {
+                return booleanValue;
+            }
+            return StringUtils.isNotBlank(s);
+        }
 
-    public void setRight(String right) {
-        this.right = right;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
+        log.warn("can not recognize predicate expression calc result:" + ret);
+        return false;
     }
 }

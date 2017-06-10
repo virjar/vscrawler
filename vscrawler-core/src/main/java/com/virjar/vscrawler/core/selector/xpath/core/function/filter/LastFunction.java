@@ -1,8 +1,11 @@
 package com.virjar.vscrawler.core.selector.xpath.core.function.filter;
 
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.params.ParamType;
 import org.jsoup.nodes.Element;
 
 import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
+
+import java.util.List;
 
 /**
  * Created by virjar on 17/6/6.
@@ -12,7 +15,7 @@ import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
  */
 public class LastFunction implements FilterFunction {
     @Override
-    public Object call(Element element) {
+    public Object call(Element element, List<ParamType> params) {
         return XpathUtil.getElIndexInSameTags(element) == XpathUtil.sameTagElNums(element);
     }
 
