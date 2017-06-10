@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.TokenQueue;
+import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
 
 /**
  * Created by virjar on 17/6/10.
@@ -13,13 +14,27 @@ import com.virjar.vscrawler.core.selector.xpath.core.parse.TokenQueue;
  */
 public class ExpressionParser {
 
+    public static void main(String[] args) throws XpathSyntaxErrorException {
+        String testXpath = "add(toInt(`/div[@class~='test' && @id='testid']/a/@href`),     50)-10 =0";
+        List<TokenHolder> tokenHolders = new ExpressionParser(new TokenQueue(testXpath)).tokenStream();
+        for (TokenHolder tokenHolder : tokenHolders) {
+            System.out.println(tokenHolder.expression);
+        }
+
+        testXpath = "@class~='test' &&      @id='testid'";
+        tokenHolders = new ExpressionParser(new TokenQueue(testXpath)).tokenStream();
+        for (TokenHolder tokenHolder : tokenHolders) {
+            System.out.println(tokenHolder.expression);
+        }
+    }
+
     private TokenQueue expressionTokenQueue;
 
     public ExpressionParser(TokenQueue expressionTokenQueue) {
         this.expressionTokenQueue = expressionTokenQueue;
     }
 
-    public SyntaxNode parse() {
+    public SyntaxNode parse() throws XpathSyntaxErrorException {
         List<TokenHolder> tokenStream = tokenStream();
 
         return null;
@@ -55,7 +70,7 @@ public class ExpressionParser {
     private boolean testAttributeAction(List<TokenHolder> tokenStream) {
         // 取属性动作
         if (expressionTokenQueue.matches("@")) {
-            expressionTokenQueue.consume();
+            expressionTokenQueue.advance();
             String attributeKey = expressionTokenQueue.consumeAttributeKey();
             TokenHolder tokenHolder = new TokenHolder();
             tokenStream.add(tokenHolder);
@@ -101,7 +116,7 @@ public class ExpressionParser {
         List<OperatorEnv.AlgorithmHolder> algorithmHolders = OperatorEnv.allAlgorithmUnitList();
         for (OperatorEnv.AlgorithmHolder holder : algorithmHolders) {
             if (expressionTokenQueue.matches(holder.getKey())) {
-                expressionTokenQueue.consumeTo(holder.getKey());
+                expressionTokenQueue.consume(holder.getKey());
                 TokenHolder tokenHolder = new TokenHolder();
                 tokenStream.add(tokenHolder);
                 tokenHolder.type = TokenHolder.TokenType.SYMBOL;
@@ -124,7 +139,7 @@ public class ExpressionParser {
         return false;
     }
 
-    private List<TokenHolder> tokenStream() {
+    private List<TokenHolder> tokenStream() throws XpathSyntaxErrorException {
         List<TokenHolder> tokenStream = Lists.newLinkedList();
         // java不支持逗号表达式,这么做达到了逗号表达式的效果
         while ((expressionTokenQueue.consumeWhitespace() || !expressionTokenQueue.consumeWhitespace())
@@ -132,9 +147,7 @@ public class ExpressionParser {
             if (testExpression(tokenStream)) {
                 continue;
             }
-            if (testDigit(tokenStream)) {
-                continue;
-            }
+
             if (testAttributeAction(tokenStream)) {
                 continue;
             }
@@ -152,6 +165,12 @@ public class ExpressionParser {
             if (testOperator(tokenStream)) {
                 continue;
             }
+
+            // 数字需要在操作符之后,因为先解析减号再解析负数
+            if (testDigit(tokenStream)) {
+                continue;
+            }
+
             // 函数
             if (testFunction(tokenStream)) {
                 continue;
@@ -160,6 +179,8 @@ public class ExpressionParser {
             // 兜底
 
             // 不成功,报错
+            throw new XpathSyntaxErrorException(expressionTokenQueue.nowPosition(), "can not parse predicate"
+                    + expressionTokenQueue.getQueue() + "  for token " + expressionTokenQueue.remainder());
         }
 
         return tokenStream;

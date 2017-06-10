@@ -8,12 +8,7 @@ package com.virjar.vscrawler.core.selector.xpath.model;
  * License.
  */
 
-import java.util.List;
-
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
-import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
 
 /**
  * XPath提取后的
@@ -55,14 +50,6 @@ public class JXNode {
     public JXNode setTextVal(String textVal) {
         this.textVal = textVal;
         return this;
-    }
-
-    public List<JXNode> sel(String xpath) throws XpathSyntaxErrorException {
-        if (element == null) {
-            return null;
-        }
-        JXDocument doc = new JXDocument(new Elements(element));
-        return doc.selN(xpath);
     }
 
     public static JXNode e(Element element) {

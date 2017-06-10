@@ -7,6 +7,8 @@ package com.virjar.vscrawler.core.selector.xpath.core.parse;
 import org.jsoup.helper.StringUtil;
 import org.jsoup.helper.Validate;
 
+import lombok.Getter;
+
 /**
  * A character queue with parsing helpers.
  *
@@ -14,6 +16,7 @@ import org.jsoup.helper.Validate;
  * @author virjar
  */
 public class TokenQueue {
+    @Getter
     private String queue;
     private int pos = 0;
 
@@ -166,19 +169,35 @@ public class TokenQueue {
     }
 
     /**
-     * 测试是否是函数 abc() ,
-     * //
+     * 测试是否是函数 abc() , //
      * 
      * @return 是否是函数
      */
     public boolean matchesFunction() {
+        if (remainingLength() < 3) {
+            return false;
+        }
+        char first = peek();
+        if (!Character.isLetter(first) && first != '_') {
+            return false;
+        }
 
+        int start = pos + 1;
+        for (; start < queue.length(); start++) {
+            if (Character.isLetterOrDigit(queue.charAt(start))) {
+                continue;
+            }
+            if (queue.charAt(start) == '(') {
+                return queue.indexOf(')', start) > 0;
+            }
+        }
         return false;
     }
 
-
-    public String consumeFunction(){
-        return null;
+    public String consumeFunction() {
+        String functionName = consumeTo("(");
+        String params = chompBalanced('(', ')');
+        return functionName + "(" + params + ")";
     }
 
     /**
@@ -320,12 +339,25 @@ public class TokenQueue {
                     inQuote = !inQuote;
                 if (inQuote)
                     continue;
-                if (c.equals(open)) {
-                    depth++;
-                    if (start == -1)
-                        start = pos;
-                } else if (c.equals(close))
-                    depth--;
+                if (open != close) {
+                    if (c.equals(open)) {
+                        depth++;
+                        if (start == -1)
+                            start = pos;
+                    } else if (c.equals(close))
+                        depth--;
+                } else {// 开闭相同的时候,相同即可退出
+                    if (c.equals(open)) {
+                        depth++;
+                        if (start == -1) {
+                            start = pos;
+                        }
+                    }
+                    if (depth == 2) {
+                        end = pos - 1;// 末尾数据不要
+                        break;
+                    }
+                }
             }
 
             if (depth > 0 && last != 0)
@@ -514,11 +546,12 @@ public class TokenQueue {
         if (queue.charAt(pos) == '-') {// 负数标记
             pos++;
         }
-        while (Character.isDigit(queue.charAt(pos))) {
+        while (!isEmpty() && Character.isDigit(queue.charAt(pos))) {
             pos++;
         }
 
-        if (queue.charAt(pos) == '.' && remainingLength() >= 2 && Character.isDigit(queue.charAt(pos + 1))) {// 小数点
+        if (!isEmpty() && queue.charAt(pos) == '.' && remainingLength() >= 2
+                && Character.isDigit(queue.charAt(pos + 1))) {// 小数点
             pos++;
             while (Character.isDigit(queue.charAt(pos))) {
                 pos++;
