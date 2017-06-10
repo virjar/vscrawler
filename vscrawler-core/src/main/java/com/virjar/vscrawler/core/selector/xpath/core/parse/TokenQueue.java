@@ -155,6 +155,16 @@ public class TokenQueue {
     }
 
     /**
+     * 测试是否以数字开头,负数也是数字,但是不支持科学表达式模型
+     * 
+     * @return if matches a digit character
+     */
+    public boolean matchesDigit() {
+        return !isEmpty() && (Character.isDigit(queue.charAt(pos))
+                || queue.charAt(pos) == '-' && remainingLength() >= 2 && Character.isDigit(queue.charAt(pos + 1)));
+    }
+
+    /**
      * Drops the next character off the queue.
      */
     public void advance() {
@@ -446,7 +456,6 @@ public class TokenQueue {
         return false;
     }
 
-
     /**
      * 下一个"\"的位置,如果没有,则返回空,考虑转义和字符串文本
      * 
@@ -478,10 +487,36 @@ public class TokenQueue {
     }
 
     /**
+     * 解析一个数字串,处理负数,小数
+     *
+     * @return 新的数字串
+     */
+    public String consumeDigit() {
+        int start = pos;
+
+        if (queue.charAt(pos) == '-') {// 负数标记
+            pos++;
+        }
+        while (Character.isDigit(queue.charAt(pos))) {
+            pos++;
+        }
+
+        if (queue.charAt(pos) == '.' && remainingLength() >= 2 && Character.isDigit(queue.charAt(pos + 1))) {// 小数点
+            pos++;
+            while (Character.isDigit(queue.charAt(pos))) {
+                pos++;
+            }
+        }
+
+        return queue.substring(start, pos);
+    }
+
+    /**
      * 输出当前解析数据位置,用来记录日志,定位位置使用
+     * 
      * @return pos
      */
-    public int nowPosition(){
+    public int nowPosition() {
         return pos;
     }
 
