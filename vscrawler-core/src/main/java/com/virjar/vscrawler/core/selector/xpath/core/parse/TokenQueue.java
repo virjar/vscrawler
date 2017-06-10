@@ -11,6 +11,7 @@ import org.jsoup.helper.Validate;
  * A character queue with parsing helpers.
  *
  * @author Jonathan Hedley
+ * @author virjar
  */
 public class TokenQueue {
     private String queue;
@@ -162,6 +163,22 @@ public class TokenQueue {
     public boolean matchesDigit() {
         return !isEmpty() && (Character.isDigit(queue.charAt(pos))
                 || queue.charAt(pos) == '-' && remainingLength() >= 2 && Character.isDigit(queue.charAt(pos + 1)));
+    }
+
+    /**
+     * 测试是否是函数 abc() ,
+     * //
+     * 
+     * @return 是否是函数
+     */
+    public boolean matchesFunction() {
+
+        return false;
+    }
+
+
+    public String consumeFunction(){
+        return null;
     }
 
     /**

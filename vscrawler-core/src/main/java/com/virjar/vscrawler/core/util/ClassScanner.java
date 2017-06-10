@@ -2,6 +2,7 @@ package com.virjar.vscrawler.core.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -99,6 +100,57 @@ public class ClassScanner {
 
     public interface ClassVisitor<T> {
         void visit(Class<? extends T> clazz);
+    }
+
+    public static class AnnotationClassVisitor implements ClassScanner.ClassVisitor {
+        private Class annotationClazz;
+        private Set<Class> classSet = Sets.newHashSet();
+
+        public AnnotationClassVisitor(Class annotationClazz) {
+            this.annotationClazz = annotationClazz;
+        }
+
+        @Override
+        public void visit(Class clazz) {
+            try {
+                if (clazz.getAnnotation(annotationClazz) != null) {
+                    classSet.add(clazz);
+                }
+            } catch (Throwable e) {
+                // do nothing 可能有classNotFoundException
+            }
+        }
+
+        public Set<Class> getClassSet() {
+            return classSet;
+        }
+    }
+
+    public static class AnnotationMethodVisitor implements ClassScanner.ClassVisitor {
+        private Class annotationClazz;
+        private Set<Method> methodSet = Sets.newHashSet();
+
+        public AnnotationMethodVisitor(Class annotationClazz) {
+            this.annotationClazz = annotationClazz;
+        }
+
+        @Override
+        public void visit(Class clazz) {
+            try {
+                Method[] methods = clazz.getDeclaredMethods();
+                for (Method method : methods) {
+                    if (method.getAnnotation(annotationClazz) != null) {
+                        methodSet.add(method);
+                    }
+                }
+            } catch (Throwable e) {
+                // do nothing 可能有classNotFoundException
+            }
+        }
+
+        public Set<Method> getMethodSet() {
+            return methodSet;
+        }
     }
 
     public static class SubClassVisitor<T> implements ClassVisitor {

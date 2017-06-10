@@ -78,4 +78,11 @@ public class XpathUtil {
             }
         }
     }
+
+    public static String toPlainString(Object obj) {
+        if (obj == null) {
+            return "null";
+        }
+        return obj.toString();
+    }
 }
