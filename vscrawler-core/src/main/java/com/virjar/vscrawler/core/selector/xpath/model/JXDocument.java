@@ -55,7 +55,7 @@ public class JXDocument {
             if (e instanceof NoSuchAxisException || e instanceof NoSuchFunctionException) {
                 msg = e.getMessage();
             }
-            throw new XpathSyntaxErrorException(msg);
+            throw new XpathSyntaxErrorException(0, msg);
         }
         return res;
     }
@@ -68,7 +68,7 @@ public class JXDocument {
             if (e instanceof NoSuchAxisException || e instanceof NoSuchFunctionException) {
                 msg = e.getMessage();
             }
-            throw new XpathSyntaxErrorException(msg);
+            throw new XpathSyntaxErrorException(0, msg);
         }
     }
 

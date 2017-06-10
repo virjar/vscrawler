@@ -20,6 +20,7 @@ import lombok.Getter;
  * @author github.com/zhegexiaohuozi [et.tw@163.com]
  * @since 13-12-26
  */
+@Deprecated
 public class NodeTreeBuilderStateMachine {
     @Getter
     private BuilderState state = BuilderState.SCOPE;
@@ -57,7 +58,7 @@ public class NodeTreeBuilderStateMachine {
                 StringBuilder accumTmp = new StringBuilder();
                 while (curtmp < xpath.length && xpath[curtmp] != '[' && xpath[curtmp] != '/') {
                     if (xpath[curtmp] == ':') {
-                        stateMachine.context.getOrXpathNodes().getLast().setAxis(accumTmp.toString());
+                        stateMachine.context.getOrXpathNodes().getLast().setAxis(null);
                         stateMachine.cur = curtmp + 2;
                         stateMachine.state = TAG;
                         break;

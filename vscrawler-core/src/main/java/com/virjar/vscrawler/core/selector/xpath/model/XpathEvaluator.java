@@ -25,7 +25,7 @@ public abstract class XpathEvaluator {
         throw new UnsupportedOperationException();
     }
 
-    public static class AnanyseStartEvalutor extends XpathEvaluator {
+    public static class AnanyseStartEvaluator extends XpathEvaluator {
 
         @Override
         public List<JXNode> evaluate(List<JXNode> elements) {
@@ -43,10 +43,10 @@ public abstract class XpathEvaluator {
         }
     }
 
-    public static class ChainEvalutor extends XpathEvaluator {
+    public static class ChainEvaluator extends XpathEvaluator {
         private LinkedList<XpathNode> xpathNodeList = Lists.newLinkedList();
 
-        public ChainEvalutor(LinkedList<XpathNode> xpathNodeList) {
+        public ChainEvaluator(LinkedList<XpathNode> xpathNodeList) {
             this.xpathNodeList = xpathNodeList;
         }
 

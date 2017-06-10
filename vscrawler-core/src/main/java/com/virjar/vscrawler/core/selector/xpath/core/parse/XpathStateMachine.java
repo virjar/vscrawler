@@ -23,7 +23,8 @@ public class XpathStateMachine {
     @Getter
     private BuilderState state = BuilderState.SCOPE;
     private TokenQueue tokenQueue;
-    private XpathEvaluator evaluator = new XpathEvaluator.AnanyseStartEvalutor();
+    @Getter
+    private XpathEvaluator evaluator = new XpathEvaluator.AnanyseStartEvaluator();
 
     private XpathChain xpathChain = new XpathChain();
 
@@ -36,7 +37,7 @@ public class XpathStateMachine {
         // 解析起始
         SCOPE {
             @Override
-            public void parse(XpathStateMachine stateMachine) {
+            public void parse(XpathStateMachine stateMachine) throws XpathSyntaxErrorException {
                 stateMachine.tokenQueue.consumeWhitespace();// 消除空白字符
                 char xpathFlag = '`';
                 if (stateMachine.tokenQueue.matchesAny(xpathFlag, '(')) {
@@ -197,6 +198,9 @@ public class XpathStateMachine {
                 }
                 if (stateMachine.tokenQueue.isEmpty()) {
                     stateMachine.state = END;
+                    stateMachine.evaluator = stateMachine.evaluator
+                            .wrap(new XpathEvaluator.ChainEvaluator(stateMachine.xpathChain.getXpathNodeList()));
+                    stateMachine.xpathChain = null;
                 } else {
                     stateMachine.state = SCOPE;
                 }

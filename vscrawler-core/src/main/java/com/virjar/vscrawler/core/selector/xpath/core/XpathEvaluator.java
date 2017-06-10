@@ -22,8 +22,8 @@ import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
 import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
-import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 import com.virjar.vscrawler.core.selector.xpath.util.ScopeEm;
+import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 
 import lombok.Getter;
 
@@ -161,8 +161,9 @@ public class XpathEvaluator {
                 } else {
                     for (Element e : context) {
                         Elements filterScope = e.children();
-                        if (StringUtils.isNotBlank(n.getAxis())) {
-                            filterScope = getAxisScopeEls(n.getAxis(), e);
+                        if (n.getAxis() != null) {
+                            filterScope = n.getAxis().call(e, n.getAxisParams().toArray(new String[] {}));// getAxisScopeEls(n.getAxis(),
+                                                                                                          // e);
                         }
                         for (Element chi : filterScope) {
                             Element fchi = filter(chi, n);

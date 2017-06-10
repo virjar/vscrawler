@@ -15,6 +15,7 @@ import com.virjar.vscrawler.core.selector.xpath.util.OpEm;
  * 
  * @author github.com/zhegexiaohuozi [seimimaster@gmail.com]
  */
+@Deprecated
 public class Predicate {
 
     private OpEm opEm;
