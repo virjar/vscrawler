@@ -8,7 +8,14 @@ package com.virjar.vscrawler.core.selector.xpath.model;
  * either express or implied. See the License for the specific language governing permissions and limitations under the
  * License.
  */
+
+import java.util.List;
+
+import com.virjar.vscrawler.core.selector.xpath.core.function.axis.AxisFunction;
 import com.virjar.vscrawler.core.selector.xpath.util.ScopeEm;
+
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * xpath语法链的一个基本节点
@@ -19,50 +26,29 @@ public class XpathNode {
     /**
      * 查找方向,
      */
+    @Getter
+    @Setter
     private ScopeEm scopeEm;
     /**
      * 轴
      */
-    private String axis;
+    @Getter
+    @Setter
+    private AxisFunction axis;
+
+    @Getter
+    @Setter
+    private List<String> axisParams;
     /**
      * 标签
      */
+    @Getter
+    @Setter
     private String tagName;
     /**
      * 谓语
      */
+    @Getter
+    @Setter
     private Predicate predicate;
-
-    public ScopeEm getScopeEm() {
-        return scopeEm;
-    }
-
-    public void setScopeEm(ScopeEm scopeEm) {
-        this.scopeEm = scopeEm;
-    }
-
-    public String getAxis() {
-        return axis;
-    }
-
-    public void setAxis(String axis) {
-        this.axis = axis;
-    }
-
-    public String getTagName() {
-        return tagName;
-    }
-
-    public void setTagName(String tagName) {
-        this.tagName = tagName;
-    }
-
-    public Predicate getPredicate() {
-        return predicate;
-    }
-
-    public void setPredicate(Predicate predicate) {
-        this.predicate = predicate;
-    }
-
 }

@@ -1,6 +1,14 @@
 package com.virjar.vscrawler.core.selector.xpath.core.parse;
 
-import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
+import java.util.LinkedList;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.collect.Lists;
+import com.virjar.vscrawler.core.selector.xpath.core.FunctionEnv;
+import com.virjar.vscrawler.core.selector.xpath.core.function.axis.AxisFunction;
+import com.virjar.vscrawler.core.selector.xpath.exception.NoSuchAxisException;
+import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathChain;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
@@ -17,11 +25,10 @@ public class XpathStateMachine {
     private TokenQueue tokenQueue;
     private XpathEvaluator evaluator = new XpathEvaluator.AnanyseStartEvalutor();
 
-    private static char xpathFlag = '`';// 所有被反引号标记的,都认为是一个xpath表达式
-
     private XpathChain xpathChain = new XpathChain();
 
     public XpathStateMachine(TokenQueue tokenQueue) {
+        this.tokenQueue = tokenQueue;
     }
 
     public enum BuilderState {
@@ -31,6 +38,7 @@ public class XpathStateMachine {
             @Override
             public void parse(XpathStateMachine stateMachine) {
                 stateMachine.tokenQueue.consumeWhitespace();// 消除空白字符
+                char xpathFlag = '`';
                 if (stateMachine.tokenQueue.matchesAny(xpathFlag, '(')) {
                     // 获取一个子串,处理递归,转义,引号问题
 
@@ -79,7 +87,7 @@ public class XpathStateMachine {
 
                 XpathNode xpathNode = new XpathNode();
                 if (stateMachine.tokenQueue.matchesAny("./", "//", "/", "//")) {
-                    String scope = stateMachine.tokenQueue.consumeToAny("./", "//", "/", "//");
+                    String scope = stateMachine.tokenQueue.consumeToAny(".//", "./", "//", "/");
                     xpathNode.setScopeEm(EmMap.getInstance().scopeEmMap.get(scope));
                 }
                 stateMachine.xpathChain.getXpathNodeList().add(xpathNode);
@@ -89,27 +97,109 @@ public class XpathStateMachine {
         },
         AXIS {
             @Override
-            public void parse(XpathStateMachine stateMachine) {
+            public void parse(XpathStateMachine stateMachine) throws XpathSyntaxErrorException {
                 // 轴解析
-                if (stateMachine.tokenQueue.hasAxis()) {
-                    String axisFunction = stateMachine.tokenQueue.consumeTo("::");
-                    TokenQueue functionTokenQueue = new TokenQueue(axisFunction);
-                    String functionName = functionTokenQueue.consumeIdentify();
-
+                if (!stateMachine.tokenQueue.hasAxis()) {
+                    stateMachine.state = TAG;
+                    return;
                 }
+
+                String axisFunctionStr = stateMachine.tokenQueue.consumeTo("::");
+                TokenQueue functionTokenQueue = new TokenQueue(axisFunctionStr);
+                String functionName = functionTokenQueue.consumeIdentify().trim();
+                functionTokenQueue.consumeWhitespace();
+
+                AxisFunction axisFunction = FunctionEnv.getAxisFunction(functionName);
+                if (axisFunction == null) {
+                    throw new NoSuchAxisException(stateMachine.tokenQueue.nowPosition(),
+                            "not such axis " + functionName);
+                }
+                stateMachine.xpathChain.getXpathNodeList().getLast().setAxis(axisFunction);
+
+                if (functionTokenQueue.isEmpty()) {
+                    stateMachine.state = TAG;
+                    return;
+                }
+
+                // 带有参数的轴函数
+                if (!functionTokenQueue.matches("(")) {// 必须以括号开头
+                    throw new XpathSyntaxErrorException(stateMachine.tokenQueue.nowPosition(),
+                            "expression is not a function:\"" + axisFunctionStr + "\"");
+                }
+                String paramList = functionTokenQueue.chompBalanced('(', ')');
+                functionTokenQueue.consumeWhitespace();
+                if (!functionTokenQueue.isEmpty()) {
+                    throw new XpathSyntaxErrorException(stateMachine.tokenQueue.nowPosition(),
+                            "expression is not a function: \"" + axisFunctionStr + "\" can not recognize token:"
+                                    + functionTokenQueue.remainder());
+                }
+
+                // 解析参数列表
+                TokenQueue paramTokenQueue = new TokenQueue(paramList);
+                LinkedList<String> params = Lists.newLinkedList();
+                while (!paramTokenQueue.isEmpty()) {
+                    paramTokenQueue.consumeWhitespace();
+                    String param;
+                    if (paramTokenQueue.matches("\"")) {
+                        param = paramTokenQueue.chompBalanced('\"', '\"');
+                        if (paramTokenQueue.peek() == ',') {
+                            paramTokenQueue.consume();
+                        }
+                    } else if (paramTokenQueue.matches("\'")) {
+                        param = paramTokenQueue.chompBalanced('\'', '\'');
+                        if (paramTokenQueue.peek() == ',') {
+                            paramTokenQueue.consume();
+                        }
+                    } else {
+                        param = paramTokenQueue.consumeTo(",");
+                    }
+                    params.add(TokenQueue.unescape(param));
+                }
+                stateMachine.xpathChain.getXpathNodeList().getLast().setAxisParams(params);
                 stateMachine.state = TAG;
             }
         },
         TAG {
             @Override
-            public void parse(XpathStateMachine stateMachine) {
+            public void parse(XpathStateMachine stateMachine) throws XpathSyntaxErrorException {
+                stateMachine.tokenQueue.consumeWhitespace();
+                if (stateMachine.tokenQueue.peek() == '*') {
+                    stateMachine.xpathChain.getXpathNodeList().getLast().setTagName("*");
+                    stateMachine.tokenQueue.consume();
+                    stateMachine.state = PREDICATE;
+                    return;
+                }
 
+                String tagName = stateMachine.tokenQueue.consumeTagName();
+                if (StringUtils.isEmpty(tagName)) {
+                    throw new XpathSyntaxErrorException(stateMachine.tokenQueue.nowPosition(),
+                            "can not recognize token,expected start with a tagName,actually is:"
+                                    + stateMachine.tokenQueue.remainder());
+                }
+                stateMachine.xpathChain.getXpathNodeList().getLast().setTagName(tagName);
+                stateMachine.state = PREDICATE;
             }
         },
         PREDICATE {
             @Override
-            public void parse(XpathStateMachine stateMachine) {
+            public void parse(XpathStateMachine stateMachine) throws XpathSyntaxErrorException {
+                stateMachine.tokenQueue.consumeWhitespace();
 
+                if (stateMachine.tokenQueue.matches("[")) {
+                    // 谓语串
+                    String predicate = stateMachine.tokenQueue.chompBalanced('[', ']');
+                    // TODO handle predicate
+                }
+                // check
+                if (!stateMachine.tokenQueue.isEmpty() || !stateMachine.tokenQueue.matches("/")) {
+                    throw new XpathSyntaxErrorException(stateMachine.tokenQueue.nowPosition(),
+                            "illegal predicate token :" + stateMachine.tokenQueue.remainder());
+                }
+                if (stateMachine.tokenQueue.isEmpty()) {
+                    stateMachine.state = END;
+                } else {
+                    stateMachine.state = SCOPE;
+                }
             }
         },
         END {
@@ -117,63 +207,7 @@ public class XpathStateMachine {
             public void parse(XpathStateMachine stateMachine) {
             }
         };
-        public void parse(XpathStateMachine stateMachine) {
+        public void parse(XpathStateMachine stateMachine) throws XpathSyntaxErrorException {
         }
-    }
-
-    /**
-     * 根据谓语字符串初步生成谓语体
-     *
-     * @param pre 谓语文本
-     * @return 谓语对象
-     */
-    public Predicate genPredicate(String pre) {
-        StringBuilder op = new StringBuilder();
-        StringBuilder left = new StringBuilder();
-        StringBuilder right = new StringBuilder();
-        Predicate predicate = new Predicate();
-        char[] preArray = pre.toCharArray();
-        int index = preArray.length - 1;
-        int argDeep = 0;
-        int opFlag = 0;
-        if (pre.matches(".+(\\+|=|-|>|<|>=|<=|^=|\\*=|$=|~=|!=|!~)\\s*'.+'")) {
-            while (index >= 0) {
-                char tmp = preArray[index];
-                if (tmp == '\'') {
-                    argDeep += 1;
-                }
-                if (argDeep == 1 && tmp != '\'') {
-                    right.insert(0, tmp);
-                } else if (argDeep == 2 && EmMap.getInstance().commOpChar.contains(tmp)) {
-                    op.insert(0, tmp);
-                    opFlag = 1;
-                } else if (argDeep >= 2 && opFlag > 0) {
-                    argDeep++;// 取完操作符后剩下的都属于left
-                    left.insert(0, tmp);
-                }
-                index -= 1;
-            }
-        } else if (pre.matches(".+(\\+|=|-|>|<|>=|<=|^=|\\*=|$=|~=|!=|!~)[^']+")) {
-            while (index >= 0) {
-                char tmp = preArray[index];
-                if (opFlag == 0 && EmMap.getInstance().commOpChar.contains(tmp)) {
-                    op.insert(0, tmp);
-                } else {
-                    if (op.length() > 0) {
-                        left.insert(0, tmp);
-                        opFlag = 1;
-                    } else {
-                        right.insert(0, tmp);
-                    }
-                }
-                index -= 1;
-            }
-        }
-
-        predicate.setOpEm(EmMap.getInstance().opEmMap.get(op.toString()));
-        predicate.setLeft(left.toString().trim());
-        predicate.setRight(right.toString().trim());
-        predicate.setValue(pre);
-        return predicate;
     }
 }

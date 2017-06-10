@@ -60,7 +60,7 @@ public class CacheCSSFunction implements AxisFunction {
     /**
      * Parses a CSS selector into an Evaluator tree.
      */
-    static class QueryParser {
+    private static class QueryParser {
         private final static String[] combinators = { ",", ">", "+", "~", " " };
         private static final String[] AttributeEvals = new String[] { "=", "!=", "^=", "$=", "*=", "~=" };
 

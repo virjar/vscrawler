@@ -477,6 +477,14 @@ public class TokenQueue {
         } while (true);
     }
 
+    /**
+     * 输出当前解析数据位置,用来记录日志,定位位置使用
+     * @return pos
+     */
+    public int nowPosition(){
+        return pos;
+    }
+
     @Override
     public String toString() {
         return queue.substring(pos);
