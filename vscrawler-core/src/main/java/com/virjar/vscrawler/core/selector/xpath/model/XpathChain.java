@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.selector.xpath.model;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -18,5 +19,6 @@ public class XpathChain {
      */
     private JXNode.NodeType finalType;
 
-    private List<XpathNode> xpathNodeList = Lists.newLinkedList();
+    @Getter
+    private LinkedList<XpathNode> xpathNodeList = Lists.newLinkedList();
 }

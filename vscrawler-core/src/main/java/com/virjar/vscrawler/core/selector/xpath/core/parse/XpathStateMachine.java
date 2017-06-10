@@ -1,7 +1,9 @@
 package com.virjar.vscrawler.core.selector.xpath.core.parse;
 
 import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathChain;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 import com.virjar.vscrawler.core.selector.xpath.util.EmMap;
 
 import lombok.Getter;
@@ -17,6 +19,8 @@ public class XpathStateMachine {
 
     private static char xpathFlag = '`';// 所有被反引号标记的,都认为是一个xpath表达式
 
+    private XpathChain xpathChain = new XpathChain();
+
     public XpathStateMachine(TokenQueue tokenQueue) {
     }
 
@@ -27,12 +31,12 @@ public class XpathStateMachine {
             @Override
             public void parse(XpathStateMachine stateMachine) {
                 stateMachine.tokenQueue.consumeWhitespace();// 消除空白字符
-                if (stateMachine.tokenQueue.matchesAny('`', '(')) {
+                if (stateMachine.tokenQueue.matchesAny(xpathFlag, '(')) {
                     // 获取一个子串,处理递归,转义,引号问题
 
                     String subXpath;
-                    if (stateMachine.tokenQueue.matchesAny('`')) {
-                        subXpath = stateMachine.tokenQueue.chompBalanced('`', '`');
+                    if (stateMachine.tokenQueue.matchesAny(xpathFlag)) {
+                        subXpath = stateMachine.tokenQueue.chompBalanced(xpathFlag, xpathFlag);
                     } else {
                         subXpath = stateMachine.tokenQueue.chompBalanced('(', ')');
                     }
@@ -43,7 +47,7 @@ public class XpathStateMachine {
                     return;
                 }
 
-                if (stateMachine.tokenQueue.matchesAny("and", "AND", "&")) {
+                if (stateMachine.tokenQueue.matchesAny("and", "&")) {
                     if (stateMachine.tokenQueue.matchesAny("&")) {
                         stateMachine.tokenQueue.consumeTo("&");
                     } else {
@@ -58,7 +62,7 @@ public class XpathStateMachine {
                     return;
                 }
 
-                if (stateMachine.tokenQueue.matchesAny("or", "OR", "|")) {
+                if (stateMachine.tokenQueue.matchesAny("or", "|")) {
                     if (stateMachine.tokenQueue.matchesAny("|")) {
                         stateMachine.tokenQueue.consumeTo("|");
                     } else {
@@ -73,12 +77,26 @@ public class XpathStateMachine {
                     return;
                 }
 
+                XpathNode xpathNode = new XpathNode();
+                if (stateMachine.tokenQueue.matchesAny("./", "//", "/", "//")) {
+                    String scope = stateMachine.tokenQueue.consumeToAny("./", "//", "/", "//");
+                    xpathNode.setScopeEm(EmMap.getInstance().scopeEmMap.get(scope));
+                }
+                stateMachine.xpathChain.getXpathNodeList().add(xpathNode);
+                stateMachine.state = AXIS;
+
             }
         },
         AXIS {
             @Override
             public void parse(XpathStateMachine stateMachine) {
+                // 轴解析
+                if (stateMachine.tokenQueue.hasAxis()) {
+                    String axisFunction = stateMachine.tokenQueue.consumeTo("::");
+                    TokenQueue functionTokenQueue = new TokenQueue(axisFunction);
+                    String functionName = functionTokenQueue.consumeIdentify();
 
+                }
                 stateMachine.state = TAG;
             }
         },

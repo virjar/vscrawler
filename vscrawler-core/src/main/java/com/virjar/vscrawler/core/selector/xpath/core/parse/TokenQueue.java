@@ -419,6 +419,64 @@ public class TokenQueue {
         return remainder;
     }
 
+    /**
+     * 标识符,字母开始,后续可接字母或者数字
+     * 
+     * @return 标志符,如果不满足,则返回空字符串
+     */
+    public String consumeIdentify() {
+        if (!Character.isLetter(queue.charAt(pos))) {
+            return "";
+        }
+        return consumeWord();
+    }
+
+    /**
+     * 当前节点是否有轴 abc('param1','param2'):: 或者abc::
+     * 
+     * @return 是否是轴节点
+     */
+    public boolean hasAxis() {
+        int end = nextXpathNodeSeperator();
+        for (int i = pos; i < end - 1; i++) {
+            if (queue.charAt(i) == ':' && queue.charAt(i + 1) == ':') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * 下一个"\"的位置,如果没有,则返回空,考虑转义和字符串文本
+     * 
+     * @return
+     */
+    private int nextXpathNodeSeperator() {
+        int start = pos;
+        boolean inQuote = false;
+        char last = 0;
+        do {
+            if (queue.length() - start == 0) {
+                return -1;
+            }
+            Character c = queue.charAt(start++);
+
+            if (last == 0 || last != ESC) {
+                if ((c.equals('\'') || c.equals('"')))
+                    inQuote = !inQuote;
+                if (inQuote)
+                    continue;
+            }
+
+            if (c == '/') {
+                return start;
+            }
+
+            last = c;
+        } while (true);
+    }
+
     @Override
     public String toString() {
         return queue.substring(pos);
