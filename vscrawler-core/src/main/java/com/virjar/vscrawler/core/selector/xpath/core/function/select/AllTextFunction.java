@@ -3,6 +3,7 @@ package com.virjar.vscrawler.core.selector.xpath.core.function.select;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
@@ -16,7 +17,7 @@ import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
  */
 public class AllTextFunction implements SelectFunction {
     @Override
-    public List<JXNode> call(Elements elements) {
+    public List<JXNode> call(XpathNode.ScopeEm scopeEm, Elements elements, List<String> args) {
         List<JXNode> res = new LinkedList<JXNode>();
         if (elements != null && elements.size() > 0) {
             for (Element e : elements) {

@@ -1,12 +1,13 @@
 package com.virjar.vscrawler.core.selector.xpath.core.function.select;
 
-import java.util.LinkedList;
 import java.util.List;
 
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 
 /**
  * Created by virjar on 17/6/6.
@@ -17,8 +18,8 @@ import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
 public class HtmlFunction implements SelectFunction {
 
     @Override
-    public List<JXNode> call(Elements elements) {
-        List<JXNode> res = new LinkedList<JXNode>();
+    public List<JXNode> call(XpathNode.ScopeEm scopeEm, Elements elements, List<String> args) {
+        List<JXNode> res = Lists.newLinkedList();
         if (elements != null && elements.size() > 0) {
             for (Element e : elements) {
                 res.add(JXNode.t(e.html()));

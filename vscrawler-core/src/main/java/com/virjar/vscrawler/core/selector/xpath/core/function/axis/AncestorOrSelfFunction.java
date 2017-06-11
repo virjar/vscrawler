@@ -1,5 +1,7 @@
 package com.virjar.vscrawler.core.selector.xpath.core.function.axis;
 
+import java.util.List;
+
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
@@ -11,7 +13,7 @@ import org.jsoup.select.Elements;
  */
 public class AncestorOrSelfFunction implements AxisFunction {
     @Override
-    public Elements call(Element e, String... args) {
+    public Elements call(Element e, List<String> args) {
         Elements rs = e.parents();
         rs.add(e);
         return rs;

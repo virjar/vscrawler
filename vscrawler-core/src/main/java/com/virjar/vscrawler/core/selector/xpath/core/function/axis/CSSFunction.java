@@ -1,5 +1,7 @@
 package com.virjar.vscrawler.core.selector.xpath.core.function.axis;
 
+import java.util.List;
+
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
@@ -11,8 +13,8 @@ import org.jsoup.select.Elements;
  */
 public class CSSFunction implements AxisFunction {
     @Override
-    public Elements call(Element e, String... args) {
-        return e.select(args[0]);
+    public Elements call(Element e, List<String> args) {
+        return e.select(args.get(0));
     }
 
     @Override

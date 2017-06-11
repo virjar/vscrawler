@@ -1,5 +1,7 @@
 package com.virjar.vscrawler.core.selector.xpath.core.function.axis;
 
+import java.util.List;
+
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
@@ -13,5 +15,5 @@ import com.virjar.vscrawler.core.selector.xpath.core.function.NameAware;
  * @see "https://github.com/zhegexiaohuozi"
  */
 public interface AxisFunction extends NameAware {
-    Elements call(Element e, String... args);
+    Elements call(Element e, List<String> args);
 }

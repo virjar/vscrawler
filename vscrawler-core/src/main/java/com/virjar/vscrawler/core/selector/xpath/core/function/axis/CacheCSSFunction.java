@@ -43,13 +43,13 @@ public class CacheCSSFunction implements AxisFunction {
     }
 
     @Override
-    public Elements call(Element e, String... args) {
+    public Elements call(Element e, List<String> args) {
         try {
-            return Collector.collect(cache.get(args[0]), e);
+            return Collector.collect(cache.get(args.get(0)), e);
         } catch (ExecutionException e1) {
             log.warn("error when loader css query rule cache", e1);
         }
-        return e.select(args[0]);// 发生异常则服务降级
+        return e.select(args.get(0));// 发生异常则服务降级
     }
 
     @Override

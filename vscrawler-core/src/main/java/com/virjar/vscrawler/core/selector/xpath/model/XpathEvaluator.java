@@ -4,7 +4,14 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.virjar.vscrawler.core.selector.xpath.core.function.axis.AxisFunction;
 import com.virjar.vscrawler.core.selector.xpath.exception.FinalTypeNotSameException;
 import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 
@@ -50,8 +57,54 @@ public abstract class XpathEvaluator {
             this.xpathNodeList = xpathNodeList;
         }
 
-        private List<JXNode> handleNode(List<JXNode> input, XpathNode xpathNode) {
-            return null;
+        private List<JXNode> handleNode(List<JXNode> input, final XpathNode xpathNode) {
+
+            // 目前只支持对element元素进行抽取,如果中途抽取到了文本,则会断节
+            List<Element> elements = Lists
+                    .transform(Lists.newLinkedList(Iterables.filter(input, new Predicate<JXNode>() {
+                        @Override
+                        public boolean apply(JXNode input) {
+                            return !input.isText();
+                        }
+                    })), new Function<JXNode, Element>() {
+                        @Override
+                        public Element apply(JXNode input) {
+                            return input.getElement();
+                        }
+                    });
+
+            List<Element> contextElements;
+
+            // 轴
+            AxisFunction axis = xpathNode.getAxis();
+            if (axis != null) {
+                contextElements = Lists.newLinkedList();
+                for (Element element : elements) {
+                    Elements call = axis.call(element, xpathNode.getAxisParams());
+                    if (call != null) {
+                        contextElements.addAll(call);
+                    }
+                }
+            } else {
+                contextElements = elements;
+            }
+
+            // 调用抽取函数
+            List<JXNode> jxNodes = xpathNode.getSelectFunction().call(xpathNode.getScopeEm(),
+                    new Elements(contextElements), xpathNode.getSelectParams());
+
+            // 谓语过滤
+            if (xpathNode.getPredicate() == null) {
+                return jxNodes;
+            }
+
+            // 谓语只支持对元素过滤,非元素节点直接被过滤
+            return Lists.newLinkedList(Iterables.filter(jxNodes, new Predicate<JXNode>() {
+                @Override
+                public boolean apply(JXNode input) {
+                    return xpathNode.getPredicate().isValid(input.getElement());
+                }
+            }));
         }
 
         @Override
@@ -64,8 +117,10 @@ public abstract class XpathEvaluator {
 
         @Override
         public JXNode.NodeType judeNodeType() throws FinalTypeNotSameException {
-            Predicate predicate = xpathNodeList.getLast().getPredicate();
-            return null;// TODO 优化谓语结构后实现
+            // Predicate predicate = xpathNodeList.getLast().getPredicate();
+            // return null;// TODO 优化谓语结构后实现
+            // return xpathNodeList.getLast().getTagName()
+            return null;
         }
     }
 

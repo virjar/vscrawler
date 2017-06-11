@@ -29,6 +29,9 @@ public class Predicate {
     }
 
     public boolean isValid(Element element) {
+        if (element == null) {
+            return false;
+        }
         Object ret = syntaxNode.calc(element);
         if (ret == null) {
             return false;

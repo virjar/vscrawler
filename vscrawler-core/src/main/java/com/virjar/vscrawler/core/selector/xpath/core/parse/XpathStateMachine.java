@@ -17,7 +17,6 @@ import com.virjar.vscrawler.core.selector.xpath.model.Predicate;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathChain;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
-import com.virjar.vscrawler.core.selector.xpath.util.ScopeEm;
 
 import lombok.Getter;
 
@@ -25,12 +24,12 @@ import lombok.Getter;
  * Created by virjar on 17/6/9.
  */
 public class XpathStateMachine {
-    private static Map<String, ScopeEm> scopeEmMap = Maps.newHashMap();
+    private static Map<String, XpathNode.ScopeEm> scopeEmMap = Maps.newHashMap();
     static {
-        scopeEmMap.put("/", ScopeEm.INCHILREN);
-        scopeEmMap.put("//", ScopeEm.RECURSIVE);
-        scopeEmMap.put("./", ScopeEm.CUR);
-        scopeEmMap.put(".//", ScopeEm.CURREC);
+        scopeEmMap.put("/", XpathNode.ScopeEm.INCHILREN);
+        scopeEmMap.put("//", XpathNode.ScopeEm.RECURSIVE);
+        scopeEmMap.put("./", XpathNode.ScopeEm.CUR);
+        scopeEmMap.put(".//", XpathNode.ScopeEm.CURREC);
     }
     @Getter
     private BuilderState state = BuilderState.SCOPE;
@@ -177,9 +176,60 @@ public class XpathStateMachine {
             public void parse(XpathStateMachine stateMachine) throws XpathSyntaxErrorException {
                 stateMachine.tokenQueue.consumeWhitespace();
                 if (stateMachine.tokenQueue.peek() == '*') {
-                    stateMachine.xpathChain.getXpathNodeList().getLast().setTagName("*");
-                    stateMachine.tokenQueue.consume();
+                    stateMachine.tokenQueue.advance();
+                    stateMachine.tokenQueue.consumeWhitespace();
+                    stateMachine.xpathChain.getXpathNodeList().getLast()
+                            .setSelectFunction(FunctionEnv.getSelectFunction("tag"));
+                    stateMachine.xpathChain.getXpathNodeList().getLast().setSelectParams(Lists.newArrayList("*"));
                     stateMachine.state = PREDICATE;
+                    return;
+                }
+
+                if (stateMachine.tokenQueue.matchesFunction()) {// 遇到主干抽取函数,后面不能有谓语
+                    String function = stateMachine.tokenQueue.consumeFunction();
+                    TokenQueue functionTokenQueue = new TokenQueue(function);
+                    String functionName = functionTokenQueue.consumeTo("(");
+                    LinkedList<String> params = Lists.newLinkedList();
+                    TokenQueue paramTokenQueue = new TokenQueue(functionTokenQueue.chompBalanced('(', ')'));
+                    while ((paramTokenQueue.consumeWhitespace() && !paramTokenQueue.consumeWhitespace())
+                            || !paramTokenQueue.isEmpty()) {
+                        String param;
+                        if (paramTokenQueue.matches("\"")) {
+                            param = paramTokenQueue.chompBalanced('\"', '\"');
+                            if (paramTokenQueue.peek() == ',') {
+                                paramTokenQueue.advance();
+                            }
+                        } else if (paramTokenQueue.matches("\'")) {
+                            param = paramTokenQueue.chompBalanced('\'', '\'');
+                            if (paramTokenQueue.peek() == ',') {
+                                paramTokenQueue.advance();
+                            }
+                        } else {
+                            param = paramTokenQueue.consumeTo(",");
+                        }
+                        params.add(TokenQueue.unescape(param));
+                    }
+                    stateMachine.xpathChain.getXpathNodeList().getLast()
+                            .setSelectFunction(FunctionEnv.getSelectFunction(functionName));
+                    stateMachine.xpathChain.getXpathNodeList().getLast().setSelectParams(params);
+                    stateMachine.state = PREDICATE;// TODO 后面是否支持谓语,如果支持的话,谓语数据结构需要修改
+                    return;
+                }
+                if (stateMachine.tokenQueue.matches("@")) {// 遇到属性抽取动作
+                    stateMachine.tokenQueue.advance();
+                    stateMachine.tokenQueue.consumeWhitespace();
+                    stateMachine.xpathChain.getXpathNodeList().getLast()
+                            .setSelectFunction(FunctionEnv.getSelectFunction("@"));
+                    if (stateMachine.tokenQueue.peek() == '*') {
+                        stateMachine.tokenQueue.advance();
+                        stateMachine.xpathChain.getXpathNodeList().getLast().setSelectParams(Lists.newArrayList("*"));
+                    } else {
+                        String attributeKey = stateMachine.tokenQueue.consumeAttributeKey();
+                        stateMachine.xpathChain.getXpathNodeList().getLast()
+                                .setSelectParams(Lists.newArrayList(attributeKey));
+                    }
+                    stateMachine.state = PREDICATE;
+                    stateMachine.tokenQueue.consumeWhitespace();
                     return;
                 }
 
@@ -189,7 +239,9 @@ public class XpathStateMachine {
                             "can not recognize token,expected start with a tagName,actually is:"
                                     + stateMachine.tokenQueue.remainder());
                 }
-                stateMachine.xpathChain.getXpathNodeList().getLast().setTagName(tagName);
+                stateMachine.xpathChain.getXpathNodeList().getLast()
+                        .setSelectFunction(FunctionEnv.getSelectFunction("tag"));
+                stateMachine.xpathChain.getXpathNodeList().getLast().setSelectParams(Lists.newArrayList(tagName));
                 stateMachine.state = PREDICATE;
             }
         },

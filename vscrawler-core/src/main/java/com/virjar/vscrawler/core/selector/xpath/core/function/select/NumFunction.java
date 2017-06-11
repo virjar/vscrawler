@@ -9,6 +9,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
 
 /**
  * Created by virjar on 17/6/6.
@@ -18,7 +19,7 @@ import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
  */
 public class NumFunction implements SelectFunction {
     @Override
-    public List<JXNode> call(Elements elements) {
+    public List<JXNode> call(XpathNode.ScopeEm scopeEm, Elements elements, List<String> args) {
         List<JXNode> res = new LinkedList<JXNode>();
         if (elements != null) {
             Pattern pattern = Pattern.compile("\\d+");

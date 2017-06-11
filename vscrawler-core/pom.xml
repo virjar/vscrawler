@@ -40,13 +40,6 @@
             <version>5.0.73</version>
         </dependency>
 
-        <!-- vscrawler数据抽取功能,使用默认使用JsoupXpath,替换webmagic的xsoup -->
-        <dependency>
-            <groupId>cn.wanghaomiao</groupId>
-            <artifactId>JsoupXpath</artifactId>
-            <version>0.3.2</version>
-        </dependency>
-
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

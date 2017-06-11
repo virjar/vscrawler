@@ -6,7 +6,6 @@ import org.jsoup.nodes.Element;
 
 import com.virjar.vscrawler.core.selector.xpath.core.function.filter.FilterFunction;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.params.ParamType;
 
 /**
  * Created by virjar on 17/6/10.

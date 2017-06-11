@@ -12,7 +12,7 @@ package com.virjar.vscrawler.core.selector.xpath.model;
 import java.util.List;
 
 import com.virjar.vscrawler.core.selector.xpath.core.function.axis.AxisFunction;
-import com.virjar.vscrawler.core.selector.xpath.util.ScopeEm;
+import com.virjar.vscrawler.core.selector.xpath.core.function.select.SelectFunction;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -23,6 +23,22 @@ import lombok.Setter;
  * @author github.com/zhegexiaohuozi [seimimaster@gmail.com]
  */
 public class XpathNode {
+    public  enum ScopeEm {
+        INCHILREN("/"), // 默认只在子代中筛选,有轴时由轴定义筛选域
+        RECURSIVE("//"), // 向下递归查找
+        CUR("./"), // 当前节点下
+        CURREC(".//"); // 当前节点向下递归
+        private String val;
+
+        ScopeEm(String type) {
+            this.val = type;
+        }
+
+        public String val() {
+            return this.val;
+        }
+    }
+
     /**
      * 查找方向,
      */
@@ -39,16 +55,19 @@ public class XpathNode {
     @Getter
     @Setter
     private List<String> axisParams;
-    /**
-     * 标签
-     */
-    @Getter
-    @Setter
-    private String tagName;
+
     /**
      * 谓语
      */
     @Getter
     @Setter
     private Predicate predicate;
+
+    @Setter
+    @Getter
+    private SelectFunction selectFunction;
+
+    @Getter
+    @Setter
+    private List<String> selectParams;
 }
