@@ -79,11 +79,13 @@ public class XpathStateMachine {
                         stateMachine.tokenQueue.consumeToIgnoreCase("and");
                     }
                     XpathEvaluator tempEvaluator = stateMachine.evaluator;
-                    if (tempEvaluator instanceof XpathEvaluator.AndEvaluator) {
-                        return;
+                    if (!(tempEvaluator instanceof XpathEvaluator.AndEvaluator)) {
+                        XpathEvaluator newEvaluator = new XpathEvaluator.AndEvaluator();
+                        stateMachine.evaluator = tempEvaluator.wrap(newEvaluator);
                     }
-                    XpathEvaluator newEvaluator = new XpathEvaluator.AndEvaluator();
-                    stateMachine.evaluator = newEvaluator.wrap(stateMachine.evaluator);
+                    stateMachine.evaluator = stateMachine.evaluator
+                            .wrap(new XpathEvaluator.ChainEvaluator(stateMachine.xpathChain.getXpathNodeList()));
+                    stateMachine.xpathChain = new XpathChain();
                     return;
                 }
 
@@ -94,11 +96,13 @@ public class XpathStateMachine {
                         stateMachine.tokenQueue.consumeToIgnoreCase("or");
                     }
                     XpathEvaluator tempEvaluator = stateMachine.evaluator;
-                    if (tempEvaluator instanceof XpathEvaluator.OrEvaluator) {
-                        return;
+                    if (!(tempEvaluator instanceof XpathEvaluator.OrEvaluator)) {
+                        XpathEvaluator newEvaluator = new XpathEvaluator.OrEvaluator();
+                        stateMachine.evaluator = tempEvaluator.wrap(newEvaluator);
                     }
-                    XpathEvaluator newEvaluator = new XpathEvaluator.OrEvaluator();
-                    stateMachine.evaluator = newEvaluator.wrap(stateMachine.evaluator);
+                    stateMachine.evaluator = stateMachine.evaluator
+                            .wrap(new XpathEvaluator.ChainEvaluator(stateMachine.xpathChain.getXpathNodeList()));
+                    stateMachine.xpathChain = new XpathChain();
                     return;
                 }
 
@@ -127,6 +131,7 @@ public class XpathStateMachine {
                 }
 
                 String axisFunctionStr = stateMachine.tokenQueue.consumeTo("::");
+                stateMachine.tokenQueue.consume("::");
                 TokenQueue functionTokenQueue = new TokenQueue(axisFunctionStr);
                 String functionName = functionTokenQueue.consumeIdentify().trim();
                 functionTokenQueue.consumeWhitespace();
@@ -277,7 +282,7 @@ public class XpathStateMachine {
                     stateMachine.state = END;
                     stateMachine.evaluator = stateMachine.evaluator
                             .wrap(new XpathEvaluator.ChainEvaluator(stateMachine.xpathChain.getXpathNodeList()));
-                    stateMachine.xpathChain = null;
+                    stateMachine.xpathChain = new XpathChain();
                 } else {
                     stateMachine.state = SCOPE;
                 }

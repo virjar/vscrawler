@@ -16,7 +16,8 @@ public class RegisterNewOperator {
         // xpath本身相等判断是单等号 "=",有些语言里面是使用双等号判断相等 "=="。
         // 这里演示如何使用双等号实现相等判断
 
-        System.out.println(isLegal("//div[@name='myname' && 'true']   | /css('.cssExpression')::div"));
+        System.out.println(isLegal(
+                "//div[@name='myname' && 'true'] /css('.move')::*[3+ 6>8]/ul/li/a/@href   | /css('.cssExpression')::div"));
 
         System.out.println(isLegal("//div[@name=='myname' && 'true']"));
         // 注册==,使用=的优先级,使用DoubleEqualOperator运算器,注册后,测试应该就能通过
