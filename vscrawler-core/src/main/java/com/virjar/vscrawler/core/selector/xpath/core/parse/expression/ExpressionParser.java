@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.selector.xpath.core.parse.expression;
 
+import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Stack;
 
@@ -40,7 +41,7 @@ public class ExpressionParser {
         this.expressionTokenQueue = expressionTokenQueue;
     }
 
-    public SyntaxNode parse() throws XpathSyntaxErrorException {
+    private SyntaxNode innerParse() throws XpathSyntaxErrorException {
         // 表达式拆分成token流
         List<TokenHolder> tokenStream = tokenStream();
 
@@ -84,6 +85,14 @@ public class ExpressionParser {
         return computeStack.pop();
     }
 
+    public SyntaxNode parse() throws XpathSyntaxErrorException {
+        try {
+            return innerParse();
+        } catch (EmptyStackException e) {
+            throw new XpathSyntaxErrorException(0, "不能识别表达式:" + expressionTokenQueue.getQueue());
+        }
+    }
+
     private SyntaxNode buildAlgorithmUnit(TokenHolder tokenHolder, SyntaxNode left, SyntaxNode right) {
         // 对于计算树,属于内部节点,需要附加左右操作树,不能单纯根据token信息产生节点
         Preconditions.checkArgument(tokenHolder.type == TokenHolder.TokenType.OPERATOR);
@@ -105,7 +114,9 @@ public class ExpressionParser {
     }
 
     private int compareSymbolPripority(TokenHolder first, TokenHolder second) {
-        return OperatorEnv.judgePriority(first.expression) - OperatorEnv.judgePriority(second.expression);
+        // 不能直接减,否则可能溢出
+        return Integer.valueOf(OperatorEnv.judgePriority(first.expression))
+                .compareTo(OperatorEnv.judgePriority(second.expression));
     }
 
     private boolean testExpression(List<TokenHolder> tokenStream) {

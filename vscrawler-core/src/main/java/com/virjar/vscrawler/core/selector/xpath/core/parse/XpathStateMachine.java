@@ -1,6 +1,7 @@
 package com.virjar.vscrawler.core.selector.xpath.core.parse;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +32,10 @@ public class XpathStateMachine {
         scopeEmMap.put("./", XpathNode.ScopeEm.CUR);
         scopeEmMap.put(".//", XpathNode.ScopeEm.CURREC);
     }
+
+    // 注意顺序,这顺序不能乱
+    private static List<String> scopeList = Lists.newArrayList("//", "/", ".//", "/");
+
     @Getter
     private BuilderState state = BuilderState.SCOPE;
     private TokenQueue tokenQueue;
@@ -98,10 +103,14 @@ public class XpathStateMachine {
                 }
 
                 XpathNode xpathNode = new XpathNode();
-                if (stateMachine.tokenQueue.matchesAny("./", "//", "/", "//")) {
-                    String scope = stateMachine.tokenQueue.consumeToAny(".//", "./", "//", "/");
-                    xpathNode.setScopeEm(scopeEmMap.get(scope));
+                for (String scope : scopeList) {
+                    if (stateMachine.tokenQueue.matches(scope)) {
+                        stateMachine.tokenQueue.consume(scope);
+                        xpathNode.setScopeEm(scopeEmMap.get(scope));
+                        break;
+                    }
                 }
+
                 stateMachine.xpathChain.getXpathNodeList().add(xpathNode);
                 stateMachine.state = AXIS;
 
@@ -258,7 +267,8 @@ public class XpathStateMachine {
                             .setPredicate(new Predicate(predicate, predicateTree));
                 }
                 // check
-                if (!stateMachine.tokenQueue.isEmpty() || !stateMachine.tokenQueue.matches("/")) {
+                stateMachine.tokenQueue.consumeWhitespace();
+                if (!stateMachine.tokenQueue.isEmpty() && !stateMachine.tokenQueue.matches("/")) {
                     throw new XpathSyntaxErrorException(stateMachine.tokenQueue.nowPosition(),
                             "illegal predicate token :" + stateMachine.tokenQueue.remainder());
                 }

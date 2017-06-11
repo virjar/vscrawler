@@ -7,6 +7,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -42,6 +43,8 @@ public class OperatorEnv {
     }
 
     public static void addOperator(String key, int priority, Class<? extends AlgorithmUnit> algorithmUnit) {
+        Preconditions.checkArgument(!StringUtils.equals(key, "#"),
+                "\"#\" can not to be register a operator,please contact author virjar@virjar.com");
         AlgorithmHolder holder = new AlgorithmHolder(algorithmUnit, key, priority);
         allOperators.add(holder);
         operatorMaps.put(key, holder);
@@ -67,6 +70,10 @@ public class OperatorEnv {
     }
 
     public static int judgePriority(String operatorName) {
+        if (StringUtils.equals(operatorName, "#")) {
+            // 这是一个特殊逻辑,运算栈需要有一个兜底判断的操作符,所以#是RPN默认的一个运算符,但是他不会表现在编译好的语法树里面
+            return Integer.MIN_VALUE;
+        }
         AlgorithmHolder holder = operatorMaps.get(operatorName);
         return holder.priority;
     }

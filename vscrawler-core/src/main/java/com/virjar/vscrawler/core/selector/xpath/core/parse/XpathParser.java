@@ -18,6 +18,18 @@ public class XpathParser {
         tokenQueue = new TokenQueue(xpathStr);
     }
 
+    public static XpathEvaluator compile(String xpathStr) throws XpathSyntaxErrorException {
+        return new XpathParser(xpathStr).parse();
+    }
+
+    public static XpathEvaluator compileNoError(String xpathStr) {
+        try {
+            return compile(xpathStr);
+        } catch (XpathSyntaxErrorException e) {
+            return null;
+        }
+    }
+
     public XpathEvaluator parse() throws XpathSyntaxErrorException {
         XpathStateMachine xpathStateMachine = new XpathStateMachine(tokenQueue);
         while (xpathStateMachine.getState() != XpathStateMachine.BuilderState.END) {

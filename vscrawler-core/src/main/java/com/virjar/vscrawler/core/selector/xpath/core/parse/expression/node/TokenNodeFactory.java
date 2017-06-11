@@ -84,7 +84,7 @@ public class TokenNodeFactory {
         // xpath
         register(ExpressionParser.TokenHolder.TokenType.XPATH, new AlgorithmUnitGenerator() {
             @Override
-            public SyntaxNode gen(final ExpressionParser.TokenHolder tokenHolder) throws XpathSyntaxErrorException {
+            public SyntaxNode gen(ExpressionParser.TokenHolder tokenHolder) throws XpathSyntaxErrorException {
                 final XpathEvaluator xpathEvaluator = new XpathParser(tokenHolder.getExpression()).parse();
                 return new SyntaxNode() {
                     @Override
