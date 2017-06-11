@@ -6,6 +6,7 @@ import com.virjar.vscrawler.core.selector.xpath.core.parse.XpathParser;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.OperatorEnv;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node.AlgorithmUnit;
 import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
+import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 
 /**
  * Created by virjar on 17/6/11. 定义一个运算符
@@ -15,7 +16,7 @@ public class RegisterNewOperator {
         // xpath本身相等判断是单等号 "=",有些语言里面是使用双等号判断相等 "=="。
         // 这里演示如何使用双等号实现相等判断
 
-        System.out.println(isLegal("//div[@name='myname' && 'true']"));
+        System.out.println(isLegal("//div[@name='myname' && 'true']   | /css('.cssExpression')::div"));
 
         System.out.println(isLegal("//div[@name=='myname' && 'true']"));
         // 注册==,使用=的优先级,使用DoubleEqualOperator运算器,注册后,测试应该就能通过
@@ -26,7 +27,7 @@ public class RegisterNewOperator {
 
     public static boolean isLegal(String xpath) {
         try {
-            XpathParser.compile(xpath);
+            XpathEvaluator compile = XpathParser.compile(xpath);
             return true;
         } catch (XpathSyntaxErrorException e) {
             e.printStackTrace(System.out);

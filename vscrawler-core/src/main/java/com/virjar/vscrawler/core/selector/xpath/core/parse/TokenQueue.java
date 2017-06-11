@@ -187,9 +187,7 @@ public class TokenQueue {
             if (Character.isLetterOrDigit(queue.charAt(start))) {
                 continue;
             }
-            if (queue.charAt(start) == '(') {
-                return queue.indexOf(')', start) > 0;
-            }
+            return queue.charAt(start) == '(' && queue.indexOf(')', start) > 0;
         }
         return false;
     }
@@ -497,6 +495,9 @@ public class TokenQueue {
      */
     public boolean hasAxis() {
         int end = nextXpathNodeSeperator();
+        if (end == -1) {
+            end = queue.length() - 1;
+        }
         for (int i = pos; i < end - 1; i++) {
             if (queue.charAt(i) == ':' && queue.charAt(i + 1) == ':') {
                 return true;

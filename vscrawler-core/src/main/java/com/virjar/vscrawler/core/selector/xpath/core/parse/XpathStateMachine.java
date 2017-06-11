@@ -89,7 +89,7 @@ public class XpathStateMachine {
 
                 if (stateMachine.tokenQueue.matchesAny("or", "|")) {
                     if (stateMachine.tokenQueue.matchesAny("|")) {
-                        stateMachine.tokenQueue.consumeTo("|");
+                        stateMachine.tokenQueue.consume("|");
                     } else {
                         stateMachine.tokenQueue.consumeToIgnoreCase("or");
                     }
@@ -102,18 +102,19 @@ public class XpathStateMachine {
                     return;
                 }
 
-                XpathNode xpathNode = new XpathNode();
                 for (String scope : scopeList) {
                     if (stateMachine.tokenQueue.matches(scope)) {
                         stateMachine.tokenQueue.consume(scope);
+                        XpathNode xpathNode = new XpathNode();
                         xpathNode.setScopeEm(scopeEmMap.get(scope));
-                        break;
+                        stateMachine.xpathChain.getXpathNodeList().add(xpathNode);
+                        stateMachine.state = AXIS;
+                        return;
                     }
                 }
 
-                stateMachine.xpathChain.getXpathNodeList().add(xpathNode);
-                stateMachine.state = AXIS;
-
+                throw new XpathSyntaxErrorException(stateMachine.tokenQueue.nowPosition(),
+                        "can not recognize token:" + stateMachine.tokenQueue.remainder());
             }
         },
         AXIS {
@@ -268,10 +269,10 @@ public class XpathStateMachine {
                 }
                 // check
                 stateMachine.tokenQueue.consumeWhitespace();
-                if (!stateMachine.tokenQueue.isEmpty() && !stateMachine.tokenQueue.matches("/")) {
-                    throw new XpathSyntaxErrorException(stateMachine.tokenQueue.nowPosition(),
-                            "illegal predicate token :" + stateMachine.tokenQueue.remainder());
-                }
+                // if (!stateMachine.tokenQueue.isEmpty() && !stateMachine.tokenQueue.matches("/")) {
+                // throw new XpathSyntaxErrorException(stateMachine.tokenQueue.nowPosition(),
+                // "illegal predicate token :\"" + stateMachine.tokenQueue.remainder() + "\"");
+                // }
                 if (stateMachine.tokenQueue.isEmpty()) {
                     stateMachine.state = END;
                     stateMachine.evaluator = stateMachine.evaluator
