@@ -2,12 +2,9 @@ package com.virjar.vscrawler.samples.xpath;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
 import com.google.common.io.Files;
 import com.virjar.dungproxy.client.util.CommonUtil;
@@ -20,7 +17,6 @@ import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.XpathParser;
-import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 import com.virjar.vscrawler.core.util.PathResolver;
 import com.virjar.vscrawler.samples.EmptyPipeline;
 
@@ -29,18 +25,11 @@ import com.virjar.vscrawler.samples.EmptyPipeline;
  */
 public class XpathSelectTest {
     public static void main(String[] args) throws IOException {
-        InputStream stream = XpathSelectTest.class.getResourceAsStream("/道重沙由美.html");
-        String html = IOUtils.toString(stream);
-        IOUtils.closeQuietly(stream);
-
-        Document document = Jsoup.parse(html);
-        XpathEvaluator xpathEvaluator = XpathParser.compileNoError("//css('.ad-thumb-list .inner')::*//a/@href");
-        List<String> strings = xpathEvaluator.evaluateToString(document);
 
         VSCrawler vsCrawler = VSCrawlerBuilder.create().addPipeline(new EmptyPipeline())
                 .setProcessor(new SeedProcessor() {
-                    @Override
-                    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+
+                    private void handlePic(Seed seed, CrawlerSession crawlerSession) {
                         byte[] entity = crawlerSession.getCrawlerHttpClient().getEntity(seed.getData());
                         if (entity == null) {
                             seed.retry();
@@ -52,16 +41,33 @@ public class XpathSelectTest {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+
                     }
+
+                    @Override
+                    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+                        if (StringUtils.endsWithIgnoreCase(seed.getData(), ".jpg")) {
+                            handlePic(seed, crawlerSession);
+                        } else {
+                            String s = crawlerSession.getCrawlerHttpClient().get(seed.getData());
+                            if (s == null) {
+                                seed.retry();
+                                return;
+                            }
+                            crawlResult.addStrSeeds(
+                                    XpathParser.compileNoError("//css('.ad-thumb-list .inner')::*//a/@href")
+                                            .evaluateToString(Jsoup.parse(s)));
+                        }
+                    }
+
                 }).build();
 
         // 清空历史爬去数据,或者会断点续爬
         vsCrawler.clearTask();
 
-        // 加入种子
-        for (String str : strings) {
-            vsCrawler.pushSeed(str);
-        }
+        vsCrawler.pushSeed("http://www.1905.com/newgallery/hdpic/846385.shtml?fr=wwwmdb_stargener_picture_20141010");
+        vsCrawler.pushSeed("http://www.1905.com/newgallery/hdpic/898930.shtml?fr=wwwmdb_stargener_picture_20141010");
+        vsCrawler.pushSeed("http://www.1905.com/newgallery/hdpic/817834.shtml?fr=wwwmdb_stargener_picture_20141010");
 
         vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
             @Override
