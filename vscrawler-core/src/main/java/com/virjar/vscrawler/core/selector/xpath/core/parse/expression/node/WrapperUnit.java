@@ -9,15 +9,15 @@ import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode
 public abstract class WrapperUnit extends AlgorithmUnit {
     private AlgorithmUnit delegate = null;
 
-    abstract String targetName();
+    protected abstract String targetName();
 
     @Override
-    protected void setLeft(SyntaxNode left) {
+    public void setLeft(SyntaxNode left) {
         super.setLeft(left);
     }
 
     @Override
-    protected void setRight(SyntaxNode right) {
+    public void setRight(SyntaxNode right) {
         super.setRight(right);
     }
 

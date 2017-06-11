@@ -3,10 +3,13 @@ package com.virjar.vscrawler.core.selector.xpath.core.parse;
 import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 
+import lombok.Getter;
+
 /**
  * Created by virjar on 17/6/9.
  */
 public class XpathParser {
+    @Getter
     private String xpathStr;
     private TokenQueue tokenQueue;
 

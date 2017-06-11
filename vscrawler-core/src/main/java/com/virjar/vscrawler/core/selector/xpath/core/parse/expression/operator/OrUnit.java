@@ -1,16 +1,18 @@
-package com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node;
+package com.virjar.vscrawler.core.selector.xpath.core.parse.expression.operator;
 
-import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
+import org.jsoup.nodes.Element;
+
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node.AlgorithmUnit;
 
 /**
  * Created by virjar on 17/6/10.
  */
-@OpKey("||")
+@OpKey(value = "||", priority = 0)
 public class OrUnit extends AlgorithmUnit {
     @Override
-    public Object calc(JXNode jxNode) {
-        Object leftValue = left.calc(jxNode);
-        Object rightValue = right.calc(jxNode);
+    public Object calc(Element element) {
+        Object leftValue = left.calc(element);
+        Object rightValue = right.calc(element);
         // 左边为true,右边不管是啥,都为真
         if (leftValue != null && leftValue instanceof Boolean && (Boolean) leftValue) {
             return true;

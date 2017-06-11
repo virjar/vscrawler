@@ -553,7 +553,7 @@ public class TokenQueue {
         if (!isEmpty() && queue.charAt(pos) == '.' && remainingLength() >= 2
                 && Character.isDigit(queue.charAt(pos + 1))) {// 小数点
             pos++;
-            while (Character.isDigit(queue.charAt(pos))) {
+            while (!isEmpty() && Character.isDigit(queue.charAt(pos))) {
                 pos++;
             }
         }

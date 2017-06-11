@@ -5,7 +5,7 @@ import java.util.List;
 import org.jsoup.nodes.Element;
 
 import com.virjar.vscrawler.core.selector.xpath.core.function.NameAware;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.params.ParamType;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
 
 /**
  * Created by virjar on 17/6/6.
@@ -14,5 +14,5 @@ import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.params.Par
  * @author virjar 谓语过滤方法,基于这个接口实现
  */
 public interface FilterFunction extends NameAware {
-    Object call(Element element, List<ParamType> params);
+    Object call(Element element, List<SyntaxNode> params);
 }

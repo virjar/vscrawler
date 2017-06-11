@@ -1,7 +1,9 @@
-package com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node;
+package com.virjar.vscrawler.core.selector.xpath.core.parse.expression.operator;
 
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node.AlgorithmUnit;
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
 import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
+import org.jsoup.nodes.Element;
 
 /**
  * Created by virjar on 17/6/10.
@@ -9,12 +11,12 @@ import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
  * @author virjar
  * @since 0.0.1 大于> 运算
  */
-@OpKey(">")
+@OpKey(value = ">", priority = 10)
 public class GreaterThanUnit extends AlgorithmUnit {
     @Override
-    public Object calc(JXNode jxNode) {
-        Object leftValue = left.calc(jxNode);
-        Object rightValue = right.calc(jxNode);
+    public Object calc(Element element) {
+        Object leftValue = left.calc(element);
+        Object rightValue = right.calc(element);
         if (leftValue == null || rightValue == null) {
             return XpathUtil.toPlainString(leftValue).compareTo(XpathUtil.toPlainString(rightValue)) > 0;
         }

@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node;
+package com.virjar.vscrawler.core.selector.xpath.core.parse.expression.operator;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -17,4 +17,6 @@ public @interface OpKey {
      * @return 对应符号标记,如"+","-","*","/","%",">","<",">=",">=","!="
      */
     String value();
+
+    int priority();
 }

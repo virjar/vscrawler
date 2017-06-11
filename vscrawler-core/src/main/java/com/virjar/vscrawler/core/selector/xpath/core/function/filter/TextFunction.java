@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.jsoup.nodes.Element;
 
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.params.ParamType;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
 
 /**
  * Created by virjar on 17/6/6.
@@ -14,7 +14,7 @@ import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.params.Par
  */
 public class TextFunction implements FilterFunction {
     @Override
-    public Object call(Element element, List<ParamType> params) {
+    public Object call(Element element, List<SyntaxNode> params) {
         return element.ownText();
     }
 

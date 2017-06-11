@@ -29,7 +29,7 @@ public class Predicate {
     }
 
     public boolean isValid(Element element) {
-        Object ret = syntaxNode.calc(JXNode.e(element));
+        Object ret = syntaxNode.calc(element);
         if (ret == null) {
             return false;
         }

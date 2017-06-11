@@ -2,6 +2,7 @@ package com.virjar.vscrawler.core.selector.xpath.core.function.filter;
 
 import java.util.List;
 
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
 import org.jsoup.nodes.Element;
 
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.params.ParamType;
@@ -14,7 +15,7 @@ import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.params.Par
  */
 public class AllTextFunction implements FilterFunction {
     @Override
-    public Object call(Element element, List<ParamType> params) {
+    public Object call(Element element, List<SyntaxNode> params) {
         return element.text();
     }
 
