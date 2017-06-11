@@ -92,7 +92,27 @@ public class PathResolver {
         // return absolutePath;
     }
 
-    public static String resourceName(String basePath, String url) {
+    public static String onlySource(String basePath, String url) {
+        if (basePath.startsWith("~")) {
+            basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
+        }
+
+        Matcher matcher = fileNamePattern.matcher(url);
+        if (!matcher.find()) {
+            return new File(basePath, UUID.randomUUID().toString()).getAbsolutePath();
+        }
+        String resource = matcher.group(2);
+        File targetFile = new File(basePath, resource);
+        File parentFile = targetFile.getParentFile();
+        if (!parentFile.exists()) {
+            if (!parentFile.mkdirs()) {
+                return new File(basePath, url).getAbsolutePath();
+            }
+        }
+        return targetFile.getAbsolutePath();
+    }
+
+    public static String domainAndSource(String basePath, String url) {
         if (basePath.startsWith("~")) {
             basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
         }

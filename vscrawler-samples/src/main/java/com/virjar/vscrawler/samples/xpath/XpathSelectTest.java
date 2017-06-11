@@ -48,7 +48,7 @@ public class XpathSelectTest {
                         }
                         try {
                             Files.write(entity, // 文件根据网站,路径,base自动计算
-                                    new File(PathResolver.resourceName("~/Desktop/testpic", seed.getData())));
+                                    new File(PathResolver.onlySource("~/Desktop/testpic", seed.getData())));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -72,7 +72,7 @@ public class XpathSelectTest {
                         new Thread() {
                             @Override
                             public void run() {
-                                CommonUtil.sleep(10000);
+                                CommonUtil.sleep(10000);// 如果连续10s都没有新任务,则停止爬虫
                                 if (vsCrawler.activeWorker() == 0) {
                                     vsCrawler.stopCrawler();
                                 }
