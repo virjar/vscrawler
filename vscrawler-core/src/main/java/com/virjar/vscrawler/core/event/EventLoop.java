@@ -27,6 +27,8 @@ public class EventLoop implements CrawlerEndEvent {
         return instance;
     }
 
+    private Thread loopThread = null;
+
     private ConcurrentMap<String, Set<EventHandler>> allHandlers = Maps.newConcurrentMap();
 
     private EventLoop() {
@@ -73,7 +75,7 @@ public class EventLoop implements CrawlerEndEvent {
     public void loop() {
         AutoEventRegistry.getInstance().registerObserver(this);
         if (isRunning.compareAndSet(false, true)) {
-            Thread thread = new Thread("vsCrawlerEventLoop") {
+            loopThread = new Thread("vsCrawlerEventLoop") {
                 @Override
                 public void run() {
                     while (isRunning.get()) {
@@ -81,14 +83,14 @@ public class EventLoop implements CrawlerEndEvent {
                             Event poll = eventQueue.take();
                             disPatch(poll);
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            log.info("event loop end");
                         }
 
                     }
                 }
             };
-            thread.setDaemon(true);
-            thread.start();
+            loopThread.setDaemon(true);
+            loopThread.start();
         }
     }
 
@@ -112,5 +114,6 @@ public class EventLoop implements CrawlerEndEvent {
         // 事件循环本身收到了事件消息
         isRunning.set(false);
         log.info("收到爬虫结束消息,停止事件循环,未处理将被忽略,当前待处理事件个数:{}", eventQueue.size());
+        loopThread.interrupt();
     }
 }

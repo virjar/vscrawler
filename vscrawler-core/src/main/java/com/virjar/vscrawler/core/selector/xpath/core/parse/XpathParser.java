@@ -26,7 +26,7 @@ public class XpathParser {
         try {
             return compile(xpathStr);
         } catch (XpathSyntaxErrorException e) {
-            return null;
+            return new XpathEvaluator.AnanyseStartEvaluator();
         }
     }
 

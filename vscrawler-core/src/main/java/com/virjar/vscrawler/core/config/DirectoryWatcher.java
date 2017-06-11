@@ -6,17 +6,23 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
+import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
 
 /**
  * 文件系统目录和文件监控服务
  * 
  * @author 杨尚川
  */
-public class DirectoryWatcher {
+public class DirectoryWatcher implements CrawlerEndEvent {
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectoryWatcher.class);
 
     private WatchService watchService = null;
@@ -30,10 +36,8 @@ public class DirectoryWatcher {
 
     }
 
-    private DirectoryWatcher() {
-    }
-
     private DirectoryWatcher(final WatcherCallback watcherCallback, WatchEvent.Kind<?>... events) {
+        AutoEventRegistry.getInstance().registerObserver(this);
         try {
             if (events.length == 0) {
                 throw new RuntimeException(
@@ -41,7 +45,8 @@ public class DirectoryWatcher {
             }
             synchronized (DirectoryWatcher.class) {
                 if (EXECUTOR_SERVICE == null) {
-                    EXECUTOR_SERVICE = Executors.newCachedThreadPool();
+                    EXECUTOR_SERVICE = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS,
+                            new SynchronousQueue<Runnable>(), new NamedThreadFactory("watch-service"));
                 }
             }
             this.events = new WatchEvent.Kind<?>[events.length];
@@ -230,6 +235,13 @@ public class DirectoryWatcher {
         dictionaryWatcher.watchDirectoryTree("d:/DIC");
         // 只监控DIC2目录
         dictionaryWatcher.watchDirectory("d:/DIC2");
+    }
+
+    @Override
+    public void crawlerEnd() {
+        if (!EXECUTOR_SERVICE.isShutdown()) {
+            EXECUTOR_SERVICE.shutdownNow();
+        }
     }
 
     public static interface WatcherCallback {

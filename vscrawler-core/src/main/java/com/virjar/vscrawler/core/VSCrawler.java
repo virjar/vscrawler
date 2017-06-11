@@ -89,11 +89,20 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         this.pipeline = pipeline;
     }
 
+    public class WaitThread extends Thread {
+        @Override
+        public void run() {
+            CommonUtil.sleep(120000);
+        }
+    }
+
     public void stopCrawler() {
         if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
+            new WaitThread().start();
+            VSCrawler.this.interrupt();
             log.info("爬虫停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent");
             AutoEventRegistry.getInstance().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd();
-            System.out.flush();//刷新系统buffer,避免影响队形
+            System.out.flush();// 刷新系统buffer,避免影响队形
             synchronized (System.out) {
                 System.err.println("                      江城子 . 程序员之歌");
                 System.err.println("");
@@ -115,7 +124,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     public void pushSeed(String seed) {
-        berkeleyDBSeedManager.addNewSeeds(Lists.<Seed> newArrayList(new Seed(seed)));
+        berkeleyDBSeedManager.addNewSeeds(Lists.newArrayList(new Seed(seed)));
     }
 
     private AtomicInteger activeTasks = new AtomicInteger(0);
@@ -187,7 +196,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             taskDispatchLock.lock();
             taskDispatchCondition.await();
         } catch (InterruptedException e) {
-            log.warn("爬虫线程休眠被打断", e);
+            log.warn("爬虫线程休眠被打断");
             return false;
         } finally {
             taskDispatchLock.unlock();
@@ -223,6 +232,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         int originRetryCount = seed.getRetry();
         CrawlResult crawlResult = new CrawlResult();
         try {
+            if (seed.getStatus() == STAT_INIT) {
+                seed.setStatus(Seed.STATUS_RUNNING);
+            }
             seedProcessor.process(seed, session, crawlResult);
             if (seed.getStatus() == Seed.STATUS_RUNNING) {
                 seed.setStatus(Seed.STATUS_SUCCESS);
@@ -231,6 +243,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             if (originRetryCount != seed.getRetry() && seed.getStatus() != Seed.STATUS_RUNNING) {
                 seed.retry();
             }
+            throw e;
         } finally {
             // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
             berkeleyDBSeedManager.finish(seed);
@@ -356,5 +369,13 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     public VSCrawler addCrawlerStartCallBack(CrawlerStartCallBack crawlerStartCallBack) {
         allStartCallBacks.add(crawlerStartCallBack);
         return this;
+    }
+
+    public void clearTask() {
+        berkeleyDBSeedManager.clear();
+    }
+
+    public int activeWorker() {
+        return threadPool.getActiveCount();
     }
 }

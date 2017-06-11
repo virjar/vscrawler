@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -70,7 +71,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
      */
     public void init() {
         // 移植游标
-        //archive(); //大量数据会导致程序很慢,而且似乎没有意义
+        // archive(); //大量数据会导致程序很慢,而且似乎没有意义
     }
 
     public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver, int cacheSize) {
@@ -247,7 +248,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     /**
      * 更新种子,如果种子已经处理完成,那么移动到完成库,否则修改状态
-     * 
+     *
      * @param seed 曾经处理过的种子
      */
     public void finish(Seed seed) {
@@ -311,7 +312,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     /**
      * 新产生的种子,如果入库,那么会消重。后加入的种子被reject
-     * 
+     *
      * @param seeds 种子
      */
     public void addNewSeeds(Collection<Seed> seeds) {
@@ -398,6 +399,26 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         log.info("关闭数据库环境...");
         IOUtils.closeQuietly(env);
         log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
+
+    }
+
+    public void clear() {
+        List<String> databaseNames = env.getDatabaseNames();
+        if (databaseNames.contains("crawlSeed")) {
+            env.removeDatabase(null, "crawlSeed");
+        }
+        if (databaseNames.contains("finishedSeed")) {
+            env.removeDatabase(null, "finishedSeed");
+        }
+        long expectedNumber = NumberUtils.toLong(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties()
+                .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
+
+        bloomFilter = BloomFilter.create(new Funnel<Seed>() {
+            @Override
+            public void funnel(Seed from, PrimitiveSink into) {
+                into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
+            }
+        }, expectedNumber);
 
     }
 }

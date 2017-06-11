@@ -21,6 +21,63 @@ import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 public abstract class XpathEvaluator {
     public abstract List<JXNode> evaluate(List<JXNode> elements);
 
+    public List<JXNode> evaluate(Elements elements) {
+        return evaluate(Lists.transform(elements, new Function<Element, JXNode>() {
+            @Override
+            public JXNode apply(Element input) {
+                return JXNode.e(input);
+            }
+        }));
+    }
+
+    public List<JXNode> evaluate(Element element) {
+        return evaluate(new Elements(element));
+    }
+
+    public List<String> evaluateToString(List<JXNode> jxNodes) {
+        return transformToString(evaluate(jxNodes));
+    }
+
+    public List<String> evaluateToString(Element element) {
+        return transformToString(evaluate(element));
+    }
+
+    public List<Element> evaluateToElement(List<JXNode> jxNodes) {
+        return transformToElement(evaluate(jxNodes));
+    }
+
+    public List<Element> evaluateToElement(Element element) {
+        return transformToElement(evaluate(element));
+    }
+
+    public static List<Element> transformToElement(List<JXNode> jxNodes) {
+        return Lists.newLinkedList(Iterables.transform(Iterables.filter(jxNodes, new Predicate<JXNode>() {
+            @Override
+            public boolean apply(JXNode input) {
+                return input.getElement() != null;
+            }
+        }), new Function<JXNode, Element>() {
+            @Override
+            public Element apply(JXNode input) {
+                return input.getElement();
+            }
+        }));
+    }
+
+    public static List<String> transformToString(List<JXNode> jxNodes) {
+        return Lists.newLinkedList(Iterables.transform(Iterables.filter(jxNodes, new Predicate<JXNode>() {
+            @Override
+            public boolean apply(JXNode input) {
+                return input.isText();
+            }
+        }), new Function<JXNode, String>() {
+            @Override
+            public String apply(JXNode input) {
+                return input.getTextVal();
+            }
+        }));
+    }
+
     /**
      * 系统会checktype
      *
