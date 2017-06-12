@@ -73,10 +73,10 @@ public class XpathStateMachine {
                 }
 
                 if (stateMachine.tokenQueue.matchesAny("and", "&")) {
-                    if (stateMachine.tokenQueue.matchesAny("&")) {
-                        stateMachine.tokenQueue.consumeTo("&");
+                    if (stateMachine.tokenQueue.matches("&")) {
+                        stateMachine.tokenQueue.consume("&");
                     } else {
-                        stateMachine.tokenQueue.consumeToIgnoreCase("and");
+                        stateMachine.tokenQueue.advance("and".length());
                     }
                     XpathEvaluator tempEvaluator = stateMachine.evaluator;
                     if (!(tempEvaluator instanceof XpathEvaluator.AndEvaluator)) {
@@ -90,10 +90,10 @@ public class XpathStateMachine {
                 }
 
                 if (stateMachine.tokenQueue.matchesAny("or", "|")) {
-                    if (stateMachine.tokenQueue.matchesAny("|")) {
+                    if (stateMachine.tokenQueue.matches("|")) {
                         stateMachine.tokenQueue.consume("|");
                     } else {
-                        stateMachine.tokenQueue.consumeToIgnoreCase("or");
+                        stateMachine.tokenQueue.advance("or".length());
                     }
                     XpathEvaluator tempEvaluator = stateMachine.evaluator;
                     if (!(tempEvaluator instanceof XpathEvaluator.OrEvaluator)) {
@@ -166,6 +166,10 @@ public class XpathStateMachine {
                 LinkedList<String> params = Lists.newLinkedList();
                 while (!paramTokenQueue.isEmpty()) {
                     paramTokenQueue.consumeWhitespace();
+                    if (!paramTokenQueue.isEmpty() && paramTokenQueue.peek() == ',') {
+                        paramTokenQueue.advance();
+                        paramTokenQueue.consumeWhitespace();
+                    }
                     String param;
                     if (paramTokenQueue.matches("\"")) {
                         param = paramTokenQueue.chompBalanced('\"', '\"');
@@ -179,6 +183,9 @@ public class XpathStateMachine {
                         }
                     } else {
                         param = paramTokenQueue.consumeTo(",");
+                        if (StringUtils.isEmpty(param)) {
+                            continue;
+                        }
                     }
                     params.add(TokenQueue.unescape(param));
                 }

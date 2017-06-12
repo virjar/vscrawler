@@ -1,9 +1,9 @@
 package com.virjar.vscrawler.core.selector.xpath.core.parse.expression.operator;
 
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node.AlgorithmUnit;
-import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
-import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 import org.jsoup.nodes.Element;
+
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node.AlgorithmUnit;
+import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 
 /**
  * Created by virjar on 17/6/10.
@@ -24,6 +24,9 @@ public class AddUnit extends AlgorithmUnit {
         // 左右都不为空,开始计算
         // step one think as number
         if (leftValue instanceof Number && rightValue instanceof Number) {
+            if (leftValue instanceof Integer && rightValue instanceof Integer) {
+                return (Integer) leftValue + (Integer) rightValue;
+            }
             return ((Number) leftValue).doubleValue() + ((Number) rightValue).doubleValue();
         }
 

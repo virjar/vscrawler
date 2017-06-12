@@ -192,6 +192,18 @@ public class TokenQueue {
         return false;
     }
 
+    public boolean matchesBoolean() {
+        if (remainingLength() < "true".length()) {
+            return false;
+        }
+        if (matches("true") || matches("false")) {
+            if (remainingLength() == "true".length() || !Character.isLetter(queue.charAt(pos + "true".length()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public String consumeFunction() {
         String functionName = consumeTo("(");
         String params = chompBalanced('(', ')');
@@ -204,6 +216,12 @@ public class TokenQueue {
     public void advance() {
         if (!isEmpty())
             pos++;
+    }
+
+    public void advance(int step) {
+        if (step > remainingLength())
+            throw new IllegalStateException("Queue not long enough to advance sequence");
+        pos += step;
     }
 
     /**
@@ -247,6 +265,16 @@ public class TokenQueue {
             return consumed;
         } else {
             return remainder();
+        }
+    }
+
+    public String tryConsumeTo(String seq) {
+        int offset = queue.indexOf(seq, pos);
+        if (offset != -1) {
+            return queue.substring(pos, offset);
+
+        } else {
+            return tryRemainder();
         }
     }
 
@@ -474,6 +502,10 @@ public class TokenQueue {
         final String remainder = queue.substring(pos, queue.length());
         pos = queue.length();
         return remainder;
+    }
+
+    public String tryRemainder() {
+        return queue.substring(pos, queue.length());
     }
 
     /**

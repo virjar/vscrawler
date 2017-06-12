@@ -3,15 +3,12 @@ package com.virjar.vscrawler.over.webmagic7.select;
 import java.util.List;
 
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.XpathParser;
+import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
 
-import cn.wanghaomiao.xpath.core.XpathEvaluator;
-import cn.wanghaomiao.xpath.exception.NoSuchAxisException;
-import cn.wanghaomiao.xpath.exception.NoSuchFunctionException;
-import cn.wanghaomiao.xpath.model.JXNode;
 import lombok.extern.slf4j.Slf4j;
 import us.codecraft.webmagic.selector.BaseElementSelector;
 
@@ -32,7 +29,7 @@ public class XpathSelector extends BaseElementSelector {
     @Override
     public String select(Element element) {
         try {
-            List<JXNode> jns = new XpathEvaluator().evaluate(xpathStr, new Elements(element));
+            List<JXNode> jns = XpathParser.compile(xpathStr).evaluate(element);
             if (jns.size() == 0) {
                 return null;
             }
@@ -44,10 +41,6 @@ public class XpathSelector extends BaseElementSelector {
             }
         } catch (Exception e) {
             String msg = "please check the xpath syntax";
-            // 这种应该预编译的时候抛出,设计不好
-            if (e instanceof NoSuchAxisException || e instanceof NoSuchFunctionException) {
-                msg = e.getMessage();
-            }
             log.error(msg);
             return null;
             // throw new XpathSyntaxErrorException(msg);
@@ -57,7 +50,7 @@ public class XpathSelector extends BaseElementSelector {
     @Override
     public List<String> selectList(Element element) {
         try {
-            List<JXNode> jns = new XpathEvaluator().evaluate(xpathStr, new Elements(element));
+            List<JXNode> jns = XpathParser.compile(xpathStr).evaluate(element);
 
             return Lists.transform(jns, new Function<JXNode, String>() {
                 @Override
@@ -72,10 +65,6 @@ public class XpathSelector extends BaseElementSelector {
 
         } catch (Exception e) {
             String msg = "please check the xpath syntax";
-            // 这种应该预编译的时候抛出,设计不好
-            if (e instanceof NoSuchAxisException || e instanceof NoSuchFunctionException) {
-                msg = e.getMessage();
-            }
             log.error(msg);
             return null;
             // throw new XpathSyntaxErrorException(msg);
@@ -95,7 +84,7 @@ public class XpathSelector extends BaseElementSelector {
     public List<Element> selectElements(final Element element) {
 
         try {
-            List<JXNode> jns = new XpathEvaluator().evaluate(xpathStr, new Elements(element));
+            List<JXNode> jns = XpathParser.compile(xpathStr).evaluate(element);
 
             return Lists.transform(jns, new Function<JXNode, Element>() {
                 @Override
@@ -110,10 +99,6 @@ public class XpathSelector extends BaseElementSelector {
 
         } catch (Exception e) {
             String msg = "please check the xpath syntax";
-            // 这种应该预编译的时候抛出,设计不好
-            if (e instanceof NoSuchAxisException || e instanceof NoSuchFunctionException) {
-                msg = e.getMessage();
-            }
             log.error(msg);
             return null;
             // throw new XpathSyntaxErrorException(msg);

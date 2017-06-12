@@ -2,6 +2,8 @@ package com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node;
 
 import java.util.Map;
 
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jsoup.nodes.Element;
 
@@ -12,6 +14,7 @@ import com.virjar.vscrawler.core.selector.xpath.core.parse.XpathParser;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.ExpressionParser;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.FunctionParser;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.token.Token;
 import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
@@ -20,7 +23,7 @@ import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
  * Created by virjar on 17/6/11.对于普通的token类型,通过他来构造
  */
 public class TokenNodeFactory {
-    private static Map<ExpressionParser.TokenHolder.TokenType, AlgorithmUnitGenerator> allGerator = Maps.newHashMap();
+    private static Map<Token.TokenType, AlgorithmUnitGenerator> allGerator = Maps.newHashMap();
 
     static {
         registerDefault();
@@ -28,13 +31,17 @@ public class TokenNodeFactory {
 
     private static void registerDefault() {
         // 数字
-        register(ExpressionParser.TokenHolder.TokenType.NUMBER, new AlgorithmUnitGenerator() {
+        register(Token.TokenType.NUMBER, new AlgorithmUnitGenerator() {
             @Override
             public SyntaxNode gen(final ExpressionParser.TokenHolder tokenHolder) {
                 return new SyntaxNode() {
                     @Override
                     public Object calc(Element element) {
-                        return NumberUtils.toDouble(tokenHolder.getExpression());
+                        if (StringUtils.contains(tokenHolder.getExpression(), ".")) {
+                            return NumberUtils.toDouble(tokenHolder.getExpression());
+                        } else {
+                            return NumberUtils.toInt(tokenHolder.getExpression());
+                        }
                     }
 
                     @Override
@@ -46,7 +53,7 @@ public class TokenNodeFactory {
         });
 
         // 取属性动作
-        register(ExpressionParser.TokenHolder.TokenType.ATTRIBUTE_ACTION, new AlgorithmUnitGenerator() {
+        register(Token.TokenType.ATTRIBUTE_ACTION, new AlgorithmUnitGenerator() {
             @Override
             public SyntaxNode gen(final ExpressionParser.TokenHolder tokenHolder) {
                 return new SyntaxNode() {
@@ -64,7 +71,7 @@ public class TokenNodeFactory {
         });
 
         // 字符串常量
-        register(ExpressionParser.TokenHolder.TokenType.CONSTANT, new AlgorithmUnitGenerator() {
+        register(Token.TokenType.CONSTANT, new AlgorithmUnitGenerator() {
             @Override
             public SyntaxNode gen(final ExpressionParser.TokenHolder tokenHolder) {
                 return new SyntaxNode() {
@@ -82,7 +89,7 @@ public class TokenNodeFactory {
         });
 
         // xpath
-        register(ExpressionParser.TokenHolder.TokenType.XPATH, new AlgorithmUnitGenerator() {
+        register(Token.TokenType.XPATH, new AlgorithmUnitGenerator() {
             @Override
             public SyntaxNode gen(ExpressionParser.TokenHolder tokenHolder) throws XpathSyntaxErrorException {
                 final XpathEvaluator xpathEvaluator = new XpathParser(tokenHolder.getExpression()).parse();
@@ -101,7 +108,7 @@ public class TokenNodeFactory {
         });
 
         // 子串
-        register(ExpressionParser.TokenHolder.TokenType.EXPRESSION, new AlgorithmUnitGenerator() {
+        register(Token.TokenType.EXPRESSION, new AlgorithmUnitGenerator() {
             @Override
             public SyntaxNode gen(ExpressionParser.TokenHolder tokenHolder) throws XpathSyntaxErrorException {
                 return new ExpressionParser(new TokenQueue(tokenHolder.getExpression())).parse();
@@ -109,22 +116,43 @@ public class TokenNodeFactory {
         });
 
         // 函数
-        register(ExpressionParser.TokenHolder.TokenType.FUNCTION, new AlgorithmUnitGenerator() {
+        register(Token.TokenType.FUNCTION, new AlgorithmUnitGenerator() {
             @Override
             public SyntaxNode gen(ExpressionParser.TokenHolder tokenHolder) throws XpathSyntaxErrorException {
                 return new FunctionParser(new TokenQueue(tokenHolder.getExpression())).parse();
             }
         });
+
+        // boolean变量
+        register(Token.TokenType.BOOLEAN, new AlgorithmUnitGenerator() {
+            @Override
+            public SyntaxNode gen(final ExpressionParser.TokenHolder tokenHolder) throws XpathSyntaxErrorException {
+
+                return new SyntaxNode() {
+                    @Override
+                    public Object calc(Element element) {
+                        return BooleanUtils.toBoolean(tokenHolder.getExpression());
+                    }
+
+                    @Override
+                    public Class judeResultType() {
+                        return Boolean.class;
+                    }
+                };
+            }
+        });
     }
 
-    public static void register(ExpressionParser.TokenHolder.TokenType tokenType, AlgorithmUnitGenerator gernator) {
+    public static void register(Token.TokenType tokenType, AlgorithmUnitGenerator gernator) {
         allGerator.put(tokenType, gernator);
     }
 
+    @Deprecated
     public static AlgorithmUnitGenerator hintGenerator(ExpressionParser.TokenHolder tokenType) {
-        return allGerator.get(tokenType.getType());
+        return allGerator.get(Token.TokenType.valueOf(tokenType.getType()));
     }
 
+    @Deprecated
     public static SyntaxNode hintAndGen(ExpressionParser.TokenHolder tokenHolder) throws XpathSyntaxErrorException {
         return hintGenerator(tokenHolder).gen(tokenHolder);
     }

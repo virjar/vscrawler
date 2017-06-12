@@ -8,7 +8,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.TokenQueue;
 import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node.AlgorithmUnit;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node.TokenNodeFactory;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.token.Token;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.token.TokenAnalysisRegistry;
+import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.token.TokenConsumer;
 import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
 
 import lombok.Getter;
@@ -54,9 +56,7 @@ public class ExpressionParser {
         stack.push(bottom);
 
         for (TokenHolder tokenHolder : tokenStream) {
-            if (tokenHolder.type != TokenHolder.TokenType.OPERATOR) {
-                RPN.add(tokenHolder);
-            } else {
+            if (tokenHolder.type.equals(Token.OPERATOR)) {
                 TokenHolder preSymbol = stack.peek();
                 while (compareSymbolPripority(tokenHolder, preSymbol) <= 0) {
                     RPN.add(preSymbol);
@@ -64,6 +64,9 @@ public class ExpressionParser {
                     preSymbol = stack.peek();
                 }
                 stack.push(tokenHolder);
+            } else {
+                RPN.add(tokenHolder);
+
             }
         }
         while (!stack.peek().expression.equals("#")) {
@@ -74,12 +77,12 @@ public class ExpressionParser {
         Stack<SyntaxNode> computeStack = new Stack<>();
 
         for (TokenHolder tokenHolder : RPN) {
-            if (tokenHolder.type != TokenHolder.TokenType.OPERATOR) {
-                computeStack.push(buildByTokenHolder(tokenHolder));
-            } else {
+            if (tokenHolder.type.equals(Token.OPERATOR)) {
                 SyntaxNode right = computeStack.pop();
                 SyntaxNode left = computeStack.pop();
                 computeStack.push(buildAlgorithmUnit(tokenHolder, left, right));
+            } else {
+                computeStack.push(buildByTokenHolder(tokenHolder));
             }
         }
         return computeStack.pop();
@@ -95,7 +98,7 @@ public class ExpressionParser {
 
     private SyntaxNode buildAlgorithmUnit(TokenHolder tokenHolder, SyntaxNode left, SyntaxNode right) {
         // 对于计算树,属于内部节点,需要附加左右操作树,不能单纯根据token信息产生节点
-        Preconditions.checkArgument(tokenHolder.type == TokenHolder.TokenType.OPERATOR);
+        Preconditions.checkArgument(tokenHolder.type.equals(Token.OPERATOR));
         AlgorithmUnit algorithmUnit = OperatorEnv.createByName(tokenHolder.expression);
         algorithmUnit.setLeft(left);
         algorithmUnit.setRight(right);
@@ -109,8 +112,9 @@ public class ExpressionParser {
      * @return 用来挂在计算树上面的叶节点
      */
     private SyntaxNode buildByTokenHolder(TokenHolder tokenHolder) throws XpathSyntaxErrorException {
-        Preconditions.checkArgument(tokenHolder.type != TokenHolder.TokenType.OPERATOR);
-        return TokenNodeFactory.hintAndGen(tokenHolder);
+        Preconditions.checkArgument(!tokenHolder.type.equals(Token.OPERATOR));
+        // return TokenNodeFactory.hintAndGen(tokenHolder);
+        return TokenAnalysisRegistry.findHandler(tokenHolder.getType()).parseToken(tokenHolder.expression);
     }
 
     private int compareSymbolPripority(TokenHolder first, TokenHolder second) {
@@ -119,150 +123,41 @@ public class ExpressionParser {
                 .compareTo(OperatorEnv.judgePriority(second.expression));
     }
 
-    private boolean testExpression(List<TokenHolder> tokenStream) {
-        // 当前遇到的串是一个括号
-        if (expressionTokenQueue.matches("(")) {
-            // 括号优先级,单独处理,不在逆波兰式内部处理括号问题了,这样逻辑简单一些,而且也浪费不了太大的计算消耗
-            String subExpression = expressionTokenQueue.chompBalanced('(', ')');
-            TokenHolder tokenHolder = new TokenHolder(subExpression, TokenHolder.TokenType.EXPRESSION);
-            tokenStream.add(tokenHolder);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean testDigit(List<TokenHolder> tokenStream) {
-        // 当前遇到的串是一个数字
-        if (expressionTokenQueue.matchesDigit()) {
-            String number = expressionTokenQueue.consumeDigit();
-            TokenHolder tokenHolder = new TokenHolder(number, TokenHolder.TokenType.NUMBER);
-            tokenStream.add(tokenHolder);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean testAttributeAction(List<TokenHolder> tokenStream) {
-        // 取属性动作
-        if (expressionTokenQueue.matches("@")) {
-            expressionTokenQueue.advance();
-            String attributeKey = expressionTokenQueue.consumeAttributeKey();
-            TokenHolder tokenHolder = new TokenHolder(attributeKey, TokenHolder.TokenType.ATTRIBUTE_ACTION);
-            tokenStream.add(tokenHolder);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean testXpath(List<TokenHolder> tokenStream) {
-        // xpath子串
-        if (expressionTokenQueue.matches("`")) {
-            String xpathStr = expressionTokenQueue.chompBalanced('`', '`');
-            TokenHolder tokenHolder = new TokenHolder(xpathStr, TokenHolder.TokenType.XPATH);
-            tokenStream.add(tokenHolder);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean testStringConstant(List<TokenHolder> tokenStream, char flag) {
-        // 字符串常量
-        if (flag != '\'' && flag != '\"') {
-            return false;
-        }
-        if (expressionTokenQueue.matches(String.valueOf(flag))) {
-            String subStr = expressionTokenQueue.chompBalanced(flag, flag);
-            TokenHolder tokenHolder = new TokenHolder(TokenQueue.unescape(subStr), TokenHolder.TokenType.CONSTANT);
-            tokenStream.add(tokenHolder);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean testOperator(List<TokenHolder> tokenStream) {
-        // 运算符
-        // 所有支持的运算符,而且是排序好了的
-        List<OperatorEnv.AlgorithmHolder> algorithmHolders = OperatorEnv.allAlgorithmUnitList();
-        for (OperatorEnv.AlgorithmHolder holder : algorithmHolders) {
-            if (expressionTokenQueue.matches(holder.getKey())) {
-                expressionTokenQueue.consume(holder.getKey());
-                TokenHolder tokenHolder = new TokenHolder(holder.getKey(), TokenHolder.TokenType.OPERATOR);
-                tokenStream.add(tokenHolder);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean testFunction(List<TokenHolder> tokenStream) {
-        if (expressionTokenQueue.matchesFunction()) {
-            String function = expressionTokenQueue.consumeFunction();
-            TokenHolder tokenHolder = new TokenHolder(function, TokenHolder.TokenType.FUNCTION);
-            tokenStream.add(tokenHolder);
-            return true;
-        }
-        return false;
-    }
-
     private List<TokenHolder> tokenStream() throws XpathSyntaxErrorException {
         List<TokenHolder> tokenStream = Lists.newLinkedList();
         // java不支持逗号表达式,这么做达到了逗号表达式的效果
         while ((expressionTokenQueue.consumeWhitespace() || !expressionTokenQueue.consumeWhitespace())
                 && !expressionTokenQueue.isEmpty()) {
-            if (testExpression(tokenStream)) {
-                continue;
-            }
 
-            if (testAttributeAction(tokenStream)) {
-                continue;
+            boolean hint = false;
+            for (TokenConsumer tokenConsumer : TokenAnalysisRegistry.consumerIterable()) {
+                String consume = tokenConsumer.consume(expressionTokenQueue);
+                if (consume == null) {
+                    continue;
+                }
+                hint = true;
+                tokenStream.add(new TokenHolder(consume, tokenConsumer.tokenType()));
+                break;
             }
-            if (testXpath(tokenStream)) {
-                continue;
+            if (!hint) {
+                // 不成功,报错
+                throw new XpathSyntaxErrorException(expressionTokenQueue.nowPosition(), "can not parse predicate"
+                        + expressionTokenQueue.getQueue() + "  for token " + expressionTokenQueue.remainder());
             }
-
-            if (testStringConstant(tokenStream, '\'')) {
-                continue;
-            }
-            if (testStringConstant(tokenStream, '\"')) {
-                continue;
-            }
-
-            if (testOperator(tokenStream)) {
-                continue;
-            }
-
-            // 数字需要在操作符之后,因为先解析减号再解析负数
-            if (testDigit(tokenStream)) {
-                continue;
-            }
-
-            // 函数
-            if (testFunction(tokenStream)) {
-                continue;
-            }
-
-            // 兜底
-
-            // 不成功,报错
-            throw new XpathSyntaxErrorException(expressionTokenQueue.nowPosition(), "can not parse predicate"
-                    + expressionTokenQueue.getQueue() + "  for token " + expressionTokenQueue.remainder());
         }
 
         return tokenStream;
     }
 
     public static class TokenHolder {
-        public enum TokenType {
-            OPERATOR, CONSTANT, NUMBER, EXPRESSION, ATTRIBUTE_ACTION, XPATH, FUNCTION
-        }
 
-        public TokenHolder(String expression, TokenType type) {
+        public TokenHolder(String expression, String type) {
             this.expression = expression;
             this.type = type;
         }
 
         @Getter
-        private TokenType type;
+        private String type;
         @Getter
         private String expression;
 
