@@ -24,6 +24,7 @@ public class TokenAnalysisRegistry {
         registerHandler(new FunctionHandler());
         registerHandler(new NumberHandler());
         registerHandler(new XpathHandler());
+        registerHandler(new ExpressionHandler());
 
         registerConsumer(new AttributeActionConsumer());
         registerConsumer(new BooleanConsumer());
@@ -32,6 +33,7 @@ public class TokenAnalysisRegistry {
         registerConsumer(new DigitConsumer());
         registerConsumer(new XpathConsumer());
         registerConsumer(new OperatorConsumer());
+        registerConsumer(new ExpressionConsumer());
 
         // TODO
         registerConsumer(new DefaultWordConsumer());
