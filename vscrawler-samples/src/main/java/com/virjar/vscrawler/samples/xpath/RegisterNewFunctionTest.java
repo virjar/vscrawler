@@ -4,10 +4,10 @@ import java.util.List;
 
 import org.jsoup.nodes.Element;
 
-import com.virjar.vscrawler.core.selector.xpath.core.FunctionEnv;
-import com.virjar.vscrawler.core.selector.xpath.core.function.filter.FilterFunction;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.XpathParser;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
+import com.virjar.vscrawler.core.selector.xpath.function.FunctionEnv;
+import com.virjar.vscrawler.core.selector.xpath.function.filter.FilterFunction;
+import com.virjar.vscrawler.core.selector.xpath.parse.XpathParser;
+import com.virjar.vscrawler.core.selector.xpath.parse.expression.SyntaxNode;
 import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
 
 /**

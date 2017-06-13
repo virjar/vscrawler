@@ -4,7 +4,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.SyntaxNode;
+import com.virjar.vscrawler.core.selector.xpath.parse.expression.SyntaxNode;
 import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 
 import lombok.Getter;

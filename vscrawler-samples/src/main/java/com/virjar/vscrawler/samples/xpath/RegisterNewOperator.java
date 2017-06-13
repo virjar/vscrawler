@@ -2,9 +2,9 @@ package com.virjar.vscrawler.samples.xpath;
 
 import org.jsoup.nodes.Element;
 
-import com.virjar.vscrawler.core.selector.xpath.core.parse.XpathParser;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.OperatorEnv;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.expression.node.AlgorithmUnit;
+import com.virjar.vscrawler.core.selector.xpath.parse.XpathParser;
+import com.virjar.vscrawler.core.selector.xpath.parse.expression.OperatorEnv;
+import com.virjar.vscrawler.core.selector.xpath.parse.expression.node.AlgorithmUnit;
 import com.virjar.vscrawler.core.selector.xpath.exception.XpathSyntaxErrorException;
 import com.virjar.vscrawler.core.selector.xpath.model.XpathEvaluator;
 

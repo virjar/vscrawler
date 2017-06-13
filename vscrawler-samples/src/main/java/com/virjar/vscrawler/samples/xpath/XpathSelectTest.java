@@ -16,7 +16,7 @@ import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.XpathParser;
+import com.virjar.vscrawler.core.selector.xpath.parse.XpathParser;
 import com.virjar.vscrawler.core.util.PathResolver;
 import com.virjar.vscrawler.samples.EmptyPipeline;
 

@@ -6,7 +6,7 @@ import org.jsoup.nodes.Element;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.virjar.vscrawler.core.selector.xpath.core.parse.XpathParser;
+import com.virjar.vscrawler.core.selector.xpath.parse.XpathParser;
 import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
 
 import lombok.extern.slf4j.Slf4j;

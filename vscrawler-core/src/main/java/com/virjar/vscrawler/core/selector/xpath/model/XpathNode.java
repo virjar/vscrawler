@@ -11,8 +11,8 @@ package com.virjar.vscrawler.core.selector.xpath.model;
 
 import java.util.List;
 
-import com.virjar.vscrawler.core.selector.xpath.core.function.axis.AxisFunction;
-import com.virjar.vscrawler.core.selector.xpath.core.function.select.SelectFunction;
+import com.virjar.vscrawler.core.selector.xpath.function.axis.AxisFunction;
+import com.virjar.vscrawler.core.selector.xpath.function.select.SelectFunction;
 
 import lombok.Getter;
 import lombok.Setter;

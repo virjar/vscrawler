@@ -11,7 +11,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.virjar.vscrawler.core.selector.xpath.core.function.axis.AxisFunction;
+import com.virjar.vscrawler.core.selector.xpath.function.axis.AxisFunction;
 import com.virjar.vscrawler.core.selector.xpath.exception.FinalTypeNotSameException;
 import com.virjar.vscrawler.core.selector.xpath.util.XpathUtil;
 
