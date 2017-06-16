@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.selector.xpath.function.select;
+package com.virjar.vscrawler.samples.xpath;
 
 import java.util.List;
 
@@ -8,15 +8,16 @@ import org.jsoup.select.Elements;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
-import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
+import com.virjar.sipsoup.function.select.SelectFunction;
+import com.virjar.sipsoup.model.SIPNode;
+import com.virjar.sipsoup.model.XpathNode;
 
 /**
- * Created by virjar on 17/6/11.
+ * Created by virjar on 17/6/16.
  */
-public class TagSelectFunction implements SelectFunction {
+public class MyTagSelectFunction implements SelectFunction {
     @Override
-    public List<JXNode> call(XpathNode.ScopeEm scopeEm, Elements elements, List<String> args) {
+    public List<SIPNode> call(XpathNode.ScopeEm scopeEm, Elements elements, List<String> args) {
         String tagName = args.get(0);
         List<Element> temp = Lists.newLinkedList();
 
@@ -25,6 +26,8 @@ public class TagSelectFunction implements SelectFunction {
                 for (Element element : elements) {
                     temp.addAll(element.getAllElements());
                 }
+                // 应该是在子节点查找,本节点应该忽略
+                // temp.addAll(elements);
             } else {
                 temp.addAll(elements.select(tagName));
             }
@@ -33,19 +36,22 @@ public class TagSelectFunction implements SelectFunction {
                 for (Element element : elements) {
                     temp.addAll(element.children());
                 }
+                // temp.addAll(elements);
             } else {
                 for (Element element : elements) {
-                    if (StringUtils.equals(element.tagName(), tagName)) {
-                        temp.add(element);
+                    for (Element child : element.children()) {
+                        if (StringUtils.equals(child.tagName(), tagName)) {
+                            temp.add(child);
+                        }
                     }
                 }
             }
         }
 
-        return Lists.transform(temp, new Function<Element, JXNode>() {
+        return Lists.transform(temp, new Function<Element, SIPNode>() {
             @Override
-            public JXNode apply(Element input) {
-                return JXNode.e(input);
+            public SIPNode apply(Element input) {
+                return SIPNode.e(input);
             }
         });
     }

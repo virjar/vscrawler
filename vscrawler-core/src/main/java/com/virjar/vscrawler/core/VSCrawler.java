@@ -101,7 +101,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             new WaitThread().start();
             VSCrawler.this.interrupt();
             log.info("爬虫停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent");
-            AutoEventRegistry.getInstance().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd();
             System.out.flush();// 刷新系统buffer,避免影响队形
             synchronized (System.out) {
                 System.err.println("                      江城子 . 程序员之歌");
@@ -114,6 +113,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 System.err.println("                      相顾无言，惟有泪千行。");
                 System.err.println("                  每晚灯火阑珊处，夜难寐，加班狂。");
             }
+            AutoEventRegistry.getInstance().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd();
         } else {
             log.info("爬虫已经停止,不需要发生爬虫停止事件消息");
         }
@@ -232,9 +232,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         int originRetryCount = seed.getRetry();
         CrawlResult crawlResult = new CrawlResult();
         try {
-            if (seed.getStatus() == STAT_INIT) {
-                seed.setStatus(Seed.STATUS_RUNNING);
-            }
+            seed.setStatus(Seed.STATUS_RUNNING);
             seedProcessor.process(seed, session, crawlResult);
             if (seed.getStatus() == Seed.STATUS_RUNNING) {
                 seed.setStatus(Seed.STATUS_SUCCESS);

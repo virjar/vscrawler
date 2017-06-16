@@ -14,11 +14,20 @@
     <name>core</name>
     <url>http://maven.apache.org</url>
     <dependencies>
+        <!-- 网络层 -->
         <dependency>
             <groupId>com.virjar</groupId>
             <artifactId>dungproxy-client</artifactId>
             <version>0.0.6</version>
         </dependency>
+
+        <!-- xpath -->
+        <dependency>
+            <groupId>com.virjar</groupId>
+            <artifactId>sipsoup</artifactId>
+            <version>RELEASE</version>
+        </dependency>
+        
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -53,6 +62,7 @@
             <version>2.5.1</version>
         </dependency>
         <!-- chinese to pinyin end -->
+
 
     </dependencies>
     <build>

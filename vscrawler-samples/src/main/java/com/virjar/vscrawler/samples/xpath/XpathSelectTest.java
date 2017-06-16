@@ -8,6 +8,8 @@ import org.jsoup.Jsoup;
 
 import com.google.common.io.Files;
 import com.virjar.dungproxy.client.util.CommonUtil;
+import com.virjar.sipsoup.function.FunctionEnv;
+import com.virjar.sipsoup.parse.XpathParser;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerBuilder;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
@@ -16,7 +18,6 @@ import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
-import com.virjar.vscrawler.core.selector.xpath.parse.XpathParser;
 import com.virjar.vscrawler.core.util.PathResolver;
 import com.virjar.vscrawler.samples.EmptyPipeline;
 
@@ -24,6 +25,12 @@ import com.virjar.vscrawler.samples.EmptyPipeline;
  * Created by virjar on 17/6/11.
  */
 public class XpathSelectTest {
+    static {
+        FunctionEnv.registSelectFunction(new AbsUrlFunction());
+        FunctionEnv.registFilterFunction(new MyContainsFunction());
+        FunctionEnv.registSelectFunction(new MyTagSelectFunction());
+    }
+
     public static void main(String[] args) throws IOException {
 
         VSCrawler vsCrawler = VSCrawlerBuilder.create().addPipeline(new EmptyPipeline())
@@ -54,9 +61,11 @@ public class XpathSelectTest {
                                 seed.retry();
                                 return;
                             }
-                            crawlResult.addStrSeeds(
-                                    XpathParser.compileNoError("//css('.ad-thumb-list .inner')::*//a/@href")
-                                            .evaluateToString(Jsoup.parse(s)));
+                            // 将下一页的链接和图片链接抽取出来
+                            crawlResult.addStrSeeds(XpathParser
+                                    .compileNoError(
+                                            "/css('#pages a')::self()[contains(text(),'下一页')]/absUrl('href') | /css('.content')::center/img/@src")
+                                    .evaluateToString(Jsoup.parse(s, seed.getData())));
                         }
                     }
 
@@ -65,9 +74,12 @@ public class XpathSelectTest {
         // 清空历史爬去数据,或者会断点续爬
         vsCrawler.clearTask();
 
-        vsCrawler.pushSeed("http://www.1905.com/newgallery/hdpic/846385.shtml?fr=wwwmdb_stargener_picture_20141010");
-        vsCrawler.pushSeed("http://www.1905.com/newgallery/hdpic/898930.shtml?fr=wwwmdb_stargener_picture_20141010");
-        vsCrawler.pushSeed("http://www.1905.com/newgallery/hdpic/817834.shtml?fr=wwwmdb_stargener_picture_20141010");
+        vsCrawler.pushSeed("https://www.meitulu.com/item/2125.html");
+        vsCrawler.pushSeed("https://www.meitulu.com/item/6892.html");
+        vsCrawler.pushSeed("https://www.meitulu.com/item/2124.html");
+        vsCrawler.pushSeed("https://www.meitulu.com/item/2120.html");
+        vsCrawler.pushSeed("https://www.meitulu.com/item/2086.html");
+        vsCrawler.pushSeed("https://www.meitulu.com/item/2066.html");
 
         vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
             @Override

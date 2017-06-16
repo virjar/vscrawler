@@ -1,22 +1,24 @@
-package com.virjar.vscrawler.core.selector.xpath.function.select;
+package com.virjar.vscrawler.samples.xpath;
 
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import com.google.common.collect.Lists;
-import com.virjar.vscrawler.core.selector.xpath.model.JXNode;
-import com.virjar.vscrawler.core.selector.xpath.model.XpathNode;
+import com.virjar.sipsoup.function.select.SelectFunction;
+import com.virjar.sipsoup.model.SIPNode;
+import com.virjar.sipsoup.model.XpathNode;
 
 /**
- * Created by virjar on 17/6/11.
+ * Created by virjar on 17/6/16.
  */
-public class AttrFunction implements SelectFunction {
+public class AbsUrlFunction implements SelectFunction {
     @Override
-    public List<JXNode> call(XpathNode.ScopeEm scopeEm, Elements elements, List<String> args) {
-        List<JXNode> ret = Lists.newLinkedList();
+    public List<SIPNode> call(XpathNode.ScopeEm scopeEm, Elements elements, List<String> args) {
+        List<SIPNode> ret = Lists.newLinkedList();
         boolean allAttr = StringUtils.equals(args.get(0), "*");
         String attrName = args.get(0);
         for (Element element : elements) {
@@ -31,19 +33,21 @@ public class AttrFunction implements SelectFunction {
         return ret;
     }
 
-    private void handle(boolean allAttr, String attrKey, Element element, List<JXNode> ret) {
+    private void handle(boolean allAttr, String attrKey, Element element, List<SIPNode> ret) {
         if (allAttr) {
-            ret.add(JXNode.t(element.attributes().toString()));
+            for (Attribute attribute : element.attributes()) {
+                ret.add(SIPNode.t(element.absUrl(attribute.getKey())));
+            }
         } else {
-            String value = element.attr(attrKey);
+            String value = element.absUrl(attrKey);
             if (StringUtils.isNotBlank(value)) {
-                ret.add(JXNode.t(value));
+                ret.add(SIPNode.t(value));
             }
         }
     }
 
     @Override
     public String getName() {
-        return "@";
+        return "absUrl";
     }
 }
