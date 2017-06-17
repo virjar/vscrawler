@@ -5,17 +5,15 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.*;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.PrimitiveSink;
@@ -50,7 +48,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     private SeedKeyResolver seedKeyResolver;
 
-    private BloomFilter<Seed> bloomFilter;
+    private SegmentResolver segmentResolver;
+
+    private Map<String, BloomFilter<Seed>> bloomFilters = Maps.newConcurrentMap();
 
     private DatabaseConfig databaseConfig;
 
@@ -67,6 +67,23 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     private int cacheSize;
 
     /**
+     * 段信息
+     */
+    private TreeSet<Long> allSegments = Sets.newTreeSet();
+    private TreeSet<Long> runningSegments = Sets.newTreeSet();
+    ////////// 以下为常量数据
+    /**
+     * 段表
+     */
+    private static final String SEGMENT = "SEGMENT_TABLE";
+
+    private static final String RUNNING_SEGMENT_PREFIX = "RUNNING_SEGMENT_PREFIX_";
+
+    private static final String FINISHED_SEGMENT_PREFIX = "FINISHED_SEGMENT_PREFIX_";
+
+    private static final String defaultSegment = "defaultSegment";
+
+    /**
      * 这个方法和pool必须在同一个线程里面
      */
     public void init() {
@@ -74,12 +91,17 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         // archive(); //大量数据会导致程序很慢,而且似乎没有意义
     }
 
-    public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver, int cacheSize) {
+    public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver,
+            SegmentResolver segmentResolver, int cacheSize) {
         this.initSeedSource = initSeedSource;
         this.seedKeyResolver = seedKeyResolver;
+        this.segmentResolver = segmentResolver;
         this.cacheSize = cacheSize;
         // 配置数据库环境
         configEnv();
+
+        // 初始化分段数据库
+        loadSegments();
 
         // 布隆过滤器数据还原
         buildBloomFilterInfo();
@@ -91,13 +113,56 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         AutoEventRegistry.getInstance().registerObserver(this);
     }
 
-    private synchronized void loadCache() {
-        Database iteratorDatabases = env.openDatabase(null, "crawlSeed", databaseConfig);
+    private void loadSegments() {
+        Database iteratorDatabases = env.openDatabase(null, SEGMENT, databaseConfig);
         Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
-        Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
         try {
             while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+                String segmentName = new String(iteratorValue.getData());
+                allSegments.add(Long.parseLong(segmentName));
+                runningSegments.add(Long.parseLong(segmentName));
+            }
+        } finally {
+            IOUtils.closeQuietly(cursor);
+            IOUtils.closeQuietly(iteratorDatabases);
+        }
+    }
+
+    private synchronized void loadCache() {
+        // step one ,attempt load default segment
+        loadCache(defaultSegment);
+        if (ramCache.size() >= cacheSize) {
+            return;
+        }
+
+        // step two ,attempt to load time segment
+        Iterator<Long> iterator = runningSegments.iterator();
+        while (iterator.hasNext()) {
+            Long activeTimeStamp = iterator.next();
+
+            // segment need to be active in the future
+            if (activeTimeStamp > System.currentTimeMillis()) {
+                return;
+            }
+            if (loadCache(String.valueOf(activeTimeStamp)) == 0) {
+                iterator.remove();
+            }
+            if (ramCache.size() >= cacheSize) {
+                return;
+            }
+        }
+    }
+
+    private synchronized int loadCache(String segmentName) {
+        int loadSize = 0;
+        Database iteratorDatabases = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + segmentName, databaseConfig);
+        Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
+        Database finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + segmentName, databaseConfig);
+        try {
+            while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+                loadSize++;
                 Seed ret = VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
+                ret.setSegmentKey(segmentName);
                 cursor.delete();// 删除当前数据
                 if (!ret.needEnd()) {
                     ramCache.offer(ret);
@@ -113,7 +178,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             IOUtils.closeQuietly(iteratorDatabases);
             IOUtils.closeQuietly(finishedSeedDatabase);
         }
-
+        return loadSize;
     }
 
     public synchronized Seed pool() {
@@ -126,12 +191,13 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         } else {
             Seed poll = ramCache.poll();
             if (poll != null) {
-                runningSeeds.put(seedKeyResolver.resolveSeedKey(poll), poll);
+                runningSeeds.put(poll.getSegmentKey() + seedKeyResolver.resolveSeedKey(poll), poll);
             }
             return poll;
         }
     }
 
+    @Deprecated
     private void archive() {
         Database iteratorDatabases = env.openDatabase(null, "crawlSeed", databaseConfig);
         Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
@@ -159,7 +225,20 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private boolean saveBloomFilterInfo() {
-        File bloomData = new File(SingtonObjectHolder.workPath, "bloomFilter.dat");
+        boolean ret = true;
+        for (Long segment : allSegments) {
+            if (!saveBloomFilterInfo(String.valueOf(segment)) && ret) {
+                ret = false;
+            }
+        }
+        if (!saveBloomFilterInfo(defaultSegment) && ret) {
+            ret = false;
+        }
+        return ret;
+    }
+
+    private boolean saveBloomFilterInfo(String segment) {
+        File bloomData = new File(SingtonObjectHolder.workPath, segment);
         if (!bloomData.exists()) {
             try {
                 if (!bloomData.createNewFile()) {
@@ -174,7 +253,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         FileOutputStream fileOutputStream = null;
         try {
             fileOutputStream = new FileOutputStream(bloomData);
-            bloomFilter.writeTo(fileOutputStream);
+            bloomFilters.get(segment).writeTo(fileOutputStream);
             return true;
         } catch (IOException ioe) {
             log.warn("不能写入取BloomFilter数据,消重逻辑可能转移到数据库,性能可能受到影响", ioe);
@@ -185,12 +264,20 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private void buildBloomFilterInfo() {
-        File bloomData = new File(SingtonObjectHolder.workPath, "bloomFilter.dat");
+        for (Long segment : allSegments) {
+            String s = String.valueOf(segment);
+            bloomFilters.put(s, buildBloomFilterInfo(s));
+        }
+        bloomFilters.put(defaultSegment, buildBloomFilterInfo(defaultSegment));
+    }
+
+    private BloomFilter<Seed> buildBloomFilterInfo(String segment) {
+        File bloomData = new File(SingtonObjectHolder.workPath, segment);
         if (bloomData.exists()) {
             FileInputStream inputStream = null;
             try {
                 inputStream = new FileInputStream(bloomData);
-                bloomFilter = BloomFilter.readFrom(inputStream, new Funnel<Seed>() {
+                return BloomFilter.readFrom(inputStream, new Funnel<Seed>() {
                     @Override
                     public void funnel(Seed from, PrimitiveSink into) {
                         into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
@@ -207,21 +294,13 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
 
         // any way, build a filter instance if not exist
-        if (bloomFilter == null) {
-            bloomFilter = BloomFilter.create(new Funnel<Seed>() {
-                @Override
-                public void funnel(Seed from, PrimitiveSink into) {
-                    into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
-                }
-            }, expectedNumber);
-        }
-        // can not migrate if expectedNumber not equals, else check will failed
-        /*
-         * else { BloomFilter<Seed> temp = BloomFilter.create(new Funnel<Seed>() {
-         * @Override public void funnel(Seed from, PrimitiveSink into) {
-         * into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset()); } }, expectedNumber);
-         * temp.putAll(bloomFilter); bloomFilter = temp; }
-         */
+        return BloomFilter.create(new Funnel<Seed>() {
+            @Override
+            public void funnel(Seed from, PrimitiveSink into) {
+                into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
+            }
+        }, expectedNumber);
+
     }
 
     private void configEnv() {
@@ -257,28 +336,23 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             return;
         }
         String seedKey = seedKeyResolver.resolveSeedKey(seed);
-        runningSeeds.remove(seedKey);
+        runningSeeds.remove(seed.getSegmentKey() + seedKey);
+
         DatabaseEntry key = new DatabaseEntry(seedKey.getBytes());
         DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
-
-        // Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
-        // try {
-        // runningSeedDatabase.put(null, key, value);
-        // } finally {
-        // IOUtils.closeQuietly(runningSeedDatabase);
-        // }
-
         if (seed.needEnd()) {
-            Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
+            Database finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + seed.getSegmentKey(),
+                    databaseConfig);
             finishedSeedDatabase.put(null, key, value);
             finishedSeedDatabase.close();
 
-            // TODO 确认在crawlSeed是否还存在
-            Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
+            Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + seed.getSegmentKey(),
+                    databaseConfig);
             runningSeedDatabase.removeSequence(null, key);
             runningSeedDatabase.close();
         } else {
-            Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
+            Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + seed.getSegmentKey(),
+                    databaseConfig);
             runningSeedDatabase.put(null, key, value);
             runningSeedDatabase.close();
         }
@@ -286,27 +360,43 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private void reSaveCache() {
-        if (ramCache.size() == 0) {
-            return;
+        LinkedList<Seed> allSeed = Lists.newLinkedList();
+        allSeed.addAll(ramCache);
+        allSeed.addAll(runningSeeds.values());
+        // 转化为各自的段
+        Multimap<String, Seed> segmentSeeds = HashMultimap.create();
+        for (Seed seed : allSeed) {
+            segmentSeeds.put(seed.getSegmentKey(), seed);
         }
-        Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
-        try {
-            Seed seed;
-            log.info("缓存中未分发数据重新入库...");
-            // 缓存中没有处理的
-            while ((seed = ramCache.poll()) != null) {
-                DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
-                DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
-                runningSeedDatabase.put(null, key, value);
+
+        // 处理各自的段
+        for (Map.Entry<String, Collection<Seed>> entry : segmentSeeds.asMap().entrySet()) {
+            Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(),
+                    databaseConfig);
+            try {
+                for (Seed seed : entry.getValue()) {
+                    DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
+                    DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
+                    runningSeedDatabase.put(null, key, value);
+                }
+
+            } finally {
+                IOUtils.closeQuietly(runningSeedDatabase);
             }
-            log.info("正在执行的爬虫任务,不等待结果,重新入库...");
-            for (Seed tempSeed : runningSeeds.values()) {
-                DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(tempSeed).getBytes());
-                DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(tempSeed).getBytes());
-                runningSeedDatabase.put(null, key, value);
+
+        }
+    }
+
+    private void saveSegment() {
+        Database iteratorDatabases = env.openDatabase(null, SEGMENT, databaseConfig);
+        try {
+            for (Long segment : allSegments) {
+                DatabaseEntry key = new DatabaseEntry(segment.toString().getBytes());
+                DatabaseEntry value = new DatabaseEntry(segment.toString().getBytes());
+                iteratorDatabases.put(null, key, value);
             }
         } finally {
-            IOUtils.closeQuietly(runningSeedDatabase);
+            IOUtils.closeQuietly(iteratorDatabases);
         }
     }
 
@@ -320,29 +410,77 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             log.warn("db已经关闭,拒绝添加新种子");
             return;
         }
-        Database runningSeedDatabase = env.openDatabase(null, "crawlSeed", databaseConfig);
-        try {
-            for (Seed seed : seeds) {
 
-                if (bloomFilter.mightContain(seed)) {
-                    /*
-                     * if (seed.needEnd() && runningSeedDatabase.get(null, key, value, LockMode.DEFAULT) ==
-                     * OperationStatus.SUCCESS) { runningSeedDatabase.removeSequence(null, key);
-                     * finishedSeedDataBases.put(null, key, value); }
-                     */
-                    continue;
-                }
-                DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
-                DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
-                runningSeedDatabase.put(null, key, value);
-                bloomFilter.put(seed);
-                if (isSeedEmpty.compareAndSet(true, false)) {
-                    AutoEventRegistry.getInstance().findEventDeclaring(FirstSeedPushEvent.class).firstSeed(seed);
-                }
+        // 转化为各自的段
+        Multimap<String, Seed> segmentSeeds = HashMultimap.create();
+        for (Seed seed : seeds) {
+            if (seed.getActiveTimeStamp() != null) {
+                segmentSeeds.put(String.valueOf(segmentResolver.resolveSegmentKey(seed.getActiveTimeStamp())), seed);
+            } else {
+                segmentSeeds.put(defaultSegment, seed);
             }
-        } finally {
-            VSCrawlerCommonUtil.closeQuietly(runningSeedDatabase);
         }
+
+        // 处理各自的段
+        for (Map.Entry<String, Collection<Seed>> entry : segmentSeeds.asMap().entrySet()) {
+            Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(),
+                    databaseConfig);
+            BloomFilter<Seed> bloomFilter = getOrCreate(entry.getKey());
+            try {
+                for (Seed seed : entry.getValue()) {
+                    if (bloomFilter.mightContain(seed)) {
+                        continue;
+                    }
+
+                    /**
+                     * 处理新增加的段
+                     */
+                    if (!StringUtils.equals(entry.getKey(), defaultSegment)
+                            || !allSegments.contains(Long.parseLong(entry.getKey()))) {
+                        allSegments.add(Long.parseLong(entry.getKey()));
+                        runningSegments.add(Long.parseLong(entry.getKey()));
+                    }
+
+                    DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
+                    DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
+                    runningSeedDatabase.put(null, key, value);
+                    bloomFilter.put(seed);
+                    if (isSeedEmpty.compareAndSet(true, false)) {
+                        AutoEventRegistry.getInstance().findEventDeclaring(FirstSeedPushEvent.class).firstSeed(seed);
+                    }
+                }
+            } finally {
+                VSCrawlerCommonUtil.closeQuietly(runningSeedDatabase);
+            }
+        }
+
+    }
+
+    private BloomFilter<Seed> getOrCreate(String segment) {
+        BloomFilter<Seed> seedBloomFilter = bloomFilters.get(segment);
+        if (seedBloomFilter != null) {
+            return seedBloomFilter;
+        }
+        synchronized (segment.intern()) {
+            seedBloomFilter = bloomFilters.get(segment);
+            if (seedBloomFilter != null) {
+                return seedBloomFilter;
+            }
+
+            long expectedNumber = NumberUtils.toLong(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties()
+                    .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
+
+            // any way, build a filter instance if not exist
+            seedBloomFilter = BloomFilter.create(new Funnel<Seed>() {
+                @Override
+                public void funnel(Seed from, PrimitiveSink into) {
+                    into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
+                }
+            }, expectedNumber);
+
+            bloomFilters.put(segment, seedBloomFilter);
+        }
+        return seedBloomFilter;
     }
 
     private void resolveDBFile() {
@@ -389,36 +527,58 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     @Override
     public void crawlerEnd() {
-        // 1.7的低版本不支持and方法
-        // boolean allSuccess = BooleanUtils.and(VSCrawlerCommonUtil.closeQuietly(env), saveBloomFilterInfo());
-
         log.info("收到爬虫结束消息,开始关闭资源");
         log.info("拒绝抓取结果入库...");
         isClosed = true;
+        log.info("缓存中未分发数据重新入库,正在执行的爬虫任务,不等待结果,重新入库...");
         reSaveCache();
+        log.info("写入段表信息");
+        saveSegment();
         log.info("关闭数据库环境...");
         IOUtils.closeQuietly(env);
         log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
-
     }
 
     public void clear() {
         List<String> databaseNames = env.getDatabaseNames();
-        if (databaseNames.contains("crawlSeed")) {
-            env.removeDatabase(null, "crawlSeed");
-        }
-        if (databaseNames.contains("finishedSeed")) {
-            env.removeDatabase(null, "finishedSeed");
-        }
         long expectedNumber = NumberUtils.toLong(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties()
                 .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
+        for (Long segment : allSegments) {
+            String segmentName = RUNNING_SEGMENT_PREFIX + segment;
+            if (databaseNames.contains(segmentName)) {
+                env.removeDatabase(null, segmentName);
+            }
 
-        bloomFilter = BloomFilter.create(new Funnel<Seed>() {
+            segmentName = FINISHED_SEGMENT_PREFIX + segment;
+            if (databaseNames.contains(segmentName)) {
+                env.removeDatabase(null, segmentName);
+            }
+
+            bloomFilters.put(String.valueOf(segment), BloomFilter.create(new Funnel<Seed>() {
+                @Override
+                public void funnel(Seed from, PrimitiveSink into) {
+                    into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
+                }
+            }, expectedNumber));
+        }
+
+        // default segment
+        String segmentName = RUNNING_SEGMENT_PREFIX + defaultSegment;
+        if (databaseNames.contains(segmentName)) {
+            env.removeDatabase(null, segmentName);
+        }
+
+        segmentName = FINISHED_SEGMENT_PREFIX + defaultSegment;
+        if (databaseNames.contains(segmentName)) {
+            env.removeDatabase(null, segmentName);
+        }
+
+        bloomFilters.put(defaultSegment, BloomFilter.create(new Funnel<Seed>() {
             @Override
             public void funnel(Seed from, PrimitiveSink into) {
                 into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
             }
-        }, expectedNumber);
+        }, expectedNumber));
 
     }
 }

@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>vscrawler-over-webmagic7</artifactId>
-    <version>${parent.version}</version>
+    <version>${project.parent.version}</version>
 
 
     <dependencies>
@@ -24,6 +24,26 @@
             <groupId>us.codecraft</groupId>
             <artifactId>webmagic-core</artifactId>
             <version>0.7.0.alpha</version>
+            <scope>provided</scope>
+            <exclusions>
+                <!-- vscrawler依赖的jsoup版本是1.9.2,不知道为啥provided会影响最终jsoup的版本,而且还是compile的scope?? -->
+                <exclusion>
+                    <artifactId>jsoup</artifactId>
+                    <groupId>org.jsoup</groupId>
+                </exclusion>
+
+                <!-- 这个和com.googlecode.aviator:aviator依赖的commons-beanutils:commons-beanutils冲突 -->
+                <exclusion>
+                    <groupId>commons-collections</groupId>
+                    <artifactId>commons-collections</artifactId>
+                </exclusion>
+
+                <!-- 和ch.qos.logback:logback-classic 冲突,vscrawler中使用logback作为日志框架-->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>

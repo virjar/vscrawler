@@ -196,7 +196,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             taskDispatchLock.lock();
             taskDispatchCondition.await();
         } catch (InterruptedException e) {
-            log.warn("爬虫线程休眠被打断");
             return false;
         } finally {
             taskDispatchLock.unlock();

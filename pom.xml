@@ -55,6 +55,8 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
+
+    
     <profiles>
         <profile>
             <id>release</id>
@@ -132,7 +134,50 @@
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+
+            <!-- 为了让vscrawler代码更加规范,VSCrawler定义所有依赖不存在重复类
+                 检查命令为: mvn duplicate-finder:check
+                 每次发布作者将会执行此命令检查是否有重复依赖
+             -->
+            <plugin>
+                <groupId>org.basepom.maven</groupId>
+                <artifactId>duplicate-finder-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <id>default</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>false</skip>
+                    <quiet>false</quiet>
+                    <checkCompileClasspath>true</checkCompileClasspath>
+                    <checkRuntimeClasspath>true</checkRuntimeClasspath>
+                    <checkTestClasspath>true</checkTestClasspath>
+                    <failBuildInCaseOfDifferentContentConflict>false</failBuildInCaseOfDifferentContentConflict>
+                    <failBuildInCaseOfEqualContentConflict>false</failBuildInCaseOfEqualContentConflict>
+                    <failBuildInCaseOfConflict>false</failBuildInCaseOfConflict>
+                    <printEqualFiles>false</printEqualFiles>
+                    <preferLocal>true</preferLocal>
+
+                    <!-- Version 1.1.1+ -->
+                    <includeBootClasspath>false</includeBootClasspath>
+                    <bootClasspathProperty>sun.boot.class.path</bootClasspathProperty>
+                    <!-- Version 1.1.1+ -->
+
+
+                    <!-- Version 1.2.0+ -->
+                    <includePomProjects>false</includePomProjects>
+                    <!-- Version 1.2.0+ -->
+                </configuration>
+            </plugin>
         </plugins>
+
+
     </build>
 
 </project>

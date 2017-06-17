@@ -25,11 +25,6 @@ import com.virjar.vscrawler.samples.EmptyPipeline;
  * Created by virjar on 17/6/11.
  */
 public class XpathSelectTest {
-    static {
-        FunctionEnv.registSelectFunction(new AbsUrlFunction());
-        FunctionEnv.registFilterFunction(new MyContainsFunction());
-        FunctionEnv.registSelectFunction(new MyTagSelectFunction());
-    }
 
     public static void main(String[] args) throws IOException {
 

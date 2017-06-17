@@ -78,6 +78,11 @@ public class VSCrawlerBuilder {
      */
     private SeedKeyResolver seedKeyResolver;
 
+    /**
+     * 段决策器,实现种子按时间分段,分段后段内种子消重,段间种子互不消重
+     */
+    private SegmentResolver segmentResolver;
+
     private boolean loginOnSessionCreate = false;
 
     /**
@@ -166,6 +171,11 @@ public class VSCrawlerBuilder {
         return this;
     }
 
+    public VSCrawlerBuilder setSegmentResolver(SegmentResolver segmentResolver) {
+        this.segmentResolver = segmentResolver;
+        return this;
+    }
+
     public VSCrawlerBuilder setUserResourceFacade(UserResourceFacade userResourceFacade) {
         this.userResourceFacade = userResourceFacade;
         return this;
@@ -248,8 +258,12 @@ public class VSCrawlerBuilder {
             seedKeyResolver = new DefaultSeedKeyResolver();
         }
 
+        if (segmentResolver == null) {
+            segmentResolver = new DefaultSegmentResolver();
+        }
+
         BerkeleyDBSeedManager berkeleyDBSeedManager = new BerkeleyDBSeedManager(initSeedSource, seedKeyResolver,
-                seedManagerCacheSize);
+                segmentResolver, seedManagerCacheSize);
 
         if (processor == null) {
             processor = new PageDownLoadProcessor();

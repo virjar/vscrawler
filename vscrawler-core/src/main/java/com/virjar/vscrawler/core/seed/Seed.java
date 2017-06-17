@@ -3,6 +3,8 @@ package com.virjar.vscrawler.core.seed;
 import java.io.Serializable;
 import java.util.Map;
 
+import org.joda.time.DateTime;
+
 import com.google.common.collect.Maps;
 
 import lombok.*;
@@ -44,8 +46,28 @@ public class Seed implements Serializable {
     private boolean ignore = false;
 
     @Getter
+    // 如果设置这个值,那么他放到未来的某个时间点执行,而且消重机制将会略过此类URL(在当天)
+    private Long activeTimeStamp = null;
+
+    @Getter
+    @Setter
+    /**
+     * 分段使用,供VSCrawler使用,强烈不建议外部修改此字段,否则容易引起数据紊乱
+     */
+    private String segmentKey;
+
+    @Getter
     @Setter
     private Map<String, String> ext = Maps.newHashMap();
+
+    /**
+     * 一个方便的方法,让这个种子在未来n天生效
+     * 
+     * @param day 天数
+     */
+    public void activeAfter(int day) {
+        activeTimeStamp = DateTime.now().plusDays(day).getMillis();
+    }
 
     public void retry() {
         retry++;
@@ -60,4 +82,21 @@ public class Seed implements Serializable {
         return ignore || status == STATUS_SUCCESS || retry >= maxRetry;
     }
 
+    /**
+     * 只copy种子数据和扩展数据,其他的属于状态描述,不复制
+     * 
+     * @return newSeed
+     */
+    public Seed copy() {
+        Seed seed = new Seed(data);
+        seed.ext = Maps.newHashMap(ext);
+        return seed;
+    }
+
+    public void setActiveTimeStamp(Long activeTimeStamp) {
+        if (this.activeTimeStamp != null) {
+            throw new IllegalStateException("activeTimeStamp can not update");
+        }
+        this.activeTimeStamp = activeTimeStamp;
+    }
 }
