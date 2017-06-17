@@ -61,8 +61,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     protected final static int STAT_STOPPED = 2;
 
-    protected boolean exitWhenComplete = false;
-
     private ReentrantLock taskDispatchLock = new ReentrantLock();
 
     private Condition taskDispatchCondition = taskDispatchLock.newCondition();
@@ -144,9 +142,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             // 种子为空处理
             if (seed == null) {
                 AutoEventRegistry.getInstance().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty();
-                if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
-                    break;
-                }
                 if (!waitDispatchThread()) {
                     log.warn("爬虫线程休眠被打断");
                     break;
@@ -242,7 +237,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 seed.setStatus(Seed.STATUS_SUCCESS);
             }
         } catch (Exception e) {// 如果发生了异常,并且用户没有主动重试,强制重试
-            if (originRetryCount != seed.getRetry() && seed.getStatus() != Seed.STATUS_RUNNING) {
+            if (originRetryCount == seed.getRetry() && seed.getStatus() == Seed.STATUS_RUNNING && !seed.isIgnore()) {
                 seed.retry();
             }
             throw e;

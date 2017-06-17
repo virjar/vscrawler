@@ -18,6 +18,8 @@ public class CrawlerDemo {
                 .setSessionPoolReuseDuration(2 * 60 * 1000)// 每个用户2分钟之内不能同时使用
                 .setSessionPoolMaxOnlineDuration(10 * 60 * 1000)// 每个用户最多存活10分钟
                 .build();
+        vsCrawler.clearTask();
+
         vsCrawler.start();
 
         //System.out.println("休眠10s,观察爬虫阻塞等待逻辑是否正确");

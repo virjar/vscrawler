@@ -15,7 +15,9 @@ import com.virjar.vscrawler.core.net.user.DefaultUserResource;
 import com.virjar.vscrawler.core.net.user.UserManager;
 import com.virjar.vscrawler.core.net.user.UserResourceFacade;
 import com.virjar.vscrawler.core.processor.PageDownLoadProcessor;
+import com.virjar.vscrawler.core.processor.RouteProcessor;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
+import com.virjar.vscrawler.core.processor.SeedRouter;
 import com.virjar.vscrawler.core.seed.*;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
@@ -64,9 +66,14 @@ public class VSCrawlerBuilder {
     private SeedProcessor processor;
 
     /**
+     * 基于路由的页面解析器
+     */
+    private List<SeedRouter> seedRouters = Lists.newLinkedList();
+
+    /**
      * 序列化层
      */
-    private List<Pipeline> pipelineList = Lists.newArrayList();
+    private List<Pipeline> pipelineList = Lists.newLinkedList();
 
     /**
      * 初始化种子来源
@@ -153,6 +160,11 @@ public class VSCrawlerBuilder {
 
     public VSCrawlerBuilder setProcessor(SeedProcessor processor) {
         this.processor = processor;
+        return this;
+    }
+
+    public VSCrawlerBuilder addRouteProcessor(SeedRouter seedRouter) {
+        this.seedRouters.add(seedRouter);
         return this;
     }
 
@@ -265,8 +277,18 @@ public class VSCrawlerBuilder {
         BerkeleyDBSeedManager berkeleyDBSeedManager = new BerkeleyDBSeedManager(initSeedSource, seedKeyResolver,
                 segmentResolver, seedManagerCacheSize);
 
-        if (processor == null) {
+        if (processor == null && seedRouters.isEmpty()) {
             processor = new PageDownLoadProcessor();
+        }
+
+        if (processor != null && !seedRouters.isEmpty()) {
+            throw new IllegalStateException(" seedProcessor and routeProcessor conflict");
+        }
+
+        if (!seedRouters.isEmpty()) {
+            RouteProcessor routeProcessor = new RouteProcessor();
+            routeProcessor.addRouters(seedRouters);
+            processor = routeProcessor;
         }
 
         if (pipelineList.isEmpty()) {

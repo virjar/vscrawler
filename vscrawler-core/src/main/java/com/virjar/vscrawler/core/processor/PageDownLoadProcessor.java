@@ -1,14 +1,12 @@
 package com.virjar.vscrawler.core.processor;
 
-import java.util.Set;
+import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
-import com.google.common.collect.Sets;
+import com.virjar.sipsoup.parse.XpathParser;
 import com.virjar.vscrawler.core.seed.Seed;
 
 /**
@@ -18,13 +16,8 @@ import com.virjar.vscrawler.core.seed.Seed;
  * @since 0.0.1
  */
 public class PageDownLoadProcessor extends AutoParseSeedProcessor {
-    private Set<String> allUrl(Document document) {
-        Elements a = document.getElementsByTag("a");
-        Set<String> ret = Sets.newHashSet();
-        for (Element el : a) {
-            ret.add(el.absUrl("href"));
-        }
-        return ret;
+    private List<String> allUrl(Document document) {
+        return XpathParser.compileNoError("/css('a')::absUrl('href')").evaluateToString(document);
     }
 
     @Override
@@ -32,7 +25,7 @@ public class PageDownLoadProcessor extends AutoParseSeedProcessor {
         if (StringUtils.isEmpty(result)) {
             return;
         }
-        Set<String> strings = allUrl(Jsoup.parse(result, seed.getData()));
+        List<String> strings = allUrl(Jsoup.parse(result, seed.getData()));
         crawlResult.addResults(strings);
         crawlResult.addStrSeeds(strings);
     }
