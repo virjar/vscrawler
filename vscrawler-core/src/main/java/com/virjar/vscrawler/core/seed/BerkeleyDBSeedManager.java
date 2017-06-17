@@ -436,7 +436,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                      * 处理新增加的段
                      */
                     if (!StringUtils.equals(entry.getKey(), defaultSegment)
-                            || !allSegments.contains(Long.parseLong(entry.getKey()))) {
+                            && !allSegments.contains(Long.parseLong(entry.getKey()))) {
                         allSegments.add(Long.parseLong(entry.getKey()));
                         runningSegments.add(Long.parseLong(entry.getKey()));
                     }
@@ -527,6 +527,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     @Override
     public void crawlerEnd() {
+        if (isClosed) {
+            return;
+        }
         log.info("收到爬虫结束消息,开始关闭资源");
         log.info("拒绝抓取结果入库...");
         isClosed = true;

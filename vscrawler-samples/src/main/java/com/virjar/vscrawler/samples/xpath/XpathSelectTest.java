@@ -7,11 +7,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 
 import com.google.common.io.Files;
-import com.virjar.dungproxy.client.util.CommonUtil;
-import com.virjar.sipsoup.function.FunctionEnv;
 import com.virjar.sipsoup.parse.XpathParser;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerBuilder;
+import com.virjar.vscrawler.core.event.support.AutoEvent;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.SeedEmptyEvent;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
@@ -59,7 +58,7 @@ public class XpathSelectTest {
                             // 将下一页的链接和图片链接抽取出来
                             crawlResult.addStrSeeds(XpathParser
                                     .compileNoError(
-                                            "/css('#pages a')::self()[contains(text(),'下一页')]/absUrl('href') | /css('.content')::center/img/@src")
+                                            "/css('#pages a')::self()[contains(text(),'下一页')]/absUrl('href') | css('.content')::center/img/@src")
                                     .evaluateToString(Jsoup.parse(s, seed.getData())));
                         }
                     }
@@ -79,18 +78,25 @@ public class XpathSelectTest {
         vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
             @Override
             public void onCrawlerStart(final VSCrawler vsCrawler) {
+                AutoEventRegistry.getInstance().registerEvent(ShutDownChecker.class);
+                AutoEventRegistry.getInstance().registerObserver(new ShutDownChecker() {
+
+                    @Override
+                    public void checkShutDown() {
+                        // 15s之后检查活跃线程数,发现为0,证明连续10s都没用任务执行了
+                        if (vsCrawler.activeWorker() == 0
+                                && (System.currentTimeMillis() - vsCrawler.getLastActiveTime()) > 10000) {
+                            System.out.println("尝试停止爬虫");
+                            vsCrawler.stopCrawler();
+                        }
+                    }
+                });
                 AutoEventRegistry.getInstance().registerObserver(new SeedEmptyEvent() {
                     @Override
                     public void onSeedEmpty() {// 如果收到任务为空消息的话,尝试停止爬虫
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                CommonUtil.sleep(10000);// 如果连续10s都没有新任务,则停止爬虫
-                                if (vsCrawler.activeWorker() == 0) {
-                                    vsCrawler.stopCrawler();
-                                }
-                            }
-                        }.start();
+                        // 发送延时消息,当前收到了任务为空的消息,产生一个发生在15s之后发生的事件,
+                        AutoEventRegistry.getInstance().createDelayEventSender(ShutDownChecker.class, 15000).delegate()
+                                .checkShutDown();
                     }
                 });
             }
@@ -98,5 +104,10 @@ public class XpathSelectTest {
 
         // 开始爬虫
         vsCrawler.start();
+    }
+
+    interface ShutDownChecker {
+        @AutoEvent
+        void checkShutDown();
     }
 }

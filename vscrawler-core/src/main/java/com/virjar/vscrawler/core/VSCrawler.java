@@ -30,6 +30,7 @@ import com.virjar.vscrawler.core.serialize.Pipeline;
 import com.virjar.vscrawler.core.util.SingtonObjectHolder;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -77,6 +78,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     protected long slowStartDuration = 5 * 60 * 1000;
 
     private int slowStartTimes = 0;
+
+    @Getter
+    private long lastActiveTime = 0L;
 
     private List<CrawlerStartCallBack> allStartCallBacks = Lists.newLinkedList();
 
@@ -139,6 +143,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
             // 种子为空处理
             if (seed == null) {
+
                 AutoEventRegistry.getInstance().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty();
                 if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
                     break;
@@ -149,6 +154,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 }
                 continue;
             }
+            lastActiveTime = System.currentTimeMillis();
 
             // 执行抓取任务
             threadPool.execute(new SeedProcessTask(seed));

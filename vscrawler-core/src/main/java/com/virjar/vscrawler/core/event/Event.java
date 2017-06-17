@@ -1,5 +1,8 @@
 package com.virjar.vscrawler.core.event;
 
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,7 +12,7 @@ import lombok.Setter;
  * @author virjar
  * @since 0.0.1
  */
-public class Event {
+public class Event implements Delayed {
     @Getter
     private String topic;
     @Getter
@@ -31,6 +34,10 @@ public class Event {
     @Setter
     private boolean sync = false;
 
+    /** The time the task is enabled to execute in nanoTime units */
+    @Setter
+    private long time;
+
     public Event(String topic) {
         this.topic = topic;
     }
@@ -39,8 +46,33 @@ public class Event {
         handled = true;
     }
 
-
     public void send() {
         EventLoop.getInstance().offerEvent(this);
+    }
+
+    @Override
+    public long getDelay(TimeUnit unit) {
+        if (time == 0) {
+            return 0;
+        }
+        long delay = time - System.currentTimeMillis();
+        if (delay <= 0) {
+            return 0;
+        }
+        return unit.convert(delay, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public int compareTo(Delayed o) {
+        if (o instanceof Event) {
+            Event other = (Event) o;
+            if (this == other) {
+                return 0;
+            }
+            return Long.valueOf(this.time).compareTo(other.time);
+        }
+
+        long d = (getDelay(TimeUnit.NANOSECONDS) - o.getDelay(TimeUnit.NANOSECONDS));
+        return (d == 0) ? 0 : ((d < 0) ? -1 : 1);
     }
 }

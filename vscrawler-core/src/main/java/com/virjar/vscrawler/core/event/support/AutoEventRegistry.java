@@ -7,9 +7,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import com.virjar.vscrawler.core.event.EventHandler;
-import com.virjar.vscrawler.core.event.EventLoop;
-import com.virjar.vscrawler.core.util.ClassScanner;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.base.Predicate;
@@ -17,6 +14,9 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.event.EventHandler;
+import com.virjar.vscrawler.core.event.EventLoop;
+import com.virjar.vscrawler.core.util.ClassScanner;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -111,7 +111,6 @@ public class AutoEventRegistry {
         });
 
         if (allSupperClass.size() == 0) {
-            // TODO 自动发现父类方法,并实现监听和转化,想想不实现也好,不然使用者可能犯迷糊
             log.warn("can not registry observer:{} , observer class must implement a event interface", observer);
             return;
         }
@@ -175,6 +174,14 @@ public class AutoEventRegistry {
         Object o = Proxy.newProxyInstance(AutoEventRegistry.class.getClassLoader(), new Class[] { interfaze },
                 eventSendProxyHandler);
         allAutoEventMap.put(interfaze, o);
+    }
+
+    public <T> DelayEventSender<T> createDelayEventSender(Class<T> interfaze, long afterTimeMillis) {
+        return new DelayEventSender<>(interfaze, afterTimeMillis);
+    }
+
+    public <T> DelayEventSender<T> createDelayEventSender(Class<T> interfaze) {
+        return createDelayEventSender(interfaze, 0);
     }
 
     @SuppressWarnings("unchecked")

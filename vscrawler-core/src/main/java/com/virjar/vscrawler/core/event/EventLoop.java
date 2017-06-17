@@ -2,7 +2,7 @@ package com.virjar.vscrawler.core.event;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.DelayQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Maps;
@@ -35,7 +35,7 @@ public class EventLoop implements CrawlerEndEvent {
 
     }
 
-    private LinkedBlockingQueue<Event> eventQueue = new LinkedBlockingQueue<>();
+    private DelayQueue<Event> eventQueue = new DelayQueue<>();
 
     public void offerEvent(Event event) {
         if (!isRunning.get()) {
@@ -53,11 +53,8 @@ public class EventLoop implements CrawlerEndEvent {
         if (event.isSync()) {
             disPatch(event);
         } else {
-            try {
-                eventQueue.put(event);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            eventQueue.put(event);
+
         }
     }
 
@@ -94,7 +91,7 @@ public class EventLoop implements CrawlerEndEvent {
         }
     }
 
-    public void disPatch(Event event) {
+    private void disPatch(Event event) {
         String topic = event.getTopic();
         for (EventHandler eventHandler : allHandlers.get(topic)) {
             try {
