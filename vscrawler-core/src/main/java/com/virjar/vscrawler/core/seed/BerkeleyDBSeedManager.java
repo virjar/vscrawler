@@ -446,7 +446,15 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                     runningSeedDatabase.put(null, key, value);
                     bloomFilter.put(seed);
                     if (isSeedEmpty.compareAndSet(true, false)) {
-                        AutoEventRegistry.getInstance().findEventDeclaring(FirstSeedPushEvent.class).firstSeed(seed);
+                        if (seed.getActiveTimeStamp() == null) {
+                            AutoEventRegistry.getInstance().findEventDeclaring(FirstSeedPushEvent.class)
+                                    .firstSeed(seed);
+                        } else {
+                            // 如果这种子是在未来执行,那么发送未来的延时消息
+                            AutoEventRegistry.getInstance().createDelayEventSender(FirstSeedPushEvent.class)
+                                    .sendDelay(seed.getActiveTimeStamp() - System.currentTimeMillis() + 10L).delegate()
+                                    .firstSeed(seed);
+                        }
                     }
                 }
             } finally {

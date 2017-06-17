@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.samples.xpath;
+package com.virjar.vscrawler.samples;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,12 +18,12 @@ import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.util.PathResolver;
-import com.virjar.vscrawler.samples.EmptyPipeline;
 
 /**
- * Created by virjar on 17/6/11.
+ * Created by virjar on 17/6/11.<br/>
+ * 此乃美女爬虫
  */
-public class XpathSelectTest {
+public class BeautyCrawler {
 
     public static void main(String[] args) throws IOException {
 

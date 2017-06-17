@@ -143,7 +143,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
             // 种子为空处理
             if (seed == null) {
-
                 AutoEventRegistry.getInstance().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty();
                 if (threadPool.getActiveCount() == 0 && exitWhenComplete) {
                     break;

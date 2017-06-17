@@ -1,0 +1,43 @@
+package com.virjar.vscrawler.samples;
+
+import org.joda.time.DateTime;
+
+import com.virjar.vscrawler.core.VSCrawler;
+import com.virjar.vscrawler.core.VSCrawlerBuilder;
+import com.virjar.vscrawler.core.net.session.CrawlerSession;
+import com.virjar.vscrawler.core.processor.CrawlResult;
+import com.virjar.vscrawler.core.processor.SeedProcessor;
+import com.virjar.vscrawler.core.seed.Seed;
+import com.virjar.vscrawler.core.seed.SegmentResolver;
+
+/**
+ * Created by virjar on 17/6/17.<br/>
+ * 这个是增量爬虫的测试
+ */
+public class FutureCrawler {
+    public static void main(String[] args) {
+        VSCrawler vsCrawler = VSCrawlerBuilder.create().addPipeline(new EmptyPipeline())
+                .setSegmentResolver(new SegmentResolver() {
+                    @Override
+                    public long resolveSegmentKey(long activeTime) {
+                        // 按分钟分段,每隔一分钟重新抓取链接,这里只是为了测试,实际上不能设置这么短,建议按天分段
+                        return new DateTime(activeTime).withSecondOfMinute(0).getMillis();
+                    }
+                }).setProcessor(new SeedProcessor() {
+                    @Override
+                    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+                        // 建立一个种子副本
+                        Seed copy = seed.copy();
+                        // 设置生效时间为两分钟后
+                        copy.setActiveTimeStamp(DateTime.now().plusMinutes(2).getMillis());
+                        // 返回新种子
+                        crawlResult.addSeed(copy);
+                    }
+                }).build();
+
+        // 当前所有demo都会清空task,否则不同爬虫的数据可能紊乱
+        vsCrawler.clearTask();
+        vsCrawler.pushSeed("https://www.meitulu.com/item/6892.htm");
+        vsCrawler.start();
+    }
+}
