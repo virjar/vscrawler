@@ -28,6 +28,7 @@ import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
 import com.virjar.vscrawler.core.util.SingtonObjectHolder;
+import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 import lombok.Getter;
@@ -223,43 +224,46 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 }
             }
         }
-    }
 
-    private void processSeed(Seed seed) {
+        private void processSeed(Seed seed) {
 
-        CrawlerSession session = crawlerSessionPool.borrowOne(-1);
-        int originRetryCount = seed.getRetry();
-        CrawlResult crawlResult = new CrawlResult();
-        try {
-            seed.setStatus(Seed.STATUS_RUNNING);
-            seedProcessor.process(seed, session, crawlResult);
-            if (seed.getStatus() == Seed.STATUS_RUNNING) {
-                seed.setStatus(Seed.STATUS_SUCCESS);
+            CrawlerSession session = crawlerSessionPool.borrowOne(-1);
+            int originRetryCount = seed.getRetry();
+            CrawlResult crawlResult = new CrawlResult();
+            try {
+                seed.setStatus(Seed.STATUS_RUNNING);
+                VSCrawlerCommonUtil.setCrawlerSession(session);
+                seedProcessor.process(seed, session, crawlResult);
+                if (seed.getStatus() == Seed.STATUS_RUNNING) {
+                    seed.setStatus(Seed.STATUS_SUCCESS);
+                }
+            } catch (Exception e) {// 如果发生了异常,并且用户没有主动重试,强制重试
+                if (originRetryCount == seed.getRetry() && seed.getStatus() == Seed.STATUS_RUNNING
+                        && !seed.isIgnore()) {
+                    seed.retry();
+                }
+                throw e;
+            } finally {
+                // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
+                VSCrawlerCommonUtil.clearCrawlerSession();
+                berkeleyDBSeedManager.finish(seed);
+                crawlerSessionPool.recycle(session);
             }
-        } catch (Exception e) {// 如果发生了异常,并且用户没有主动重试,强制重试
-            if (originRetryCount == seed.getRetry() && seed.getStatus() == Seed.STATUS_RUNNING && !seed.isIgnore()) {
-                seed.retry();
-            }
-            throw e;
-        } finally {
-            // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
-            berkeleyDBSeedManager.finish(seed);
-            crawlerSessionPool.recycle(session);
-        }
-        processResult(seed, crawlResult);
+            processResult(seed, crawlResult);
 
-    }
-
-    private void processResult(Seed origin, CrawlResult crawlResult) {
-        List<Seed> seeds = crawlResult.allSeed();
-        if (seeds != null) {
-            berkeleyDBSeedManager.addNewSeeds(seeds);
         }
 
-        List<String> allResult = crawlResult.allResult();
-        if (allResult != null) {
-            for (Pipeline p : pipeline) {
-                p.saveItem(allResult, origin);
+        private void processResult(Seed origin, CrawlResult crawlResult) {
+            List<Seed> seeds = crawlResult.allSeed();
+            if (seeds != null) {
+                berkeleyDBSeedManager.addNewSeeds(seeds);
+            }
+
+            List<String> allResult = crawlResult.allResult();
+            if (allResult != null) {
+                for (Pipeline p : pipeline) {
+                    p.saveItem(allResult, origin);
+                }
             }
         }
     }

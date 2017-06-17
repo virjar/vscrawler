@@ -6,12 +6,16 @@ import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
+import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.seed.Seed;
 
 /**
  * Created by virjar on 17/5/16.
  */
 public class VSCrawlerCommonUtil {
+
+    private static InheritableThreadLocal<CrawlerSession> threadLocal = new InheritableThreadLocal<>();
+
     public static boolean closeQuietly(Environment environment) {
         if (environment == null) {
             return false;
@@ -54,5 +58,17 @@ public class VSCrawlerCommonUtil {
 
     public static Seed transferStringToSeed(String seed) {
         return JSON.toJavaObject(JSONObject.parseObject(seed), Seed.class);
+    }
+
+    public static CrawlerSession crawlerSessionInThread() {
+        return threadLocal.get();
+    }
+
+    public static void setCrawlerSession(CrawlerSession crawlerSession) {
+        threadLocal.set(crawlerSession);
+    }
+
+    public static void clearCrawlerSession() {
+        threadLocal.remove();
     }
 }

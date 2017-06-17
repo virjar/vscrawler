@@ -5,6 +5,7 @@ import java.net.URL;
 
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.seed.Seed;
+import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public abstract class AutoParseSeedProcessor implements SeedProcessor {
-    private InheritableThreadLocal<CrawlerSession> crawlerSessionInheritableThreadLocal = new InheritableThreadLocal<>();
 
     @Override
     public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
@@ -27,12 +27,6 @@ public abstract class AutoParseSeedProcessor implements SeedProcessor {
             log.warn("this seed is not a url:{}", seed.getData(), e);
             seed.setIgnore(true);
             return;
-        }
-        try {
-            crawlerSessionInheritableThreadLocal.set(crawlerSession);
-            parse(seed, download(crawlerSession, url), crawlResult);
-        } finally {
-            crawlerSessionInheritableThreadLocal.remove();
         }
     }
 
@@ -50,6 +44,6 @@ public abstract class AutoParseSeedProcessor implements SeedProcessor {
     }
 
     public CrawlerSession getCrawlerSession() {
-        return crawlerSessionInheritableThreadLocal.get();
+        return VSCrawlerCommonUtil.crawlerSessionInThread();
     }
 }
