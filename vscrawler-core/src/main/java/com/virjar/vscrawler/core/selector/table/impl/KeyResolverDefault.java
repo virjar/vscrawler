@@ -1,15 +1,12 @@
 package com.virjar.vscrawler.core.selector.table.impl;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.virjar.vscrawler.core.constant.CommonConstant;
-import com.virjar.vscrawler.core.selector.table.KeyResolver;
-import com.virjar.vscrawler.core.util.ChineseUtil;
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.virjar.vscrawler.core.selector.table.KeyResolver;
+import com.virjar.vscrawler.core.util.ChineseUtil;
 
 /**
  * Created by mario1oreo on 2017/6/3.

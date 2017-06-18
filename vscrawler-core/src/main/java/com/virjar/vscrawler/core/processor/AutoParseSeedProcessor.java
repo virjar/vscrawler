@@ -28,6 +28,7 @@ public abstract class AutoParseSeedProcessor implements SeedProcessor {
             seed.setIgnore(true);
             return;
         }
+        parse(seed, download(crawlerSession, url), crawlResult);
     }
 
     protected abstract void parse(Seed seed, String result, CrawlResult crawlResult);
