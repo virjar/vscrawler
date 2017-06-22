@@ -72,7 +72,7 @@ vscrawler不是入门级的爬虫框架,拒绝菜鸟入坑
 - 主架构参考了webmagic,保留了process、pipeline等概念
 - 种子管理,参考了WebCollector,使用BerkeleyDB管理URL 完成
 - 分布式方案,将会参考elastic-job 计划中
-- 抽取器,将会接入 jsoupXpath 计划中
+- 抽取器,将会接入 jsoupXpath 完成(自JsoupXpath重构,并剥离出单独得项目[SipSoup](http://git.oschina.net/virjar/sipsoup))
 - 多站点爬虫,参考geccocrawler,使用classloader热加载 计划中
 
 对了求一个好的监控框架
