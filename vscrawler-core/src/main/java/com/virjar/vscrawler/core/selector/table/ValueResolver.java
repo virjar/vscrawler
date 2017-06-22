@@ -9,5 +9,5 @@ import org.jsoup.nodes.Element;
  */
 public interface ValueResolver {
 
-    String valueParser(String key);
+    String resolveValue(Element element);
 }

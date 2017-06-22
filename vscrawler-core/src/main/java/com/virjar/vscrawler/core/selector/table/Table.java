@@ -20,6 +20,10 @@ public class Table<T> {
     @Setter
     private List<T> tableHeader = Lists.newArrayList();
 
+    @Getter
+    @Setter
+    private List<String> tableHeaderKeys = Lists.newArrayList();
+
     public Table() {
     }
 

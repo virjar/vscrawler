@@ -34,7 +34,7 @@ public class ChineseUtil {
      * @return 拼音
      */
     public static String converterToFirstSpell(String chines) {
-        StringBuffer pinyinName = new StringBuffer();
+        StringBuilder pinyinName = new StringBuilder();
         char[] nameChar = chines.toCharArray();
         HanyuPinyinOutputFormat defaultFormat = new HanyuPinyinOutputFormat();
         defaultFormat.setCaseType(HanyuPinyinCaseType.LOWERCASE);
@@ -72,7 +72,7 @@ public class ChineseUtil {
      */
     public static String converterToSpell(String chines) {
         // long start = System.currentTimeMillis();
-        StringBuffer pinyinName = new StringBuffer();
+        StringBuilder pinyinName = new StringBuilder();
         char[] nameChar = chines.toCharArray();
         HanyuPinyinOutputFormat defaultFormat = new HanyuPinyinOutputFormat();
         defaultFormat.setCaseType(HanyuPinyinCaseType.LOWERCASE);

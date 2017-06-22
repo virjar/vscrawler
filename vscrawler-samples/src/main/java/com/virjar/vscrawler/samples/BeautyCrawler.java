@@ -58,7 +58,7 @@ public class BeautyCrawler {
                             // 将下一页的链接和图片链接抽取出来
                             crawlResult.addStrSeeds(XpathParser
                                     .compileNoError(
-                                            "/css('#pages a')::self()[contains(text(),'下一页')]/absUrl('href') | css('.content')::center/img/@src")
+                                            "/css('#pages a')::self()[contains(text(),'下一页')]/absUrl('href') | /css('.content')::center/img/@src")
                                     .evaluateToString(Jsoup.parse(s, seed.getData())));
                         }
                     }

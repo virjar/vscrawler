@@ -55,7 +55,7 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
             if (resource == null) {
                 URL classPathRoot = VSCrawlerConfigFileWatcher.class.getResource("/");
                 if (classPathRoot != null) {
-                    dir = classPathRoot.getFile();
+                    dir = classPathRoot.getPath();
                 } else {
                     dir = System.getProperty("java.class.path ");
                 }
