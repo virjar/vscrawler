@@ -10,6 +10,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
@@ -56,6 +57,10 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
                 URL classPathRoot = VSCrawlerConfigFileWatcher.class.getResource("/");
                 if (classPathRoot != null) {
                     dir = classPathRoot.getPath();
+                    if (StringUtils.length(dir) > 3 && dir.charAt(2) == ':' && dir.charAt(0) == '/') {
+                       //暂时不确定为啥window会多一个斜线导致URL格式错误
+                        dir = dir.substring(1);
+                    }
                 } else {
                     dir = System.getProperty("java.class.path ");
                 }
