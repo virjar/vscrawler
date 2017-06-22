@@ -45,22 +45,13 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
     }
 
     public void watchAndBindEvent() {
-
-        /*
-         * AutoEventRegistry.getInstance().registerObserver(new CrawlerConfigChangeEvent() {
-         * @Override public void configChange(Properties oldProperties, Properties oldProperties) { } });
-         */
         if (hasStartWatch.compareAndSet(false, true)) {
             URL resource = VSCrawlerConfigFileWatcher.class.getResource(configFileName);
             String dir = null;
             if (resource == null) {
                 URL classPathRoot = VSCrawlerConfigFileWatcher.class.getResource("/");
                 if (classPathRoot != null) {
-                    dir = classPathRoot.getPath();
-                    if (StringUtils.length(dir) > 3 && dir.charAt(2) == ':' && dir.charAt(0) == '/') {
-                       //暂时不确定为啥window会多一个斜线导致URL格式错误
-                        dir = dir.substring(1);
-                    }
+                    dir  = new File(classPathRoot.getPath()).getAbsolutePath();
                 } else {
                     dir = System.getProperty("java.class.path ");
                 }
