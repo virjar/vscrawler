@@ -119,8 +119,32 @@ public class VSCrawlerBuilder {
 
     private int seedManagerCacheSize = 1024;
 
+    /**
+     * 爬虫工作线程数
+     */
+    private int workerThreadNumber = 10;
+
+    private boolean slowStart = false;
+
+    private long slowStartDuration = 5 * 60 * 1000;
+
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
+    }
+
+    public VSCrawlerBuilder setSlowStart(boolean slowStart) {
+        this.slowStart = slowStart;
+        return this;
+    }
+
+    public VSCrawlerBuilder setSlowStartDuration(long slowStartDuration) {
+        this.slowStartDuration = slowStartDuration;
+        return this;
+    }
+
+    public VSCrawlerBuilder setWorkerThreadNumber(int workerThreadNumber) {
+        this.workerThreadNumber = workerThreadNumber;
+        return this;
     }
 
     public VSCrawlerBuilder setLoginOnSessionCreate(boolean loginOnSessionCreate) {
@@ -295,7 +319,8 @@ public class VSCrawlerBuilder {
             pipelineList.add(new ConsolePipeline());
         }
 
-        VSCrawler vsCrawler = new VSCrawler(crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList);
+        VSCrawler vsCrawler = new VSCrawler(crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList,
+                workerThreadNumber, slowStart, slowStartDuration);
         if (loginOnSessionCreate) {
             if (userResourceFacade == null) {
                 userResourceFacade = new DefaultUserResource();

@@ -84,12 +84,16 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     private List<CrawlerStartCallBack> allStartCallBacks = Lists.newLinkedList();
 
     VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
-            SeedProcessor seedProcessor, List<Pipeline> pipeline) {
+            SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
+            long slowStartDuration) {
         super("VSCrawler-Dispatch");
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
         this.seedProcessor = seedProcessor;
         this.pipeline = pipeline;
+        this.threadNumber = threadNum;
+        this.slowStart = slowStart;
+        this.slowStartDuration = slowStartDuration;
     }
 
     public class WaitThread extends Thread {

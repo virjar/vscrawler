@@ -257,11 +257,13 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
         }
 
         try {
-            if (allSessions.size() < coreSize) {
+            if ((allSessions.size() + forbidSessionHolderTreeSet.size()) < coreSize) {
                 empty.signal();
             }
             if (maxWait > 0) {
                 return allSessions.poll(maxWait, TimeUnit.MILLISECONDS);
+            } else if (allSessions.size() + forbidSessionHolderTreeSet.size() > maxSize) {
+                return allSessions.take();
             } else {
                 return allSessions.poll();
             }
