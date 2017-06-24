@@ -124,8 +124,14 @@ public class VSCrawlerBuilder {
      */
     private int workerThreadNumber = 10;
 
+    /**
+     * 慢启动控制
+     */
     private boolean slowStart = false;
 
+    /**
+     * 慢启动时长
+     */
     private long slowStartDuration = 5 * 60 * 1000;
 
     public static VSCrawlerBuilder create() {

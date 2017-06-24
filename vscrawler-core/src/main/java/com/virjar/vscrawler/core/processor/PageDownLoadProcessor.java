@@ -11,12 +11,12 @@ import com.virjar.vscrawler.core.seed.Seed;
 
 /**
  * Created by virjar on 17/4/16.
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
 public class PageDownLoadProcessor extends AutoParseSeedProcessor {
-    private List<String> allUrl(Document document) {
+    protected List<String> allUrl(Document document) {
         return XpathParser.compileNoError("/css('a')::absUrl('href')").evaluateToString(document);
     }
 

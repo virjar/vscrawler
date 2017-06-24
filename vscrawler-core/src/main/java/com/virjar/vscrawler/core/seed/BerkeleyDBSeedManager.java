@@ -8,6 +8,8 @@ import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -64,6 +66,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     // 所有正在处理的种子
     private Map<String, Seed> runningSeeds = Maps.newConcurrentMap();
     private volatile boolean isClosed = false;
+    private ReentrantLock dbLock = new ReentrantLock();
+    private Condition dbRelease = dbLock.newCondition();
+    private volatile int dbOperator = 0;
     private int cacheSize;
 
     /**
@@ -155,10 +160,18 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     private synchronized int loadCache(String segmentName) {
         int loadSize = 0;
-        Database iteratorDatabases = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + segmentName, databaseConfig);
-        Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
-        Database finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + segmentName, databaseConfig);
+        Database iteratorDatabases = null;
+        Cursor cursor = null;
+        Database finishedSeedDatabase = null;
+        if (isClosed) {
+            return 0;
+        }
         try {
+            lockDBOperate();
+
+            iteratorDatabases = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + segmentName, databaseConfig);
+            cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
+            finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + segmentName, databaseConfig);
             while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
                 loadSize++;
                 Seed ret = VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
@@ -174,6 +187,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 }
             }
         } finally {
+            unlockDBOperate();
             IOUtils.closeQuietly(cursor);
             IOUtils.closeQuietly(iteratorDatabases);
             IOUtils.closeQuietly(finishedSeedDatabase);
@@ -182,6 +196,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     public synchronized Seed pool() {
+        if (isClosed) {
+            return null;
+        }
         if (ramCache.size() == 0) {
             loadCache();
         }
@@ -340,21 +357,31 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
         DatabaseEntry key = new DatabaseEntry(seedKey.getBytes());
         DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
-        if (seed.needEnd()) {
-            Database finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + seed.getSegmentKey(),
-                    databaseConfig);
-            finishedSeedDatabase.put(null, key, value);
-            finishedSeedDatabase.close();
+        try {
+            if (isClosed) {
+                log.info("db已经关闭,拒绝归还任务");
+                return;
+            }
+            lockDBOperate();
 
-            Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + seed.getSegmentKey(),
-                    databaseConfig);
-            runningSeedDatabase.removeSequence(null, key);
-            runningSeedDatabase.close();
-        } else {
-            Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + seed.getSegmentKey(),
-                    databaseConfig);
-            runningSeedDatabase.put(null, key, value);
-            runningSeedDatabase.close();
+            if (seed.needEnd()) {
+                Database finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + seed.getSegmentKey(),
+                        databaseConfig);
+                finishedSeedDatabase.put(null, key, value);
+                finishedSeedDatabase.close();
+
+                Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + seed.getSegmentKey(),
+                        databaseConfig);
+                runningSeedDatabase.removeSequence(null, key);
+                runningSeedDatabase.close();
+            } else {
+                Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + seed.getSegmentKey(),
+                        databaseConfig);
+                runningSeedDatabase.put(null, key, value);
+                runningSeedDatabase.close();
+            }
+        } finally {
+            unlockDBOperate();
         }
 
     }
@@ -371,9 +398,10 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
         // 处理各自的段
         for (Map.Entry<String, Collection<Seed>> entry : segmentSeeds.asMap().entrySet()) {
-            Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(),
-                    databaseConfig);
+            Database runningSeedDatabase = null;
             try {
+                lockDBOperate();
+                runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
                 for (Seed seed : entry.getValue()) {
                     DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
                     DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
@@ -381,6 +409,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 }
 
             } finally {
+                unlockDBOperate();
                 IOUtils.closeQuietly(runningSeedDatabase);
             }
 
@@ -388,16 +417,32 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private void saveSegment() {
-        Database iteratorDatabases = env.openDatabase(null, SEGMENT, databaseConfig);
+        Database iteratorDatabases = null;
         try {
+            lockDBOperate();
+            iteratorDatabases = env.openDatabase(null, SEGMENT, databaseConfig);
             for (Long segment : allSegments) {
                 DatabaseEntry key = new DatabaseEntry(segment.toString().getBytes());
                 DatabaseEntry value = new DatabaseEntry(segment.toString().getBytes());
                 iteratorDatabases.put(null, key, value);
             }
         } finally {
+            unlockDBOperate();
             IOUtils.closeQuietly(iteratorDatabases);
         }
+    }
+
+    private void lockDBOperate() {
+        dbLock.lock();
+        dbOperator++;
+        dbLock.unlock();
+    }
+
+    private void unlockDBOperate() {
+        dbLock.lock();
+        dbOperator--;
+        dbRelease.signal();
+        dbLock.unlock();
     }
 
     /**
@@ -423,10 +468,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
         // 处理各自的段
         for (Map.Entry<String, Collection<Seed>> entry : segmentSeeds.asMap().entrySet()) {
-            Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(),
-                    databaseConfig);
+            Database runningSeedDatabase = null;
             BloomFilter<Seed> bloomFilter = getOrCreate(entry.getKey());
             try {
+                lockDBOperate();
+                runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
                 for (Seed seed : entry.getValue()) {
                     if (bloomFilter.mightContain(seed)) {
                         continue;
@@ -460,6 +506,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                     }
                 }
             } finally {
+                unlockDBOperate();
                 VSCrawlerCommonUtil.closeQuietly(runningSeedDatabase);
             }
         }
@@ -548,6 +595,19 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         log.info("写入段表信息");
         saveSegment();
         log.info("关闭数据库环境...");
+        while (true) {
+            dbLock.lock();
+            try {
+                dbRelease.await();
+                if (dbOperator <= 0) {
+                    break;
+                }
+            } catch (InterruptedException e) {
+                throw new IllegalStateException("can not close db ,db operate await Interrupted");
+            } finally {
+                dbLock.unlock();
+            }
+        }
         IOUtils.closeQuietly(env);
         log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
     }
