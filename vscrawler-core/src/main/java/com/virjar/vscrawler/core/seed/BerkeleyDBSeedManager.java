@@ -443,7 +443,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
                     DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
                     DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
-                    runningSeedDatabase.put(null, key, value);
+                    // db层面消重
+                    runningSeedDatabase.putNoOverwrite(null, key, value);
+                    // runningSeedDatabase.put(null, key, value);
                     bloomFilter.put(seed);
                     if (isSeedEmpty.compareAndSet(true, false)) {
                         if (seed.getActiveTimeStamp() == null) {

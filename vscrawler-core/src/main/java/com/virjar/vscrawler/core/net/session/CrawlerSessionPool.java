@@ -1,17 +1,11 @@
 package com.virjar.vscrawler.core.net.session;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.TreeSet;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionBorrowEvent;
@@ -32,8 +26,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class CrawlerSessionPool implements CrawlerEndEvent {
-
-    private LinkedBlockingQueue<CrawlerSession> allSessions = new LinkedBlockingQueue<>();
 
     private int maxSize = 10;
 
@@ -62,8 +54,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     protected Condition empty = lock.newCondition();
 
     private CreateSessionThread createSessionThread;
-    private TreeSet<ForbidSessionHolder> forbidSessionHolderTreeSet = new TreeSet<>();
-    private AtomicBoolean isHandleForbidSession = new AtomicBoolean(false);
+    private DelayQueue<SessionHolder> sessionQueue = new DelayQueue<>();
 
     public CrawlerSessionPool(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
             IPPool ipPool, ProxyPlanner proxyPlanner, int maxSize, int coreSize, int initialSize, long reuseDuration,
@@ -115,7 +106,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                     if (newSession == null) {
                         i--;
                     } else {
-                        allSessions.add(newSession);
+                        sessionQueue.offer(new SessionHolder(newSession));
                     }
                     if (totalTry > initialSize * 3) {
                         throw new IllegalStateException("can not create session ,all session create failed");
@@ -145,133 +136,126 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
     public void recycle(CrawlerSession crawlerSession) {
         crawlerSession.setLastActiveTimeStamp(System.currentTimeMillis());
-        if (allSessions.size() > maxSize || !crawlerSession.isValid()) {
+        if (sessionQueue.size() > maxSize || !crawlerSession.isValid()) {
             crawlerSession.destroy();
         } else {
-            allSessions.add(crawlerSession);
+            sessionQueue.offer(new SessionHolder(crawlerSession));
         }
     }
 
     public CrawlerSession borrowOne(long maxWaitMillis) {
         init();
         long lessTimeMillis = maxWaitMillis;
-        LinkedList<CrawlerSession> tempCrawlerSession = Lists.newLinkedList();
+        // LinkedList<CrawlerSession> tempCrawlerSession = Lists.newLinkedList();
 
         // logger.info("当前会话池中,共有:{}个用户可用", allSessions.size());
-        try {
-            for (;;) {
-                long startRequestTimeStamp = System.currentTimeMillis();
-                CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
-                if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
-                    crawlerSession = createNewSession();
-                }
-                if (crawlerSession == null && lessTimeMillis < 0 && maxWaitMillis > 0) {
-                    return null;
-                }
-                lessTimeMillis = lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp);
-                if (crawlerSession == null) {
-                    continue;
-                }
 
-                // 各种check
-                if (!crawlerSession.isValid()) {
-                    crawlerSession.destroy();
-                    continue;
-                }
-
-                // 单个session使用太频繁
-                if (System.currentTimeMillis() - crawlerSession.getLastActiveTimeStamp() < reuseDuration) {
-                    tempCrawlerSession.add(crawlerSession);
-                    continue;
-                }
-
-                // 单个session使用太久了
-                if (System.currentTimeMillis() - crawlerSession.getInitTimeStamp() > maxOnlineDuration) {
-                    crawlerSession.destroy();
-                    continue;
-                }
-
-                AutoEventRegistry.getInstance().findEventDeclaring(SessionBorrowEvent.class)
-                        .onSessionBorrow(crawlerSession);
-                log.debug("当前session数量:{}", allSessions.size());
-                return crawlerSession;
+        for (;;) {
+            long startRequestTimeStamp = System.currentTimeMillis();
+            CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
+            if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
+                crawlerSession = createNewSession();
             }
-        } finally {
-            handleForbidSessions(tempCrawlerSession);
+            if (crawlerSession == null && lessTimeMillis < 0 && maxWaitMillis > 0) {
+                return null;
+            }
+            lessTimeMillis = lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp);
+            if (crawlerSession == null) {
+                continue;
+            }
+
+            // 各种check
+            if (!crawlerSession.isValid()) {
+                crawlerSession.destroy();
+                continue;
+            }
+
+            // 单个session使用太频繁
+            if (System.currentTimeMillis() - crawlerSession.getLastActiveTimeStamp() < reuseDuration) {
+                // tempCrawlerSession.add(crawlerSession);
+                sessionQueue.offer(new SessionHolder(crawlerSession));
+                continue;
+            }
+
+            // 单个session使用太久了
+            if (System.currentTimeMillis() - crawlerSession.getInitTimeStamp() > maxOnlineDuration) {
+                crawlerSession.destroy();
+                continue;
+            }
+
+            AutoEventRegistry.getInstance().findEventDeclaring(SessionBorrowEvent.class)
+                    .onSessionBorrow(crawlerSession);
+            log.debug("当前session数量:{}", sessionQueue.size());
+            return crawlerSession;
         }
+
     }
 
-    private void handleForbidSessions(List<CrawlerSession> newForbidSessions) {
-        LinkedList<CrawlerSession> recoverSessions = Lists.newLinkedList();
-
-        if (isHandleForbidSession.compareAndSet(false, true)) {
-            try {
-                // 老的session解禁
-                Iterator<ForbidSessionHolder> iterator = forbidSessionHolderTreeSet.iterator();
-                while (iterator.hasNext()) {
-                    ForbidSessionHolder next = iterator.next();
-                    if (System.currentTimeMillis() - next.crawlerSession.getLastActiveTimeStamp() > reuseDuration) {
-                        recoverSessions.add(next.crawlerSession);
-                        iterator.remove();
-                    }
-                }
-
-                // 新加入的session封禁
-                if (newForbidSessions.size() != 0) {
-                    forbidSessionHolderTreeSet.addAll(
-                            Lists.transform(newForbidSessions, new Function<CrawlerSession, ForbidSessionHolder>() {
-                                @Override
-                                public ForbidSessionHolder apply(CrawlerSession input) {
-                                    return new ForbidSessionHolder(input);
-                                }
-                            }));
-                }
-            } finally {
-                isHandleForbidSession.set(false);
-            }
-        }
-        if (recoverSessions.size() != 0) {
-            allSessions.addAll(recoverSessions);
-        }
-    }
-
-    private class ForbidSessionHolder implements Comparable<ForbidSessionHolder> {
+    private class SessionHolder implements Delayed {
         private CrawlerSession crawlerSession;
 
-        ForbidSessionHolder(CrawlerSession crawlerSession) {
+        SessionHolder(CrawlerSession crawlerSession) {
             this.crawlerSession = crawlerSession;
         }
 
         @Override
-        public int compareTo(ForbidSessionHolder o) {
-            return Long.valueOf(crawlerSession.getLastActiveTimeStamp())
-                    .compareTo(o.crawlerSession.getLastActiveTimeStamp());
+        public long getDelay(TimeUnit unit) {
+            if (crawlerSession.getLastActiveTimeStamp() == 0) {
+                return 0;
+            }
+            long delay = crawlerSession.getLastActiveTimeStamp() + reuseDuration - System.currentTimeMillis();
+            if (delay <= 0) {
+                return 0;
+            }
+            return unit.convert(delay, TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public int compareTo(Delayed o) {
+            if (o instanceof SessionHolder) {
+                SessionHolder other = (SessionHolder) o;
+                if (this == other) {
+                    return 0;
+                }
+                return Long.valueOf(this.crawlerSession.getLastActiveTimeStamp())
+                        .compareTo(other.crawlerSession.getLastActiveTimeStamp());
+            }
+
+            long d = (getDelay(TimeUnit.NANOSECONDS) - o.getDelay(TimeUnit.NANOSECONDS));
+            return (d == 0) ? 0 : ((d < 0) ? -1 : 1);
         }
     }
 
     private CrawlerSession getSessionInternal(long maxWait) {
-        try {
-            lock.lockInterruptibly();
-        } catch (InterruptedException e) {
-            throw new PoolException("lock interrupted", e);
+
+        if (sessionQueue.size() < coreSize) {
+            try {
+                lock.lockInterruptibly();
+            } catch (InterruptedException e) {
+                throw new PoolException("lock interrupted", e);
+            }
+            try {
+                empty.signal();
+            } finally {
+                lock.unlock();
+            }
         }
 
         try {
-            if ((allSessions.size() + forbidSessionHolderTreeSet.size()) < coreSize) {
-                empty.signal();
-            }
             if (maxWait > 0) {
-                return allSessions.poll(maxWait, TimeUnit.MILLISECONDS);
-            } else if (allSessions.size() + forbidSessionHolderTreeSet.size() > maxSize) {
-                return allSessions.take();
+                SessionHolder poll = sessionQueue.poll(maxWait, TimeUnit.MILLISECONDS);
+                return poll == null ? null : poll.crawlerSession;
+            } else if (sessionQueue.size() > maxSize) {
+                log.info("等待session复活,session数目:{}", sessionQueue.size());
+                return sessionQueue.take().crawlerSession;
             } else {
-                return allSessions.poll();
+                SessionHolder poll = sessionQueue.poll();
+                return poll == null ? null : poll.crawlerSession;
             }
         } catch (InterruptedException interruptedException) {
             throw new PoolException("lock interrupted", interruptedException);
-        } finally {
-            lock.unlock();
         }
+
     }
 
     @Override
@@ -297,18 +281,18 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 } finally {
                     lock.unlock();
                 }
-                int expected = coreSize - allSessions.size();
+                int expected = coreSize - sessionQueue.size();
 
                 for (int i = 0; i < expected * 2; i++) {
                     CrawlerSession newSession = createNewSession();
                     if (newSession != null) {
-                        allSessions.add(newSession);
+                        sessionQueue.add(new SessionHolder(newSession));
                     }
-                    if (allSessions.size() >= coreSize) {
+                    if (sessionQueue.size() >= coreSize) {
                         break;
                     }
                 }
-                if (allSessions.size() < coreSize) {
+                if (sessionQueue.size() < coreSize) {
                     log.warn("many of sessions create failed,please check  your config");
                 }
             }
