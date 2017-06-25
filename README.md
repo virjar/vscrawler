@@ -7,28 +7,23 @@ vscrawler的一个重要特性就是他把下载和解析放在了同一个组�
 
 编写vscrawler的契机是本人在抓取企信宝的时候遇到的滑块验证码突破问题，多用户登录问题，复杂流程抽取问题。同时他基于dungproxy作为网络层API，天生接入了代理服务。vscrawler目前还是我花不到两天弄出来的小框架，可能有各种不完善的地方，不过一定会越来越完善的，期待越来越好的明天
 
-## maven坐标-快照版本
+
+## maven坐标
 ```
- <dependencies>
-        <dependency>
-            <groupId>com.virjar</groupId>
-            <artifactId>vscrawler-core</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
-    <repositories>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </repository>
- </repositories>
-    
+<dependency>
+      <groupId>com.virjar</groupId>
+      <artifactId>vscrawler-core</artifactId>
+      <version>0.0.1</version>
+</dependency>
 ```
 
-## maven坐标-正式版本
-```
-期待哦
-```
+## 详细文档
+
+[VSCrawler文档地址](https://virjar.gitbooks.io/vscrawler/content/)
+
+##QQ群：
+
+569543649(VS系列统一交流群，目前包含DungProxy，VSCrawler，SipSoup三个项目)
 
 ## vscrawler特点
 
