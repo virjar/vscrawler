@@ -1,0 +1,439 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>6.4 classScanner · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.2">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    
+    <link rel="prev" href="63delayevent.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    序言
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="../chapter1.html">
+            
+                <a href="../chapter1.html">
+            
+                    
+                    1. 快速入门
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="../2ji-ben-zu-jian.html">
+            
+                <a href="../2ji-ben-zu-jian.html">
+            
+                    
+                    2.基本组件
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="../2ji-ben-zu-jian/processor.html">
+            
+                <a href="../2ji-ben-zu-jian/processor.html">
+            
+                    
+                    2.1 Processor
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="../2ji-ben-zu-jian/22-pipline.html">
+            
+                <a href="../2ji-ben-zu-jian/22-pipline.html">
+            
+                    
+                    2.2 Pipline
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="../2ji-ben-zu-jian/23-sessionpool.html">
+            
+                <a href="../2ji-ben-zu-jian/23-sessionpool.html">
+            
+                    
+                    2.3 SessionPool
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" data-path="../3pa-chong-kong-zhi.html">
+            
+                <a href="../3pa-chong-kong-zhi.html">
+            
+                    
+                    3.爬虫控制
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" data-path="../4chou-qu-qi.html">
+            
+                <a href="../4chou-qu-qi.html">
+            
+                    
+                    4.抽取器
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.5.1" data-path="../4chou-qu-qi/41sipsoup.html">
+            
+                <a href="../4chou-qu-qi/41sipsoup.html">
+            
+                    
+                    4.1SipSoup
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5.2" data-path="../4chou-qu-qi/42tableevaluator.html">
+            
+                <a href="../4chou-qu-qi/42tableevaluator.html">
+            
+                    
+                    4.2TableEvaluator
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" data-path="../5zhong-zi-guan-li-qi.html">
+            
+                <a href="../5zhong-zi-guan-li-qi.html">
+            
+                    
+                    5.种子管理器
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="../6shi-jian-xun-huan.html">
+            
+                <a href="../6shi-jian-xun-huan.html">
+            
+                    
+                    6.事件循环
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.7.1" data-path="61-eventloopgong-zuo-ji-zhi.html">
+            
+                <a href="61-eventloopgong-zuo-ji-zhi.html">
+            
+                    
+                    6.1 eventLoop工作机制
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7.2" data-path="62zi-dong-shi-jian.html">
+            
+                <a href="62zi-dong-shi-jian.html">
+            
+                    
+                    6.2 自动事件
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7.3" data-path="63delayevent.html">
+            
+                <a href="63delayevent.html">
+            
+                    
+                    6.3 延时事件
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.7.4" data-path="64classScanner.html">
+            
+                <a href="64classScanner.html">
+            
+                    
+                    6.4 classScanner
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >6.4 classScanner</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <p>classScanner&#x8BB2;&#x9053;&#x7406;&#x4E0D;&#x5E94;&#x8BE5;&#x653E;&#x5230;&#x8FD9;&#x91CC;&#xFF0C;&#x4E0D;&#x8FC7;&#x5176;&#x5B9E;&#x81EA;&#x52A8;&#x4E8B;&#x4EF6;&#x4F1A;&#x57FA;&#x4E8E;classScanner&#x3002;&#x6240;&#x4EE5;&#x8FD8;&#x662F;&#x8BB2;&#x4E00;&#x8BB2;classScanner&#x5427;&#x3002;</p>
+<p>classScanner&#x662F;&#x4E00;&#x4E2A;&#x5DE5;&#x5177;&#x7C7B;&#xFF0C;&#x4ED6;&#x7684;&#x4F5C;&#x7528;&#x662F;&#x5B9E;&#x73B0;&#x7C7B;&#x626B;&#x63CF;&#xFF0C;&#x5F53;&#x4F60;&#x4F7F;&#x7528;spring&#x7684;&#x81EA;&#x52A8;&#x626B;&#x63CF;bean&#x7684;&#x529F;&#x80FD;&#x7684;&#x65F6;&#x5019;&#xFF0C;&#x662F;&#x4E0D;&#x662F;&#x89C9;&#x5F97;&#x5F88;&#x795E;&#x5947;&#x5462;&#xFF1F;&#x6709;&#x6CA1;&#x6709;&#x60F3;&#x8FC7;&#x81EA;&#x5DF1;&#x5B9E;&#x73B0;&#x4E00;&#x4E2A;&#xFF1F;&#x54C8;&#x54C8;&#xFF0C;&#x4E3A;&#x4E86;&#x5199;&#x4EE3;&#x7801;&#x65B9;&#x4FBF;&#xFF0C;&#x4F46;&#x662F;&#x53C8;&#x4E0D;&#x60F3;&#x968F;&#x610F;&#x63A5;&#x5165;spring&#xFF0C;&#x6211;&#x81EA;&#x5DF1;&#x4E5F;&#x5C1D;&#x8BD5;&#x5B9E;&#x73B0;&#x4E86;&#x4E00;&#x4E2A;&#x7C7B;&#x626B;&#x63CF;&#x5668;&#x3002;&#x5B9E;&#x73B0;&#x5B8C;&#x6210;&#x4E4B;&#x540E;&#x53D1;&#x73B0;&#x4EE3;&#x7801;&#x91CF;&#x4E5F;&#x4E0D;&#x5927;&#xFF0C;&#x5C31;&#x4E0D;&#x5230;&#x4E09;&#x767E;&#x884C;&#x4EE3;&#x7801;&#x3002;</p>
+<p>classScanner&#x7684;&#x539F;&#x7406;&#x662F;&#x627E;classLoader&#xFF0C;classLoader&#x91CC;&#x9762;&#x6709;&#x6240;&#x6709;class&#x6587;&#x4EF6;&#x7684;&#x5730;&#x5740;&#xFF0C;&#x6240;&#x6709;jar&#x7684;&#x6587;&#x4EF6;&#x5730;&#x5740;&#x3002;&#x4E0D;&#x8FC7;&#x5BF9;&#x4E8E;java&#x6765;&#x8BF4;&#xFF0C;&#x8FD8;&#x53EF;&#x80FD;&#x6709;&#x8FDC;&#x7A0B;&#x7684;class&#x6587;&#x4EF6;&#xFF0C;&#x8FD9;&#x79CD;class&#x6211;&#x7684;&#x7C7B;&#x626B;&#x63CF;&#x5668;&#x5C31;&#x5904;&#x7406;&#x4E0D;&#x4E86;&#x4E86;&#x3002;&#x4E0D;&#x8FC7;&#x8BDD;&#x8BF4;&#x8FD9;&#x79CD;&#x7279;&#x8272;&#x7684;&#x73A9;&#x513F;&#x6CD5;&#x73B0;&#x5728;&#x4E5F;&#x6CA1;&#x6709;&#x4E86;&#x5427;&#x3002;&#x627E;&#x5230;&#x8FD9;&#x4E9B;&#x6587;&#x4EF6;&#x5730;&#x5740;&#x4E4B;&#x540E;&#xFF0C;&#x5C31;&#x5C1D;&#x8BD5;&#x89E3;&#x6790;&#x7C7B;&#x540D;&#xFF0C;&#x7136;&#x540E;&#x5339;&#x914D;basePackage&#x89C4;&#x5219;&#xFF0C;&#x5982;&#x679C;&#x5339;&#x914D;&#x4E0A;&#x4E86;&#xFF0C;&#x5C31;&#x56DE;&#x8C03;visitor&#x3002;&#x6700;&#x540E;&#x901A;&#x8FC7;visitor&#x5F97;&#x5230;&#x56DE;&#x8C03;&#x7ED3;&#x679C;</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="63delayevent.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page: 6.3 延时事件">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"6.4 classScanner","level":"1.7.4","depth":2,"previous":{"title":"6.3 延时事件","level":"1.7.3","depth":2,"path":"6shi-jian-xun-huan/63delayevent.md","ref":"6shi-jian-xun-huan/63delayevent.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"6shi-jian-xun-huan/64classScanner.md","mtime":"2017-06-25T05:56:09.000Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2017-06-25T14:04:12.299Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
