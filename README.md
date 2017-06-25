@@ -18,8 +18,8 @@ vscrawler的一个重要特性就是他把下载和解析放在了同一个组�
 ```
 
 ## 详细文档
-
-[VSCrawler文档地址](https://virjar.gitbooks.io/vscrawler/content/)
+[http://vscrawler.virjar.com/](http://vscrawler.virjar.com/)
+[http://vscrawler.scumall.com/](http://vscrawler.scumall.com/)
 
 ##QQ群：
 
