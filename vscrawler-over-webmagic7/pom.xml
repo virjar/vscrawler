@@ -17,7 +17,7 @@
         <dependency>
             <groupId>com.virjar</groupId>
             <artifactId>vscrawler-core</artifactId>
-            <version>0.0.1</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <!-- webMagic在我们项目中只是作为API,用在编译中,而不会真正使用它 -->
