@@ -2,6 +2,8 @@ package com.virjar.vscrawler.core.selector.combine;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONPath;
 import com.google.common.collect.Lists;
@@ -15,7 +17,7 @@ import com.virjar.vscrawler.core.selector.combine.selectables.RawNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.StringNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.XpathNode;
 import com.virjar.vscrawler.core.selector.string.FunctionParser;
-import com.virjar.vscrawler.core.selector.string.tree.FunctionNode;
+import com.virjar.vscrawler.core.selector.string.StingEvaluator;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -119,9 +121,23 @@ public abstract class AbstractSelectable<M> {
         return (StringNode) this;
     }
 
-    public StringNode stirngRule(String stringFunction) {
+    public StringNode stringRule(StingEvaluator stingEvaluator) {
         StringNode from = covert(StringNode.class);
-        FunctionNode functionNode = new FunctionParser(new TokenQueue(stringFunction)).parse();
-        return null;
+        List<String> evaluate = stingEvaluator.evaluate(from.createOrGetModel());
+        StringNode newNode = new StringNode(getBaseUrl(), null);
+        newNode.setModel(evaluate);
+        return newNode;
+    }
+
+    public StringNode stringRule(String stringFunction) {
+        return stringRule(new StingEvaluator(new FunctionParser(new TokenQueue(stringFunction)).parse()));
+    }
+
+    public StringNode regex(String regex, int group) {
+        return stringRule("regex(" + StringUtils.wrap(regex, "\"") + "," + group + ")");
+    }
+
+    public static AbstractSelectable createModel(String baseUrl, String rawText) {
+        return new RawNode(baseUrl, rawText);
     }
 }

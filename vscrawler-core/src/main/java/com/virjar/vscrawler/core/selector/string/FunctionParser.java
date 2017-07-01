@@ -7,10 +7,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.collect.Lists;
 import com.virjar.sipsoup.parse.TokenQueue;
-import com.virjar.vscrawler.core.selector.string.tree.FunctionNode;
-import com.virjar.vscrawler.core.selector.string.tree.FunctionResult;
-import com.virjar.vscrawler.core.selector.string.tree.IntergerResult;
-import com.virjar.vscrawler.core.selector.string.tree.StringResult;
+import com.virjar.vscrawler.core.selector.string.tree.*;
 
 /**
  * Created by virjar on 17/7/1.
@@ -24,7 +21,7 @@ public class FunctionParser {
     }
 
     // 将一个函数规则文本编译成模型
-    public FunctionNode parse() {
+    public FunctionType parse() {
 
         tokenQueue.consumeWhitespace();
         String functionName = tokenQueue.consumeAttributeKey();
@@ -41,21 +38,21 @@ public class FunctionParser {
         // 参数列表
         String paramString = tokenQueue.chompBalanced('(', ')');
         TokenQueue paramToken = new TokenQueue(paramString);
-        LinkedList<FunctionNode> params = Lists.newLinkedList();
+        LinkedList<ParamType> params = Lists.newLinkedList();
         while ((paramToken.consumeWhitespace() || !paramToken.consumeWhitespace()) && !paramToken.isEmpty()) {
 
             // 字符串参数
             if (tokenQueue.matches("\'")) {
                 final String stringParam = TokenQueue.unescape(tokenQueue.chompBalanced('\'', '\''));
-                params.add(new StringResult(stringParam).toFunctionNode());
+                params.add(new StringType(stringParam));
             } else if (tokenQueue.matches("\"")) {
                 String stringParam = TokenQueue.unescape(tokenQueue.chompBalanced('\"', '\"'));
-                params.add(new StringResult(stringParam).toFunctionNode());
+                params.add(new StringType(stringParam));
             } // 数字参数
             else if (tokenQueue.matchesDigit()) {
                 String digit = tokenQueue.consumeDigit();
                 // 当前只支持整数,这里暂时留一个坑(解析结果可能有小数)
-                params.add(new IntergerResult(NumberUtils.toInt(digit)).toFunctionNode());
+                params.add(new IntegerType(NumberUtils.toInt(digit)));
             } // 函数
             else if (tokenQueue.matchesFunction()) {
                 String subFunction = tokenQueue.consumeFunction();
@@ -72,6 +69,10 @@ public class FunctionParser {
                 }
             }
         }
-        return new FunctionResult(functionName, params).toFunctionNode();
+        StringFunction function = StringFunctionEnv.findFunction(functionName);
+        if (function == null) {
+            throw new IllegalStateException("unknown string function:" + functionName);
+        }
+        return new FunctionType(function, params);
     }
 }
