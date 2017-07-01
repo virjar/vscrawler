@@ -20,7 +20,7 @@ public class ElementsNode extends AbstractSelectable<Elements> {
     @Override
     public Elements createOrGetModel() {
         if (model == null) {
-            model = new Elements(Jsoup.parse(getBaseUrl(), getRowText()));
+            model = new Elements(Jsoup.parse(getBaseUrl(), getRawText()));
         }
         return model;
     }

@@ -20,7 +20,7 @@ public class StringNode extends AbstractSelectable<List<String>> {
     @Override
     public List<String> createOrGetModel() {
         if (model == null) {
-            model = Lists.newArrayList(getRowText());
+            model = Lists.newArrayList(getRawText());
         }
         return model;
     }

@@ -13,7 +13,7 @@ public class RawNode extends AbstractSelectable<String> {
     @Override
     public String createOrGetModel() {
         if (model == null) {
-            model = getRowText();
+            model = getRawText();
         }
         return model;
     }

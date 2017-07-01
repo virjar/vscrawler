@@ -17,7 +17,7 @@ public class XpathNode extends AbstractSelectable<List<SIPNode>> {
     @Override
     public List<SIPNode> createOrGetModel() {
         if (model == null) {
-            model = Lists.newArrayList(SIPNode.t(getRowText()));
+            model = Lists.newArrayList(SIPNode.t(getRawText()));
         }
         return model;
     }

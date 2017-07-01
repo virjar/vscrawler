@@ -17,17 +17,17 @@ import lombok.Setter;
 public abstract class AbstractSelectable<M> {
 
     @Getter
-    private String rowText;
+    private String rawText;
     @Getter
     private String baseUrl;
 
-    public AbstractSelectable(String rowText) {
-        this(null, rowText);
+    public AbstractSelectable(String rawText) {
+        this(null, rawText);
     }
 
-    public AbstractSelectable(String baseUrl, String rowText) {
+    public AbstractSelectable(String baseUrl, String rawText) {
         this.baseUrl = baseUrl;
-        this.rowText = rowText;
+        this.rawText = rawText;
     }
 
     @Setter
@@ -46,7 +46,8 @@ public abstract class AbstractSelectable<M> {
     public AbstractSelectable xpath(XpathEvaluator xpathEvaluator) {
         List<SIPNode> sipNodes = xpathEvaluator.evaluate(covert(XpathNode.class).createOrGetModel());
 
-        XpathNode xpathNode = new XpathNode(getBaseUrl(), getRowText());
+        //TODO rawText
+        XpathNode xpathNode = new XpathNode(getBaseUrl(), getRawText());
         xpathNode.setModel(sipNodes);
         return xpathNode;
     }

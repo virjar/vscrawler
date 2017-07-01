@@ -16,7 +16,7 @@ public class HtmlNode extends AbstractSelectable<Element> {
     @Override
     public Element createOrGetModel() {
         if (model == null) {
-            model = Jsoup.parse(getRowText(), getBaseUrl());
+            model = Jsoup.parse(getRawText(), getBaseUrl());
         }
         return model;
     }

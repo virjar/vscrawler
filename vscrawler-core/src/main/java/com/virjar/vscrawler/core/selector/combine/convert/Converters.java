@@ -45,7 +45,7 @@ public class Converters {
         register(RawNode.class, HtmlNode.class, new NodeConvert<RawNode, HtmlNode>() {
             @Override
             public HtmlNode convert(RawNode from) {
-                return new HtmlNode(from.getBaseUrl(), from.getRowText());
+                return new HtmlNode(from.getBaseUrl(), from.getRawText());
             }
         });
 
