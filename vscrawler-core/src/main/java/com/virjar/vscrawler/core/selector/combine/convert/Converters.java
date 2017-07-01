@@ -27,6 +27,7 @@ public class Converters {
     }
 
     private static void registerHtm() {
+        /*
         register(HtmlNode.class, HtmlNode.class, new NodeConvert<HtmlNode, HtmlNode>() {
             @Override
             public HtmlNode convert(HtmlNode from) {
@@ -96,7 +97,7 @@ public class Converters {
                 htmlNode.setModel(element);
                 return htmlNode;
             }
-        });
+        });*/
     }
 
     private static void registerJson() {
