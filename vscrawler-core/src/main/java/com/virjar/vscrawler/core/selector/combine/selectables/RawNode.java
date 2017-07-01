@@ -1,6 +1,6 @@
-package com.virjar.vscrawler.core.selector.model.selectables;
+package com.virjar.vscrawler.core.selector.combine.selectables;
 
-import com.virjar.vscrawler.core.selector.model.AbstractSelectable;
+import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
 
 /**
  * Created by virjar on 17/6/30.

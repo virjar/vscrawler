@@ -73,7 +73,7 @@ public class BeautyCrawler {
         vsCrawler.pushSeed("https://www.meitulu.com/item/2124.html");
         vsCrawler.pushSeed("https://www.meitulu.com/item/2120.html");
         vsCrawler.pushSeed("https://www.meitulu.com/item/2086.html");
-        vsCrawler.pushSeed("https://www.meitulu.com/item/2066.html");
+        //vsCrawler.pushSeed("https://www.meitulu.com/item/2066.html");
 
         vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
             @Override

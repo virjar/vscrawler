@@ -324,7 +324,17 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         resolveDBFile();
         EnvironmentConfig environmentConfig = new EnvironmentConfig();
         environmentConfig.setAllowCreate(true);
-        env = new Environment(new File(dbFilePath), environmentConfig);
+        try {
+            env = new Environment(new File(dbFilePath), environmentConfig);
+        } catch (EnvironmentLockedException e) {
+            if (new File(dbFilePath).delete()) {
+                log.warn("数据库文件损坏,将会清空脏数据");
+                env = new Environment(new File(dbFilePath), environmentConfig);
+            } else {
+                throw e;
+            }
+
+        }
 
         databaseConfig = new DatabaseConfig();
         databaseConfig.setAllowCreate(true);

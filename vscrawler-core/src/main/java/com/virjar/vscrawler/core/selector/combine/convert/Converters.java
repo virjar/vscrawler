@@ -1,13 +1,19 @@
-package com.virjar.vscrawler.core.selector.model.convert;
+package com.virjar.vscrawler.core.selector.combine.convert;
 
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.virjar.vscrawler.core.selector.model.AbstractSelectable;
-import com.virjar.vscrawler.core.selector.model.selectables.*;
+import com.virjar.sipsoup.model.SIPNode;
+import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
+import com.virjar.vscrawler.core.selector.combine.selectables.*;
 
 import lombok.Getter;
 
@@ -58,11 +64,37 @@ public class Converters {
             @Override
             public HtmlNode convert(ElementsNode from) {
                 Elements orGetModel = from.createOrGetModel();
-                if (orGetModel.size() == 1) {
+                if (orGetModel.size() >= 1) {
                     HtmlNode htmlNode = new HtmlNode(from.getBaseUrl(), orGetModel.first().html());
                     htmlNode.setModel(orGetModel.first());
                 }
-                return null;
+                return new HtmlNode(from.getBaseUrl(), "");
+            }
+        });
+
+        register(XpathNode.class, HtmlNode.class, new NodeConvert<XpathNode, HtmlNode>() {
+            @Override
+            public HtmlNode convert(XpathNode from) {
+                List<SIPNode> sipNodes = from.createOrGetModel();
+
+                List<SIPNode> filterNodes = Lists.newLinkedList(Iterables.filter(sipNodes, new Predicate<SIPNode>() {
+                    @Override
+                    public boolean apply(SIPNode input) {
+                        return !(input.isText() && StringUtils.isBlank(input.getTextVal()));
+                    }
+                }));
+
+                if (filterNodes.size() == 0) {
+                    return new HtmlNode(from.getBaseUrl(), "");
+                }
+                SIPNode sipNode = filterNodes.get(0);
+                if (sipNode.isText()) {
+                    return new HtmlNode(from.getBaseUrl(), sipNode.getTextVal());
+                }
+                Element element = sipNode.getElement();
+                HtmlNode htmlNode = new HtmlNode(from.getBaseUrl(), element.html());
+                htmlNode.setModel(element);
+                return htmlNode;
             }
         });
     }
@@ -71,7 +103,7 @@ public class Converters {
 
     }
 
-    private static void registerRow() {
+    private static void registerRaw() {
 
     }
 
@@ -90,7 +122,7 @@ public class Converters {
     private static void registerDefault() {
         registerHtm();
         registerJson();
-        registerRow();
+        registerRaw();
         registerRegex();
         registerString();
         registerXpath();
@@ -103,7 +135,7 @@ public class Converters {
 
     @SuppressWarnings("unchecked")
     public static <F extends AbstractSelectable, T extends AbstractSelectable> NodeConvert<F, T> findConvert(
-            Class<? extends AbstractSelectable> from, Class<? extends AbstractSelectable> to) {
+            Class<? extends  AbstractSelectable> from, Class<T> to) {
         return nodeConvertMap.get(new RegistryHolder(from, to));
     }
 

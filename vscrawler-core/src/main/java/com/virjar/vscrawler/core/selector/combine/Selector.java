@@ -1,6 +1,6 @@
-package com.virjar.vscrawler.core.selector.model;
+package com.virjar.vscrawler.core.selector.combine;
 
-import com.virjar.vscrawler.core.selector.model.selectables.RawNode;
+import com.virjar.vscrawler.core.selector.combine.selectables.RawNode;
 
 /**
  * Created by virjar on 17/6/30.
