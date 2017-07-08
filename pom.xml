@@ -10,7 +10,6 @@
         <!-- <module>vscrawler-samples</module>
          <module>vscrawler-over-webmagic7</module>-->
         <module>vscrawler-samples</module>
-        <module>vscrawler-over-webmagic7</module>
     </modules>
     <name>vscrawler</name>
     <url>http://maven.apache.org</url>
