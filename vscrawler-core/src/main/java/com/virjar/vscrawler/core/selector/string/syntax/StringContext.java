@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.selector.strfunction.syntax;
+package com.virjar.vscrawler.core.selector.string.syntax;
 
 import java.util.List;
 

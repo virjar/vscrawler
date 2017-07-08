@@ -1,7 +1,7 @@
-package com.virjar.vscrawler.core.selector.strfunction;
+package com.virjar.vscrawler.core.selector.string;
 
-import com.virjar.vscrawler.core.selector.strfunction.syntax.FunctionSyntaxNode;
-import com.virjar.vscrawler.core.selector.strfunction.syntax.SyntaxNode;
+import com.virjar.vscrawler.core.selector.string.syntax.FunctionSyntaxNode;
+import com.virjar.vscrawler.core.selector.string.syntax.SyntaxNode;
 
 /**
  * Created by virjar on 17/7/1.

@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.selector.strfunction.function;
+package com.virjar.vscrawler.core.selector.string.function;
 
 import java.util.Map;
 

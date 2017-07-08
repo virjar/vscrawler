@@ -1,16 +1,16 @@
-package com.virjar.vscrawler.core.selector.strfunction.operator;
+package com.virjar.vscrawler.core.selector.string.operator;
 
 import java.math.BigDecimal;
 
 import com.virjar.sipsoup.exception.EvaluateException;
 import com.virjar.sipsoup.util.XpathUtil;
-import com.virjar.vscrawler.core.selector.strfunction.syntax.StringContext;
-import com.virjar.vscrawler.core.selector.strfunction.syntax.SyntaxNode;
+import com.virjar.vscrawler.core.selector.string.syntax.StringContext;
+import com.virjar.vscrawler.core.selector.string.syntax.SyntaxNode;
 
 /**
  * Created by virjar on 17/7/8.
  */
-public class Divide implements Operation {
+public class Remainder implements Operation {
     @Override
     public Object operate(SyntaxNode left, SyntaxNode right, StringContext stringContext) {
 
@@ -24,36 +24,37 @@ public class Divide implements Operation {
         if (leftValue instanceof Number && rightValue instanceof Number) {
             // 都是整数,则执行整数除法
             if (leftValue instanceof Integer && rightValue instanceof Integer) {
-                return (Integer) leftValue / (Integer) rightValue;
+                return (Integer) leftValue % (Integer) rightValue;
             }
 
             // 包含小数,转double执行除法
             if (leftValue instanceof Double || rightValue instanceof Double || leftValue instanceof Float
                     || rightValue instanceof Float) {
-                return ((Number) leftValue).doubleValue() / ((Number) rightValue).doubleValue();
+                return ((Number) leftValue).doubleValue() % ((Number) rightValue).doubleValue();
             }
 
             // 包含BigDecimal 转bigDecimal
             if (leftValue instanceof BigDecimal || rightValue instanceof BigDecimal) {
                 if (leftValue instanceof BigDecimal && rightValue instanceof BigDecimal) {
-                    return ((BigDecimal) leftValue).divide((BigDecimal) rightValue, BigDecimal.ROUND_HALF_UP);// 默认四舍五入
+                    return ((BigDecimal) leftValue).remainder((BigDecimal) rightValue);
                 }
 
                 BigDecimal newLeft = XpathUtil.toBigDecimal((Number) leftValue);
                 BigDecimal newRight = XpathUtil.toBigDecimal((Number) rightValue);
-                return newLeft.divide(newRight, BigDecimal.ROUND_HALF_UP);
+                return newLeft.remainder(newRight);
             }
 
             // 包含长整数,且不包含小数,全部转化为长整数计算
             if (leftValue instanceof Long || rightValue instanceof Long) {
-                return ((Number) leftValue).longValue() / ((Number) rightValue).longValue();
+                return ((Number) leftValue).longValue() % ((Number) rightValue).longValue();
             }
 
             // 兜底,用double执行计算
-            return ((Number) leftValue).doubleValue() / ((Number) rightValue).doubleValue();
+            return ((Number) leftValue).doubleValue() % ((Number) rightValue).doubleValue();
         }
 
         throw new EvaluateException(
-                "divide operate must with number parameter left:" + leftValue + " right:" + rightValue);
+                "remainder operate must with number parameter left:" + leftValue + " right:" + rightValue);
+
     }
 }

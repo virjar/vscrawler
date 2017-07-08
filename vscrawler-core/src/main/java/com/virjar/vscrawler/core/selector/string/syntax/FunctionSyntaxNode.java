@@ -1,9 +1,8 @@
-package com.virjar.vscrawler.core.selector.strfunction.syntax;
+package com.virjar.vscrawler.core.selector.string.syntax;
 
 import java.util.List;
 
-import com.virjar.vscrawler.core.selector.strfunction.Strings;
-import com.virjar.vscrawler.core.selector.strfunction.function.StringFunction;
+import com.virjar.vscrawler.core.selector.string.function.StringFunction;
 
 /**
  * Created by virjar on 17/7/8.
@@ -17,12 +16,12 @@ public class FunctionSyntaxNode implements SyntaxNode {
         this.stringFunction = stringFunction;
     }
 
-    public Strings call(StringContext stringContext) {
+    @Override
+    public Object calculate(StringContext stringContext) {
         return stringFunction.call(stringContext, params);
     }
 
-    @Override
-    public Object calculate(StringContext stringContext) {
-        return call(stringContext);
+    public String functionName(){
+        return stringFunction.determineFunctionName();
     }
 }

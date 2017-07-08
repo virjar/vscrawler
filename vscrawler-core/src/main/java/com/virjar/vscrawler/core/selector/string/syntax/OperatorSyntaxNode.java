@@ -1,6 +1,6 @@
-package com.virjar.vscrawler.core.selector.strfunction.syntax;
+package com.virjar.vscrawler.core.selector.string.syntax;
 
-import com.virjar.vscrawler.core.selector.strfunction.operator.Operation;
+import com.virjar.vscrawler.core.selector.string.operator.Operation;
 
 /**
  * Created by virjar on 17/7/8.

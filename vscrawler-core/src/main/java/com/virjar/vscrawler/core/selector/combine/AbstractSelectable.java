@@ -15,8 +15,8 @@ import com.virjar.vscrawler.core.selector.combine.selectables.JsonNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.RawNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.StringNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.XpathNode;
-import com.virjar.vscrawler.core.selector.strfunction.FunctionParser;
-import com.virjar.vscrawler.core.selector.strfunction.StingEvaluator;
+import com.virjar.vscrawler.core.selector.string.FunctionParser;
+import com.virjar.vscrawler.core.selector.string.StingEvaluator;
 
 import lombok.Getter;
 import lombok.Setter;

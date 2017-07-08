@@ -1,12 +1,12 @@
-package com.virjar.vscrawler.core.selector.strfunction;
+package com.virjar.vscrawler.core.selector.string;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.virjar.vscrawler.core.selector.strfunction.syntax.FunctionSyntaxNode;
-import com.virjar.vscrawler.core.selector.strfunction.syntax.StringContext;
+import com.virjar.vscrawler.core.selector.string.syntax.FunctionSyntaxNode;
+import com.virjar.vscrawler.core.selector.string.syntax.StringContext;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,7 +26,12 @@ public class StingEvaluator {
         int i = 0;
         for (String str : input) {
             StringContext stringContext = new StringContext(baseUrl, str, input, i);
-            linkedHashSet.addAll(stringFunction.call(stringContext));
+            Object calculate = stringFunction.calculate(stringContext);
+            if (!(calculate instanceof Strings)) {
+                log.warn("result type for function: " + stringFunction.functionName() + " is not strings");
+            } else {
+                linkedHashSet.addAll((Strings) calculate);
+            }
             i++;
         }
         return Lists.newLinkedList(linkedHashSet);

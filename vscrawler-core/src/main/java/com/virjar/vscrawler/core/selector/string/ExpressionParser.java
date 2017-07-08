@@ -1,18 +1,18 @@
-package com.virjar.vscrawler.core.selector.strfunction;
+package com.virjar.vscrawler.core.selector.string;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import com.virjar.vscrawler.core.selector.strfunction.function.StringFunction;
-import com.virjar.vscrawler.core.selector.strfunction.function.StringFunctionEnv;
+import com.virjar.vscrawler.core.selector.string.function.StringFunction;
+import com.virjar.vscrawler.core.selector.string.function.StringFunctionEnv;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.virjar.vscrawler.core.selector.strfunction.operator.*;
-import com.virjar.vscrawler.core.selector.strfunction.syntax.*;
+import com.virjar.vscrawler.core.selector.string.operator.*;
+import com.virjar.vscrawler.core.selector.string.syntax.*;
 
 /**
  * Created by virjar on 17/7/8.

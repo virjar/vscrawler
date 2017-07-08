@@ -1,11 +1,11 @@
-package com.virjar.vscrawler.core.selector.strfunction.operator;
+package com.virjar.vscrawler.core.selector.string.operator;
 
 import java.math.BigDecimal;
 
 import com.virjar.sipsoup.exception.EvaluateException;
 import com.virjar.sipsoup.util.XpathUtil;
-import com.virjar.vscrawler.core.selector.strfunction.syntax.StringContext;
-import com.virjar.vscrawler.core.selector.strfunction.syntax.SyntaxNode;
+import com.virjar.vscrawler.core.selector.string.syntax.StringContext;
+import com.virjar.vscrawler.core.selector.string.syntax.SyntaxNode;
 
 /**
  * Created by virjar on 17/7/8.

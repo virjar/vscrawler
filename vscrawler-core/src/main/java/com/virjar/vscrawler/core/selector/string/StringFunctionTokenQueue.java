@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.selector.strfunction;
+package com.virjar.vscrawler.core.selector.string;
 
 /**
  * Created by virjar on 17/7/8.
