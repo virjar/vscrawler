@@ -25,6 +25,24 @@ public class StringFunctionEnv {
         register(new Trim());
         register(new TrimToEmpty());
         register(new Truncate());
+        register(new Split());
+        register(new SplitByWholeSeparator());
+        register(new Join());
+        register(new DeleteWhitespace());
+        register(new RemoveStart());
+        register(new RemoveStartIgnoreCase());
+        register(new RemoveEnd());
+        register(new RemoveEndIgnoreCase());
+        register(new Remove());
+        register(new RemoveIgnoreCase());
+        register(new RemoveAll());
+        register(new RemoveFirst());
+        register(new ReplaceOnce());
+        register(new ReplaceOnceIgnoreCase());
+        register(new ReplacePattern());
+        register(new RemovePattern());
+        register(new ReplaceAll());
+        register(new ReplaceFirst());
     }
 
     public static void register(StringFunction stringFunction) {
