@@ -9,15 +9,14 @@ import com.alibaba.fastjson.JSONPath;
 import com.google.common.collect.Lists;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.sipsoup.model.XpathEvaluator;
-import com.virjar.sipsoup.parse.TokenQueue;
 import com.virjar.sipsoup.parse.XpathParser;
 import com.virjar.vscrawler.core.selector.combine.convert.Converters;
 import com.virjar.vscrawler.core.selector.combine.selectables.JsonNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.RawNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.StringNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.XpathNode;
-import com.virjar.vscrawler.core.selector.string.FunctionParser;
-import com.virjar.vscrawler.core.selector.string.StingEvaluator;
+import com.virjar.vscrawler.core.selector.strfunction.FunctionParser;
+import com.virjar.vscrawler.core.selector.strfunction.StingEvaluator;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -123,14 +122,14 @@ public abstract class AbstractSelectable<M> {
 
     public StringNode stringRule(StingEvaluator stingEvaluator) {
         StringNode from = covert(StringNode.class);
-        List<String> evaluate = stingEvaluator.evaluate(from.createOrGetModel());
+        List<String> evaluate = stingEvaluator.evaluate(from.createOrGetModel(), from.getBaseUrl());
         StringNode newNode = new StringNode(getBaseUrl(), null);
         newNode.setModel(evaluate);
         return newNode;
     }
 
     public StringNode stringRule(String stringFunction) {
-        return stringRule(new StingEvaluator(new FunctionParser(new TokenQueue(stringFunction)).parse()));
+        return stringRule(new StingEvaluator(new FunctionParser(stringFunction).parse()));
     }
 
     public StringNode regex(String regex, int group) {

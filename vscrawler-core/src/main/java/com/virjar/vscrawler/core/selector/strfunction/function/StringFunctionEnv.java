@@ -1,10 +1,8 @@
-package com.virjar.vscrawler.core.selector.string;
+package com.virjar.vscrawler.core.selector.strfunction.function;
 
 import java.util.Map;
 
 import com.google.common.collect.Maps;
-import com.virjar.vscrawler.core.selector.string.tree.StringFunction;
-
 /**
  * Created by virjar on 17/7/1.
  */
