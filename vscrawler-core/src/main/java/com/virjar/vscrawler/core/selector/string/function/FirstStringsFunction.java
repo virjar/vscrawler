@@ -26,6 +26,6 @@ public abstract class FirstStringsFunction implements StringFunction {
         }
     }
 
-    abstract Strings handle(Strings input, StringContext stringContext, List<SyntaxNode> params);
+    protected  abstract Strings handle(Strings input, StringContext stringContext, List<SyntaxNode> params);
 
 }

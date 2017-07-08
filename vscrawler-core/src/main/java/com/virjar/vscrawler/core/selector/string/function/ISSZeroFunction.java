@@ -40,5 +40,5 @@ public abstract class ISSZeroFunction implements StringFunction {
         return handleIndex(string.toString(), subString.toString(), searchStart);
     }
 
-    abstract int handleIndex(final CharSequence str, final CharSequence searchStr, int startPos);
+    protected abstract int handleIndex(final CharSequence str, final CharSequence searchStr, int startPos);
 }

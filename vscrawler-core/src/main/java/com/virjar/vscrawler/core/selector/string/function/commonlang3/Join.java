@@ -1,8 +1,10 @@
-package com.virjar.vscrawler.core.selector.string.function;
+package com.virjar.vscrawler.core.selector.string.function.commonlang3;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.virjar.vscrawler.core.selector.string.function.FirstStringsFunction;
+import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.string.Strings;
@@ -12,18 +14,18 @@ import com.virjar.vscrawler.core.selector.string.syntax.SyntaxNode;
 /**
  * Created by virjar on 17/7/8.
  */
-public abstract class AbstractSplitFunction extends FirstStringsFunction {
+public class Join extends FirstStringsFunction {
     @Override
-    protected Strings handle(Strings input, StringContext stringContext, List<SyntaxNode> params) {
-        String sepatatorChars = null;
-        int max = -1;
-        boolean preserveAllTokens = false;
+    protected  Strings handle(Strings input, StringContext stringContext, List<SyntaxNode> params) {
+        String separator = null;
+        Integer startIndex = 0;
+        Integer endIndex = input.size();
         int index = 1;
         LinkedList<Object> calcData = Lists.newLinkedList();
-        if (params.size() > index + 1) {
+        if (params.size() > 2) {
             Object calculate = params.get(index).calculate(stringContext);
             if (calculate instanceof CharSequence) {
-                sepatatorChars = calculate.toString();
+                separator = calculate.toString();
                 index++;
             } else {
                 calcData.add(calculate);
@@ -31,33 +33,31 @@ public abstract class AbstractSplitFunction extends FirstStringsFunction {
         }
 
         if (!calcData.isEmpty() && calcData.peek() instanceof Number) {
-            max = ((Number) calcData.removeFirst()).intValue();
+            startIndex = ((Number) calcData.removeFirst()).intValue();
         } else if (params.size() > index + 1) {
             Object calculate = params.get(index).calculate(stringContext);
             if (calculate instanceof Number) {
-                max = ((Number) calculate).intValue();
+                startIndex = ((Number) calculate).intValue();
                 index++;
             } else {
                 calcData.add(calculate);
             }
         }
 
-        if (!calcData.isEmpty() && calcData.peek() instanceof Boolean) {
-            preserveAllTokens = (Boolean) calcData.removeFirst();
+        if (!calcData.isEmpty() && calcData.peek() instanceof Number) {
+            endIndex = ((Number) calcData.removeFirst()).intValue();
         } else if (params.size() > index + 1) {
             Object calculate = params.get(index).calculate(stringContext);
-            if (calculate instanceof Boolean) {
-                preserveAllTokens = (boolean) calculate;
+            if (calculate instanceof Number) {
+                endIndex = ((Number) calculate).intValue();
             }
         }
 
-        Strings ret = new Strings();
-        for (String str : input) {
-            Collections.addAll(ret, split(str, sepatatorChars, max, preserveAllTokens));
-
-        }
-        return ret;
+        return new Strings(StringUtils.join(input.toArray(), separator, startIndex, endIndex));
     }
 
-    protected abstract String[] split(String str, String separatorChars, int max, boolean preserveAllTokens);
+    @Override
+    public String determineFunctionName() {
+        return "join";
+    }
 }

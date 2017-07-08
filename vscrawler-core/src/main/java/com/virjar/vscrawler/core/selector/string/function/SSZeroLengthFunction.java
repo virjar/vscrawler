@@ -55,5 +55,5 @@ public abstract class SSZeroLengthFunction implements StringFunction {
 
     }
 
-    abstract String handle(String str, int start, int end);
+    protected abstract String handle(String str, int start, int end);
 }

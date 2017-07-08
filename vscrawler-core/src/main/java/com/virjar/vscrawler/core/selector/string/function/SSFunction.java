@@ -11,7 +11,7 @@ import com.virjar.vscrawler.core.selector.string.syntax.SyntaxNode;
  */
 public abstract class SSFunction extends FirstStringsFunction {
 
-    Strings handle(Strings input, StringContext stringContext, List<SyntaxNode> params) {
+    protected Strings handle(Strings input, StringContext stringContext, List<SyntaxNode> params) {
         Strings ret = new Strings();
         for (String str : input) {
             ret.add(handleSingleStr(str));
@@ -19,5 +19,5 @@ public abstract class SSFunction extends FirstStringsFunction {
         return ret;
     }
 
-    abstract String handleSingleStr(String input);
+    protected abstract String handleSingleStr(String input);
 }

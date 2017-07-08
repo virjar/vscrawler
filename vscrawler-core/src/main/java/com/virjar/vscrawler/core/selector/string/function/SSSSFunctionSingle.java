@@ -12,7 +12,7 @@ import com.virjar.vscrawler.core.selector.string.syntax.SyntaxNode;
  */
 public abstract class SSSSFunctionSingle extends FirstStringsFunction {
     @Override
-    Strings handle(Strings input, StringContext stringContext, List<SyntaxNode> params) {
+    protected Strings handle(Strings input, StringContext stringContext, List<SyntaxNode> params) {
         Preconditions.checkArgument(params.size() >= 3, determineFunctionName() + " must have 2 parameters at last");
 
         Object secondObject = params.get(1).calculate(stringContext);
@@ -36,5 +36,5 @@ public abstract class SSSSFunctionSingle extends FirstStringsFunction {
         return ret;
     }
 
-    abstract String handle(String input, String second, String third);
+    protected  abstract String handle(String input, String second, String third);
 }
