@@ -27,10 +27,13 @@ public class StingEvaluator {
         for (String str : input) {
             StringContext stringContext = new StringContext(baseUrl, str, input, i);
             Object calculate = stringFunction.calculate(stringContext);
-            if (!(calculate instanceof Strings)) {
-                log.warn("result type for function: " + stringFunction.functionName() + " is not strings");
-            } else {
+            if ((calculate instanceof Strings)) {
                 linkedHashSet.addAll((Strings) calculate);
+            } else if (calculate instanceof CharSequence) {
+                linkedHashSet.add(calculate.toString());
+            } else {
+                log.warn("result type for function: " + stringFunction.functionName() + " is not strings");
+
             }
             i++;
         }

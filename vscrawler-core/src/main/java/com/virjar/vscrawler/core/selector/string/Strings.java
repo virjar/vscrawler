@@ -11,6 +11,10 @@ public class Strings extends LinkedList<String> {
         add(data);
     }
 
+    public Strings() {
+
+    }
+
     public Strings(Collection<String> strings) {
         addAll(strings);
     }
