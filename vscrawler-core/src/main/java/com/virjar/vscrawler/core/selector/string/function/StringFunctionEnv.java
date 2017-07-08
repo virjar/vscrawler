@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.selector.string.function.commonlang3.*;
 import com.virjar.vscrawler.core.selector.string.function.vs.Regex;
 import com.virjar.vscrawler.core.selector.string.function.vs.RuntimeString;
+import com.virjar.vscrawler.core.selector.string.function.vs.Test;
 
 /**
  * Created by virjar on 17/7/1.
@@ -25,6 +26,7 @@ public class StringFunctionEnv {
     private static void registerVS() {
         register(new Regex());
         register(new RuntimeString());
+        register(new Test());
     }
 
     /**
