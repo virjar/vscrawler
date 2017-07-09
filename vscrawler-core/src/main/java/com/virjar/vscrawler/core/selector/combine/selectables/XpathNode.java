@@ -2,6 +2,9 @@ package com.virjar.vscrawler.core.selector.combine.selectables;
 
 import java.util.List;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
 import com.google.common.collect.Lists;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
@@ -17,7 +20,15 @@ public class XpathNode extends AbstractSelectable<List<SIPNode>> {
     @Override
     public List<SIPNode> createOrGetModel() {
         if (model == null) {
-            model = Lists.newArrayList(SIPNode.t(getRawText()));
+            try {
+                Document document = Jsoup.parse(getRawText(), getBaseUrl());
+                if (document == null) {
+                    throw new RuntimeException();
+                }
+                model = Lists.newArrayList(SIPNode.e(document));
+            } catch (Exception e) {
+                model = Lists.newArrayList(SIPNode.t(getRawText()));
+            }
         }
         return model;
     }

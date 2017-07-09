@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Function;
@@ -113,23 +115,106 @@ public class Converters {
         register(XpathNode.class, RawNode.class, new NodeConvert<XpathNode, RawNode>() {
             @Override
             public RawNode convert(XpathNode from) {
-                return new RawNode(from.getBaseUrl(), StringUtils.join(Iterables.transform(from.createOrGetModel(), new Function<SIPNode, String>() {
-                    @Override
-                    public String apply(SIPNode input) {
-                        return input.isText() ? input.getTextVal() : input.getElement().html();
-                    }
-                }), " "));
+                return new RawNode(from.getBaseUrl(),
+                        StringUtils.join(Iterables.transform(from.createOrGetModel(), new Function<SIPNode, String>() {
+                            @Override
+                            public String apply(SIPNode input) {
+                                return input.isText() ? input.getTextVal() : input.getElement().html();
+                            }
+                        }), " "));
             }
         });
     }
 
-
     private static void registerString() {
 
+        register(StringNode.class, StringNode.class, new NodeConvert<StringNode, StringNode>() {
+            @Override
+            public StringNode convert(StringNode from) {
+                return from;
+            }
+        });
+
+        register(JsonNode.class, StringNode.class, new NodeConvert<JsonNode, StringNode>() {
+            @Override
+            public StringNode convert(JsonNode from) {
+                StringNode ret = new StringNode(from.getBaseUrl(), null);
+                ret.setModel(Lists.transform(from.createOrGetModel(), new Function<JSON, String>() {
+                    @Override
+                    public String apply(JSON input) {
+                        return input.toJSONString();
+                    }
+                }));
+                return ret;
+            }
+        });
+
+        register(RawNode.class, StringNode.class, new NodeConvert<RawNode, StringNode>() {
+            @Override
+            public StringNode convert(RawNode from) {
+                return new StringNode(from.getBaseUrl(), from.createOrGetModel());
+            }
+        });
+
+        register(XpathNode.class, StringNode.class, new NodeConvert<XpathNode, StringNode>() {
+            @Override
+            public StringNode convert(XpathNode from) {
+                StringNode ret = new StringNode(from.getBaseUrl(), null);
+                ret.setModel(Lists.transform(from.createOrGetModel(), new Function<SIPNode, String>() {
+                    @Override
+                    public String apply(SIPNode input) {
+                        return input.isText() ? input.getTextVal() : input.getElement().html();
+                    }
+                }));
+                return ret;
+            }
+        });
     }
 
     private static void registerXpath() {
+        register(XpathNode.class, XpathNode.class, new NodeConvert<XpathNode, XpathNode>() {
+            @Override
+            public XpathNode convert(XpathNode from) {
+                return from;
+            }
+        });
 
+        register(JsonNode.class, XpathNode.class, new NodeConvert<JsonNode, XpathNode>() {
+            @Override
+            public XpathNode convert(JsonNode from) {
+                throw new UnsupportedOperationException("can not cover json to xpath");
+            }
+        });
+
+        register(RawNode.class, XpathNode.class, new NodeConvert<RawNode, XpathNode>() {
+            @Override
+            public XpathNode convert(RawNode from) {
+                return new XpathNode(from.getBaseUrl(), from.getRawText());
+            }
+        });
+
+        register(StringNode.class, XpathNode.class, new NodeConvert<StringNode, XpathNode>() {
+            @Override
+            public XpathNode convert(final StringNode from) {
+                XpathNode ret = new XpathNode(from.getBaseUrl(), null);
+                ret.setModel(Lists
+                        .newLinkedList(Iterables.transform(from.createOrGetModel(), new Function<String, SIPNode>() {
+                            @Override
+                            public SIPNode apply(String input) {
+                                try {
+                                    Document document = Jsoup.parse(input, from.getBaseUrl());
+                                    if (document != null) {
+                                        return SIPNode.e(document);
+                                    }
+                                } catch (Exception e) {
+                                    // do nothing
+                                }
+                                return SIPNode.t(input);
+                            }
+                        })));
+                return ret;
+            }
+        });
     }
 
     private static void registerDefault() {
@@ -140,7 +225,7 @@ public class Converters {
     }
 
     public static <F extends AbstractSelectable, T extends AbstractSelectable> void register(Class<F> from, Class<T> to,
-                                                                                             NodeConvert<F, T> nodeConvert) {
+            NodeConvert<F, T> nodeConvert) {
         nodeConvertMap.put(new RegistryHolder(from, to), nodeConvert);
     }
 
