@@ -4,16 +4,19 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
+import com.alibaba.fastjson.JSON;
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
-import com.virjar.vscrawler.core.selector.combine.selectables.*;
+import com.virjar.vscrawler.core.selector.combine.selectables.JsonNode;
+import com.virjar.vscrawler.core.selector.combine.selectables.RawNode;
+import com.virjar.vscrawler.core.selector.combine.selectables.StringNode;
+import com.virjar.vscrawler.core.selector.combine.selectables.XpathNode;
 
 import lombok.Getter;
 
@@ -22,95 +25,104 @@ import lombok.Getter;
  */
 public class Converters {
     private static Map<RegistryHolder, NodeConvert> nodeConvertMap = Maps.newHashMap();
+
     static {
         registerDefault();
     }
 
-    private static void registerHtm() {
-        /*
-        register(HtmlNode.class, HtmlNode.class, new NodeConvert<HtmlNode, HtmlNode>() {
+    private static void registerJson() {
+        register(JsonNode.class, JsonNode.class, new NodeConvert<JsonNode, JsonNode>() {
             @Override
-            public HtmlNode convert(HtmlNode from) {
+            public JsonNode convert(JsonNode from) {
                 return from;
             }
         });
 
-        register(JsonNode.class, HtmlNode.class, new NodeConvert<JsonNode, HtmlNode>() {
+        register(RawNode.class, JsonNode.class, new NodeConvert<RawNode, JsonNode>() {
             @Override
-            public HtmlNode convert(JsonNode from) {
-                // json to json
-                throw new UnsupportedOperationException("can not convert a json data to html data");
+            public JsonNode convert(RawNode from) {
+                return new JsonNode(from.getBaseUrl(), from.getRawText());
             }
         });
 
-        register(RawNode.class, HtmlNode.class, new NodeConvert<RawNode, HtmlNode>() {
+        register(StringNode.class, JsonNode.class, new NodeConvert<StringNode, JsonNode>() {
             @Override
-            public HtmlNode convert(RawNode from) {
-                return new HtmlNode(from.getBaseUrl(), from.getRawText());
-            }
-        });
-
-        register(StringNode.class, HtmlNode.class, new NodeConvert<StringNode, HtmlNode>() {
-            @Override
-            public HtmlNode convert(StringNode from) {
-                List<String> strings = from.createOrGetModel();
-                if (strings.size() >= 1) {
-                    return new HtmlNode(from.getBaseUrl(), strings.get(0));
-                }
-                return new HtmlNode(from.getBaseUrl(), "");
-            }
-        });
-
-        register(ElementsNode.class, HtmlNode.class, new NodeConvert<ElementsNode, HtmlNode>() {
-            @Override
-            public HtmlNode convert(ElementsNode from) {
-                Elements orGetModel = from.createOrGetModel();
-                if (orGetModel.size() >= 1) {
-                    HtmlNode htmlNode = new HtmlNode(from.getBaseUrl(), orGetModel.first().html());
-                    htmlNode.setModel(orGetModel.first());
-                }
-                return new HtmlNode(from.getBaseUrl(), "");
-            }
-        });
-
-        register(XpathNode.class, HtmlNode.class, new NodeConvert<XpathNode, HtmlNode>() {
-            @Override
-            public HtmlNode convert(XpathNode from) {
-                List<SIPNode> sipNodes = from.createOrGetModel();
-
-                List<SIPNode> filterNodes = Lists.newLinkedList(Iterables.filter(sipNodes, new Predicate<SIPNode>() {
+            public JsonNode convert(StringNode from) {
+                JsonNode jsonNode = new JsonNode(from.getBaseUrl(), null);
+                jsonNode.setModel(Lists.transform(from.createOrGetModel(), new Function<String, JSON>() {
                     @Override
-                    public boolean apply(SIPNode input) {
-                        return !(input.isText() && StringUtils.isBlank(input.getTextVal()));
+                    public JSON apply(String input) {
+                        return (JSON) JSON.toJSON(input);
                     }
                 }));
-
-                if (filterNodes.size() == 0) {
-                    return new HtmlNode(from.getBaseUrl(), "");
-                }
-                SIPNode sipNode = filterNodes.get(0);
-                if (sipNode.isText()) {
-                    return new HtmlNode(from.getBaseUrl(), sipNode.getTextVal());
-                }
-                Element element = sipNode.getElement();
-                HtmlNode htmlNode = new HtmlNode(from.getBaseUrl(), element.html());
-                htmlNode.setModel(element);
-                return htmlNode;
+                return jsonNode;
             }
-        });*/
-    }
+        });
 
-    private static void registerJson() {
-
+        register(XpathNode.class, JsonNode.class, new NodeConvert<XpathNode, JsonNode>() {
+            @Override
+            public JsonNode convert(XpathNode from) {
+                JsonNode ret = new JsonNode(from.getBaseUrl(), null);
+                ret.setModel(Lists.newLinkedList(
+                        Iterables.transform(Iterables.filter(from.createOrGetModel(), new Predicate<SIPNode>() {
+                            @Override
+                            public boolean apply(SIPNode input) {
+                                return input.isText();
+                            }
+                        }), new Function<SIPNode, JSON>() {
+                            @Override
+                            public JSON apply(SIPNode input) {
+                                return (JSON) JSON.toJSON(input.getTextVal());
+                            }
+                        })));
+                return ret;
+            }
+        });
     }
 
     private static void registerRaw() {
+        register(RawNode.class, RawNode.class, new NodeConvert<RawNode, RawNode>() {
+            @Override
+            public RawNode convert(RawNode from) {
+                return from;
+            }
+        });
 
+        register(JsonNode.class, RawNode.class, new NodeConvert<JsonNode, RawNode>() {
+            @Override
+            public RawNode convert(JsonNode from) {
+                List<JSON> jsons = from.createOrGetModel();
+                if (jsons.size() == 1) {
+                    return new RawNode(from.getBaseUrl(), jsons.get(1).toJSONString());
+                }
+                StringBuilder sb = new StringBuilder();
+                for (JSON json : jsons) {
+                    sb.append(json.toJSONString()).append(" ");
+                }
+                return new RawNode(from.getBaseUrl(), sb.toString());
+            }
+        });
+
+        register(StringNode.class, RawNode.class, new NodeConvert<StringNode, RawNode>() {
+            @Override
+            public RawNode convert(StringNode from) {
+                return new RawNode(from.getBaseUrl(), StringUtils.join(from.createOrGetModel(), " "));
+            }
+        });
+
+        register(XpathNode.class, RawNode.class, new NodeConvert<XpathNode, RawNode>() {
+            @Override
+            public RawNode convert(XpathNode from) {
+                return new RawNode(from.getBaseUrl(), StringUtils.join(Iterables.transform(from.createOrGetModel(), new Function<SIPNode, String>() {
+                    @Override
+                    public String apply(SIPNode input) {
+                        return input.isText() ? input.getTextVal() : input.getElement().html();
+                    }
+                }), " "));
+            }
+        });
     }
 
-    private static void registerRegex() {
-
-    }
 
     private static void registerString() {
 
@@ -121,22 +133,20 @@ public class Converters {
     }
 
     private static void registerDefault() {
-        registerHtm();
         registerJson();
         registerRaw();
-        registerRegex();
         registerString();
         registerXpath();
     }
 
     public static <F extends AbstractSelectable, T extends AbstractSelectable> void register(Class<F> from, Class<T> to,
-            NodeConvert<F, T> nodeConvert) {
+                                                                                             NodeConvert<F, T> nodeConvert) {
         nodeConvertMap.put(new RegistryHolder(from, to), nodeConvert);
     }
 
     @SuppressWarnings("unchecked")
     public static <F extends AbstractSelectable, T extends AbstractSelectable> NodeConvert<F, T> findConvert(
-            Class<? extends  AbstractSelectable> from, Class<T> to) {
+            Class<? extends AbstractSelectable> from, Class<T> to) {
         return nodeConvertMap.get(new RegistryHolder(from, to));
     }
 

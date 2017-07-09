@@ -1,11 +1,15 @@
 package com.virjar.vscrawler.core.selector.combine;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONPath;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.sipsoup.model.XpathEvaluator;
@@ -70,41 +74,57 @@ public abstract class AbstractSelectable<M> {
         return xpathNode;
     }
 
-    public AbstractSelectable jsonPath(JSONPath jsonPath) {
+    // TODO
+    public AbstractSelectable jsonPath(final JSONPath jsonPath) {
         // 转化为json
         JsonNode fromNode = covert(JsonNode.class);
-        Object result = jsonPath.eval(fromNode.createOrGetModel());
+
+        List<Object> result = Lists.transform(fromNode.createOrGetModel(), new Function<JSON, Object>() {
+            @Override
+            public Object apply(JSON input) {
+                return jsonPath.eval(input);
+            }
+        });
 
         // jsonPath的抽取结果类型不定,需要做转化适配
-        if (result == null) {
-            return new RawNode(getBaseUrl(), "");
+        if (result.isEmpty()) {
+            return new RawNode(getBaseUrl(), null);
         }
 
+        Object first = result.get(0);
+
         // 抽取结果还是json,仍然使用json的模型
-        if (result instanceof JSON) {
-            JSON jsonResult = (JSON) result;
+        if (first instanceof JSON) {
             JsonNode jsonNode = new JsonNode(getBaseUrl(), null);
-            jsonNode.setModel(jsonResult);
+            jsonNode.setModel(Lists.newLinkedList(Iterables.transform(Iterables.filter(result, new Predicate<Object>() {
+                @Override
+                public boolean apply(Object input) {
+                    return input instanceof JSON;
+                }
+            }), new Function<Object, JSON>() {
+                @Override
+                public JSON apply(Object input) {
+                    return (JSON) input;
+                }
+            })));
             return jsonNode;
         }
 
         // 抽取结果是列表
-        if (result instanceof List) {
-            List listResult = (List) result;
-            if (listResult.size() == 0) {
-                return new RawNode(getBaseUrl(), "");
-            }
-
-            Object first = listResult.get(0);
-            if (first instanceof String) {
-                StringNode stringNode = new StringNode(getBaseUrl(), null);
-                List<String> data = Lists.newArrayListWithExpectedSize(listResult.size());
-                for (Object aListResult : listResult) {
-                    data.add(aListResult.toString());
+        if (first instanceof Collection) {
+            StringNode stringNode = new StringNode(getBaseUrl(), null);
+            List<String> data = Lists.newArrayList();
+            for (Object listObject : result) {
+                Collection list = (Collection) listObject;
+                for (Object dataItem : list) {
+                    if (dataItem instanceof CharSequence) {
+                        data.add(dataItem.toString());
+                    } else if (dataItem != null) {
+                        log.warn("can not convert json eval result:" + dataItem);
+                    }
                 }
-                stringNode.setModel(data);
-                return stringNode;
             }
+            stringNode.setModel(data);
         }
         log.warn("can not convert json eval result:" + result);
         return new RawNode(getBaseUrl(), null);
