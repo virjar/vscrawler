@@ -8,6 +8,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -74,7 +75,7 @@ public class Converters {
                         }), new Function<SIPNode, JSON>() {
                             @Override
                             public JSON apply(SIPNode input) {
-                                return (JSON) JSON.toJSON(input.getTextVal());
+                                return (JSON) JSON.parse(input.getTextVal());
                             }
                         })));
                 return ret;
@@ -136,15 +137,39 @@ public class Converters {
         });
 
         register(JsonNode.class, StringNode.class, new NodeConvert<JsonNode, StringNode>() {
-            @Override
-            public StringNode convert(JsonNode from) {
-                StringNode ret = new StringNode(from.getBaseUrl(), null);
-                ret.setModel(Lists.transform(from.createOrGetModel(), new Function<JSON, String>() {
+
+            private List<String> genDefault(List<JSON> fromModel) {
+                return Lists.transform(fromModel, new Function<JSON, String>() {
                     @Override
                     public String apply(JSON input) {
                         return input.toJSONString();
                     }
-                }));
+                });
+            }
+
+            @Override
+            public StringNode convert(JsonNode from) {
+                StringNode ret = new StringNode(from.getBaseUrl(), null);
+
+                List<String> tempRet = Lists.newLinkedList();
+                List<JSON> fromModel = from.createOrGetModel();
+                for (JSON json : fromModel) {
+                    if (json instanceof JSONArray) {
+                        JSONArray jsonArray = (JSONArray) json;
+                        for (Object o : jsonArray) {
+                            if (o instanceof CharSequence) {
+                                tempRet.add(o.toString());
+                            } else {
+                                ret.setModel(genDefault(fromModel));
+                                return ret;
+                            }
+                        }
+                    } else {
+                        ret.setModel(genDefault(fromModel));
+                        return ret;
+                    }
+                }
+                ret.setModel(tempRet);
                 return ret;
             }
         });

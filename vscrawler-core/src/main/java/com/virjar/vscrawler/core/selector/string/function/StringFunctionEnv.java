@@ -5,7 +5,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.selector.string.function.commonlang3.*;
 import com.virjar.vscrawler.core.selector.string.function.vs.Regex;
-import com.virjar.vscrawler.core.selector.string.function.vs.RuntimeString;
+import com.virjar.vscrawler.core.selector.string.function.vs.Self;
 import com.virjar.vscrawler.core.selector.string.function.vs.Test;
 
 /**
@@ -25,7 +25,7 @@ public class StringFunctionEnv {
 
     private static void registerVS() {
         register(new Regex());
-        register(new RuntimeString());
+        register(new Self());
         register(new Test());
     }
 

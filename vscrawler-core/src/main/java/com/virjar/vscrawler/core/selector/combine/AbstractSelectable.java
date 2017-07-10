@@ -1,15 +1,13 @@
 package com.virjar.vscrawler.core.selector.combine;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Element;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONPath;
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.sipsoup.model.XpathEvaluator;
@@ -74,60 +72,35 @@ public abstract class AbstractSelectable<M> {
         return xpathNode;
     }
 
-    // TODO
-    public AbstractSelectable jsonPath(final JSONPath jsonPath) {
+    public XpathNode css(String css) {
+        XpathNode xpathNode = new XpathNode(getBaseUrl(), null);
+        List<SIPNode> newModels = Lists.newLinkedList();
+        for (SIPNode sipNode : covert(XpathNode.class).createOrGetModel()) {
+            if (sipNode.isText()) {
+                continue;
+            }
+            for (Element el : sipNode.getElement().select(css)) {
+                newModels.add(SIPNode.e(el));
+            }
+        }
+        xpathNode.setModel(newModels);
+        return xpathNode;
+    }
+
+    public JsonNode jsonPath(final JSONPath jsonPath) {
         // 转化为json
         JsonNode fromNode = covert(JsonNode.class);
 
-        List<Object> result = Lists.transform(fromNode.createOrGetModel(), new Function<JSON, Object>() {
+        List<JSON> result = Lists.transform(fromNode.createOrGetModel(), new Function<JSON, JSON>() {
             @Override
-            public Object apply(JSON input) {
-                return jsonPath.eval(input);
+            public JSON apply(JSON input) {
+                return (JSON) jsonPath.eval(input);
             }
         });
 
-        // jsonPath的抽取结果类型不定,需要做转化适配
-        if (result.isEmpty()) {
-            return new RawNode(getBaseUrl(), null);
-        }
-
-        Object first = result.get(0);
-
-        // 抽取结果还是json,仍然使用json的模型
-        if (first instanceof JSON) {
-            JsonNode jsonNode = new JsonNode(getBaseUrl(), null);
-            jsonNode.setModel(Lists.newLinkedList(Iterables.transform(Iterables.filter(result, new Predicate<Object>() {
-                @Override
-                public boolean apply(Object input) {
-                    return input instanceof JSON;
-                }
-            }), new Function<Object, JSON>() {
-                @Override
-                public JSON apply(Object input) {
-                    return (JSON) input;
-                }
-            })));
-            return jsonNode;
-        }
-
-        // 抽取结果是列表
-        if (first instanceof Collection) {
-            StringNode stringNode = new StringNode(getBaseUrl(), null);
-            List<String> data = Lists.newArrayList();
-            for (Object listObject : result) {
-                Collection list = (Collection) listObject;
-                for (Object dataItem : list) {
-                    if (dataItem instanceof CharSequence) {
-                        data.add(dataItem.toString());
-                    } else if (dataItem != null) {
-                        log.warn("can not convert json eval result:" + dataItem);
-                    }
-                }
-            }
-            stringNode.setModel(data);
-        }
-        log.warn("can not convert json eval result:" + result);
-        return new RawNode(getBaseUrl(), null);
+        JsonNode jsonNode = new JsonNode(getBaseUrl(), null);
+        jsonNode.setModel(result);
+        return jsonNode;
     }
 
     public AbstractSelectable jsonPath(String jsonPathStr) {
@@ -135,10 +108,6 @@ public abstract class AbstractSelectable<M> {
         return jsonPath(JSONPath.compile(jsonPathStr));
     }
 
-    // 当你确定抽取结果就是字符串的时候,具体试表达式而定,如果随意调用此方法,可能引发异常
-    public StringNode toStringNode() {
-        return (StringNode) this;
-    }
 
     public StringNode stringRule(StingEvaluator stingEvaluator) {
         StringNode from = covert(StringNode.class);
