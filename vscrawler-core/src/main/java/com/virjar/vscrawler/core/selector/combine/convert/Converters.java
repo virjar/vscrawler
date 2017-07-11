@@ -55,7 +55,7 @@ public class Converters {
                 jsonNode.setModel(Lists.transform(from.createOrGetModel(), new Function<String, JSON>() {
                     @Override
                     public JSON apply(String input) {
-                        return (JSON) JSON.toJSON(input);
+                        return (JSON) JSON.parse(input);
                     }
                 }));
                 return jsonNode;

@@ -20,7 +20,7 @@ public class HtmlJsonSelectorTest {
                 IOUtils.toString(HtmlJsonSelectorTest.class.getResourceAsStream("/htmljson.html"), Charsets.UTF_8));
 
         List<String> allDepartureDate = selectable.css("#testid pre").xpath("/text()")
-                .jsonPath("$.bookingVoyages[0:].bookingFlights[0:].departureDate").stringRule("self()")
+                .jsonPath("$.bookingVoyages[0:].bookingFlights[0:].departureDate").stringRule("deleteWhitespace(self())")
                 .createOrGetModel();
 
         System.out.println(Joiner.on(",").join(allDepartureDate));

@@ -202,7 +202,7 @@ public class StringFunctionTokenQueue {
     public String consumeFunction() {
         String functionName = consumeTo("(");
         String params = chompBalanced('(', ')');
-        return functionName + "(" + params + ")";
+        return functionName + "(" + (params == null ? "" : params) + ")";
     }
 
     /**

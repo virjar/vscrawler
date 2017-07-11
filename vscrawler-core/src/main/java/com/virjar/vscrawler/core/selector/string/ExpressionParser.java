@@ -7,6 +7,7 @@ import java.util.Stack;
 import com.virjar.vscrawler.core.selector.string.function.StringFunction;
 import com.virjar.vscrawler.core.selector.string.function.StringFunctionEnv;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.collect.Lists;
@@ -188,7 +189,7 @@ public class ExpressionParser {
                     "can not parse token: " + functionString + "  ,it is not same to a function");
         }
 
-        String paramsStr = tempTokenQueue.chompBalanced('(', ')');
+        String paramsStr = StringUtils.trimToEmpty(tempTokenQueue.chompBalanced('(', ')'));
 
         StringFunctionTokenQueue paramTokenQueue = new StringFunctionTokenQueue(paramsStr);
 
@@ -196,6 +197,10 @@ public class ExpressionParser {
         List<SyntaxNode> params = Lists.newLinkedList();
         while ((parameter = paramTokenQueue.consumeIgnoreQuote(',')) != null) {
             params.add(new ExpressionParser(new StringFunctionTokenQueue(parameter)).parse());
+        }
+        paramTokenQueue.consumeWhitespace();
+        if(!paramTokenQueue.isEmpty()){
+            params.add(new ExpressionParser(new StringFunctionTokenQueue(paramTokenQueue.remainder())).parse());
         }
         return new FunctionSyntaxNode(function, params);
     }
