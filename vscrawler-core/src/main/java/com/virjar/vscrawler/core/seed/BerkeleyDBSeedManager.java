@@ -116,6 +116,13 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
         // 监听消息
         AutoEventRegistry.getInstance().registerObserver(this);
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                BerkeleyDBSeedManager.this.crawlerEnd();
+            }
+        });
     }
 
     private void loadSegments() {
@@ -597,9 +604,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         if (isClosed) {
             return;
         }
+        isClosed = true;
         log.info("收到爬虫结束消息,开始关闭资源");
         log.info("拒绝抓取结果入库...");
-        isClosed = true;
         log.info("缓存中未分发数据重新入库,正在执行的爬虫任务,不等待结果,重新入库...");
         reSaveCache();
         log.info("写入段表信息");
