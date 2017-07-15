@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by virjar on 17/4/15.<br/>
  * 创建并管理多个用户的链接,pool逻辑大概是模仿druid实现的
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -61,8 +61,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     private Set<CrawlerSession> runningSessions = Sets.newConcurrentHashSet();
 
     public CrawlerSessionPool(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
-            IPPool ipPool, ProxyPlanner proxyPlanner, int maxSize, int coreSize, int initialSize, long reuseDuration,
-            long maxOnlineDuration) {
+                              IPPool ipPool, ProxyPlanner proxyPlanner, int maxSize, int coreSize, int initialSize, long reuseDuration,
+                              long maxOnlineDuration) {
         this.crawlerHttpClientGenerator = crawlerHttpClientGenerator;
         this.proxyStrategy = proxyStrategy;
         this.ipPool = ipPool;
@@ -155,12 +155,15 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
         // logger.info("当前会话池中,共有:{}个用户可用", allSessions.size());
 
-        for (;;) {
+        for (; ; ) {
             long startRequestTimeStamp = System.currentTimeMillis();
             CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
             if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
                 if (sessionQueue.size() + runningSessions.size() < maxSize) {
                     crawlerSession = createNewSession();
+                    if (crawlerSession == null) {
+                        CommonUtil.sleep(2000);
+                    }
                 } else {
                     crawlerSession = getSessionInternal(2000);
                 }
@@ -183,6 +186,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
             if (System.currentTimeMillis() - crawlerSession.getLastActiveTimeStamp() < reuseDuration) {
                 // tempCrawlerSession.add(crawlerSession);
                 sessionQueue.offer(new SessionHolder(crawlerSession));
+                CommonUtil.sleep(2000);//否则可能cpu飙高
                 continue;
             }
 
