@@ -1,11 +1,14 @@
 package com.virjar.vscrawler.core.net.session;
 
+import java.util.Set;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.collect.Sets;
+import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionBorrowEvent;
@@ -55,6 +58,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
     private CreateSessionThread createSessionThread;
     private DelayQueue<SessionHolder> sessionQueue = new DelayQueue<>();
+    private Set<CrawlerSession> runningSessions = Sets.newConcurrentHashSet();
 
     public CrawlerSessionPool(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
             IPPool ipPool, ProxyPlanner proxyPlanner, int maxSize, int coreSize, int initialSize, long reuseDuration,
@@ -135,6 +139,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     }
 
     public void recycle(CrawlerSession crawlerSession) {
+        runningSessions.remove(crawlerSession);
         crawlerSession.setLastActiveTimeStamp(System.currentTimeMillis());
         if (sessionQueue.size() > maxSize || !crawlerSession.isValid()) {
             crawlerSession.destroy();
@@ -154,7 +159,11 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
             long startRequestTimeStamp = System.currentTimeMillis();
             CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
             if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
-                crawlerSession = createNewSession();
+                if (sessionQueue.size() + runningSessions.size() < maxSize) {
+                    crawlerSession = createNewSession();
+                } else {
+                    crawlerSession = getSessionInternal(2000);
+                }
             }
             if (crawlerSession == null && lessTimeMillis < 0 && maxWaitMillis > 0) {
                 return null;
@@ -185,7 +194,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
             AutoEventRegistry.getInstance().findEventDeclaring(SessionBorrowEvent.class)
                     .onSessionBorrow(crawlerSession);
-            log.debug("当前session数量:{}", sessionQueue.size());
+            log.debug("当前session数量:{}", sessionQueue.size() + runningSessions.size());
+            runningSessions.add(crawlerSession);
             return crawlerSession;
         }
 
@@ -228,7 +238,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
     private CrawlerSession getSessionInternal(long maxWait) {
 
-        if (sessionQueue.size() < coreSize) {
+        if (sessionQueue.size() + runningSessions.size() < coreSize) {
             try {
                 lock.lockInterruptibly();
             } catch (InterruptedException e) {
@@ -245,8 +255,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
             if (maxWait > 0) {
                 SessionHolder poll = sessionQueue.poll(maxWait, TimeUnit.MILLISECONDS);
                 return poll == null ? null : poll.crawlerSession;
-            } else if (sessionQueue.size() > maxSize) {
-                log.info("等待session复活,session数目:{}", sessionQueue.size());
+            } else if (sessionQueue.size() + runningSessions.size() >= maxSize) {
                 return sessionQueue.take().crawlerSession;
             } else {
                 SessionHolder poll = sessionQueue.poll();
@@ -281,18 +290,20 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 } finally {
                     lock.unlock();
                 }
-                int expected = coreSize - sessionQueue.size();
+                int expected = coreSize - sessionQueue.size() - runningSessions.size();
 
                 for (int i = 0; i < expected * 2; i++) {
                     CrawlerSession newSession = createNewSession();
                     if (newSession != null) {
                         sessionQueue.add(new SessionHolder(newSession));
+                    } else {
+                        CommonUtil.sleep(2000);
                     }
-                    if (sessionQueue.size() >= coreSize) {
+                    if (sessionQueue.size() + runningSessions.size() >= coreSize) {
                         break;
                     }
                 }
-                if (sessionQueue.size() < coreSize) {
+                if (sessionQueue.size() + runningSessions.size() < coreSize) {
                     log.warn("many of sessions create failed,please check  your config");
                 }
             }

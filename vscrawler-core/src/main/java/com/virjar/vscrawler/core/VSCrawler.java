@@ -76,7 +76,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
      */
     protected long slowStartDuration = 5 * 60 * 1000;
 
-    private int slowStartTimes = 0;
+    private int slowStartThreadNumber = 0;
 
     @Getter
     private long lastActiveTime = 0L;
@@ -167,10 +167,13 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             }
 
             // 慢启动控制
-            if (slowStart && slowStartTimes < threadNumber - 1) {
-                log.info("慢启动:{}", slowStartTimes);
-                CommonUtil.sleep(slowStartDuration / threadNumber);
-                slowStartTimes++;
+            if (slowStart && startTime.getTime() + slowStartDuration > System.currentTimeMillis()) {
+                slowStartThreadNumber++;
+                log.info("慢启动:{}", slowStartThreadNumber);
+                if (threadPool.getActiveCount() >= slowStartThreadNumber) {
+                    // 如果线程数活跃线程数目大于或者等于慢启动控制数目,则暂定线程
+                    CommonUtil.sleep(slowStartDuration / threadNumber);
+                }
             }
 
         }
