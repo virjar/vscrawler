@@ -78,7 +78,6 @@ public class CrawlerSession {
         decorateRoutePlanner(crawlerHttpClient);
 
         this.cookieStore = crawlerHttpClient.getCookieStore();
-        AutoEventRegistry.getInstance().findEventDeclaring(SessionCreateEvent.class).onSessionCreateEvent(this);
     }
 
     public Object getExtInfo(String key) {

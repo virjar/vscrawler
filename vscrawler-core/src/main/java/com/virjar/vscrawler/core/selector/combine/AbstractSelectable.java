@@ -2,7 +2,6 @@ package com.virjar.vscrawler.core.selector.combine;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 
 import com.alibaba.fastjson.JSON;
@@ -19,6 +18,10 @@ import com.virjar.vscrawler.core.selector.combine.selectables.StringNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.XpathNode;
 import com.virjar.vscrawler.core.selector.string.FunctionParser;
 import com.virjar.vscrawler.core.selector.string.StingEvaluator;
+import com.virjar.vscrawler.core.selector.string.function.StringFunctionEnv;
+import com.virjar.vscrawler.core.selector.string.syntax.FunctionSyntaxNode;
+import com.virjar.vscrawler.core.selector.string.syntax.NumberSyntaxNode;
+import com.virjar.vscrawler.core.selector.string.syntax.StringSyntaxNode;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -59,7 +62,7 @@ public abstract class AbstractSelectable<M> {
 
     /**
      * xpath抽取
-     * 
+     *
      * @param xpathEvaluator xpath表达式模型
      * @return xpath抽取结果
      */
@@ -122,7 +125,7 @@ public abstract class AbstractSelectable<M> {
     }
 
     public StringNode regex(String regex, int group) {
-        return stringRule("regex(" + StringUtils.wrap(regex, "\"") + "," + group + ")");
+        return stringRule(new StingEvaluator(new FunctionSyntaxNode(StringFunctionEnv.findFunction("regex"), Lists.newArrayList(new StringSyntaxNode(regex), new NumberSyntaxNode(group)))));
     }
 
     public static AbstractSelectable createModel(String baseUrl, String rawText) {

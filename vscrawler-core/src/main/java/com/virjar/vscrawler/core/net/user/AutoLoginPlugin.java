@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.net.user;
 
+import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
@@ -36,12 +37,15 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
         if (!crawlerSession.isValid()) {
             return;
         }
-        User user = userManager.allocateUser();
-        if (user == null) {
-            log.error("can not allocate user resource");
-            crawlerSession.setValid(false);
-            return;
+
+        User user;
+        while (true) {// 暂时这么写,具体逻辑需要优化userManager,包括user各个状态定义问题
+            if ((user = userManager.allocateUser()) != null) {
+                break;
+            }
+            CommonUtil.sleep(5000);
         }
+
         boolean loginSuccess = loginHandler.onLogin(user, crawlerSession.getCookieStore(),
                 crawlerSession.getCrawlerHttpClient());
         if (loginSuccess) {
