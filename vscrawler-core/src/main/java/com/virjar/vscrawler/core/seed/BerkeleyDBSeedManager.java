@@ -117,7 +117,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         // 监听消息
         AutoEventRegistry.getInstance().registerObserver(this);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        Runtime.getRuntime().addShutdownHook(new Thread("DBAutoCloseThread") {
             @Override
             public void run() {
                 BerkeleyDBSeedManager.this.crawlerEnd();
