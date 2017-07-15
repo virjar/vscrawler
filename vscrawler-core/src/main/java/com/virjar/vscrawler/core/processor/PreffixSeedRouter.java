@@ -7,7 +7,7 @@ import com.virjar.vscrawler.core.seed.Seed;
 /**
  * Created by virjar on 17/6/17.
  */
-public abstract class PreffixSeedRouter implements SeedRouter {
+public class PreffixSeedRouter implements SeedRouter {
     private String prefix;
 
     public PreffixSeedRouter(String prefix) {

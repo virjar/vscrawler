@@ -1,9 +1,9 @@
 package com.virjar.vscrawler.core.processor;
 
 import java.util.Collection;
-import java.util.LinkedList;
+import java.util.concurrent.ConcurrentMap;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.seed.Seed;
 
@@ -12,21 +12,27 @@ import com.virjar.vscrawler.core.seed.Seed;
  */
 public class RouteProcessor implements SeedProcessor {
 
-    private LinkedList<SeedRouter> seedRouters = Lists.newLinkedList();
+    private ConcurrentMap<SeedRouter, SeedProcessor> allRouters = Maps.newConcurrentMap();
 
-    public void addRouter(SeedRouter seedRouter) {
-        seedRouters.add(seedRouter);
+    public void addRouter(SeedRouter seedRouter, SeedProcessor seedProcessor) {
+        allRouters.put(seedRouter, seedProcessor);
     }
 
-    public void addRouters(Collection<SeedRouter> seedRouters) {
-        this.seedRouters.addAll(seedRouters);
+    public void addRouter(BindRouteProcessor bindRouteProcessor) {
+        addRouter(bindRouteProcessor, bindRouteProcessor);
+    }
+
+    public void addRouters(Collection<BindRouteProcessor> seedRouters) {
+        for (BindRouteProcessor bindRouteProcessor : seedRouters) {
+            addRouter(bindRouteProcessor);
+        }
     }
 
     @Override
     public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
-        for (SeedRouter seedRouter : seedRouters) {
+        for (SeedRouter seedRouter : allRouters.keySet()) {
             if (seedRouter.matchSeed(seed)) {
-                seedRouter.process(seed, crawlerSession, crawlResult);
+                allRouters.get(seedRouter).process(seed, crawlerSession, crawlResult);
             }
         }
     }
