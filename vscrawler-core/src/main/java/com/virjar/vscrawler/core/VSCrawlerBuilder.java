@@ -14,10 +14,10 @@ import com.virjar.vscrawler.core.net.user.AutoLoginPlugin;
 import com.virjar.vscrawler.core.net.user.DefaultUserResource;
 import com.virjar.vscrawler.core.net.user.UserManager;
 import com.virjar.vscrawler.core.net.user.UserResourceFacade;
+import com.virjar.vscrawler.core.processor.BindRouteProcessor;
 import com.virjar.vscrawler.core.processor.PageDownLoadProcessor;
 import com.virjar.vscrawler.core.processor.RouteProcessor;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
-import com.virjar.vscrawler.core.processor.SeedRouter;
 import com.virjar.vscrawler.core.seed.*;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
@@ -68,7 +68,7 @@ public class VSCrawlerBuilder {
     /**
      * 基于路由的页面解析器
      */
-    private List<SeedRouter> seedRouters = Lists.newLinkedList();
+    private List<BindRouteProcessor> seedRouters = Lists.newLinkedList();
 
     /**
      * 序列化层
@@ -193,7 +193,7 @@ public class VSCrawlerBuilder {
         return this;
     }
 
-    public VSCrawlerBuilder addRouteProcessor(SeedRouter seedRouter) {
+    public VSCrawlerBuilder addRouteProcessor(BindRouteProcessor seedRouter) {
         this.seedRouters.add(seedRouter);
         return this;
     }
