@@ -21,7 +21,7 @@ public class FilePipLine implements Pipeline {
 
     public FilePipLine(String filepath) throws FileNotFoundException {
         this.filepath = filepath;
-        printWriter = new PrintWriter(new FileOutputStream(new File(filepath)));
+        printWriter = new PrintWriter(new FileOutputStream(new File(filepath), true));
     }
 
     @Override

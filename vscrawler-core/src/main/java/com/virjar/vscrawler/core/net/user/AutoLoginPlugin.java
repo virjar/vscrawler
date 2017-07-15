@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.net.user;
 
+import com.alibaba.fastjson.JSONObject;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
@@ -52,7 +53,7 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
             UserUtil.setUser(crawlerSession, user);
         } else {
             userManager.returnUser(user);
-            log.warn("用户:{} 登录失败", user);
+            log.warn("用户:{} 登录失败", JSONObject.toJSONString(user));
         }
     }
 

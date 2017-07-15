@@ -6,15 +6,15 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
-import com.virjar.vscrawler.core.event.systemevent.UserStateChangeEvent;
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.core.event.systemevent.UserStateChangeEvent;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,8 +39,8 @@ public class DefaultUserResource implements UserResourceFacade, CrawlerConfigCha
     private int crawlerThreadNumber = 10;
 
     private AtomicInteger userMockIndex = new AtomicInteger(0);
-    private Splitter userSplitter = Splitter.on(";").omitEmptyStrings().trimResults();
-    private Splitter userItemSplitter = Splitter.on(",").omitEmptyStrings().trimResults();
+    private Splitter userSplitter = Splitter.on(",").omitEmptyStrings().trimResults();
+    private Splitter userItemSplitter = Splitter.on(":").omitEmptyStrings().trimResults();
 
     public DefaultUserResource() {
         AutoEventRegistry.getInstance().registerObserver(this);
@@ -55,34 +55,39 @@ public class DefaultUserResource implements UserResourceFacade, CrawlerConfigCha
                     .toInt(newProperties.getProperty(VSCrawlerConstant.VSCRAWLER_THREAD_NUMBER));
             return;
         }
-        if (!property.equals(oldProperties.getProperty(VSCrawlerConstant.USER_RESOURCE_USERINFO))) {
-            // load new user account
-            List<String> allUser = userSplitter.splitToList(property);
-            int newUserNum = 0;
-            for (String userStr : allUser) {
-                User user = new User();
-                List<String> strings = userItemSplitter.splitToList(userStr);
-                if (strings.size() < 2) {
-                    log.warn("can log load user info from str:{}", userStr);
+
+        if (oldProperties != null
+                && property.equals(oldProperties.getProperty(VSCrawlerConstant.USER_RESOURCE_USERINFO))) {
+            return;
+        }
+
+        // load new user account
+        List<String> allUser = userSplitter.splitToList(property);
+        int newUserNum = 0;
+        for (String userStr : allUser) {
+            User user = new User();
+            List<String> strings = userItemSplitter.splitToList(userStr);
+            if (strings.size() < 2) {
+                log.warn("can log load user info from str:{}", userStr);
+                continue;
+            }
+            user.setUserID(strings.get(0));
+            user.setPassword(strings.get(1));
+            if (strings.size() >= 3) {
+                String status = strings.get(2);
+                if (StringUtils.equalsIgnoreCase(status, "false")) {
+                    AutoEventRegistry.getInstance().findEventDeclaring(UserStateChangeEvent.class)
+                            .userStatusChange(user, UserStatus.UNKNOWN, UserStatus.FORBID);
                     continue;
                 }
-                user.setUserID(strings.get(0));
-                user.setPassword(strings.get(1));
-                if (strings.size() >= 3) {
-                    String status = strings.get(2);
-                    if (StringUtils.equalsIgnoreCase(status, "false")) {
-                        AutoEventRegistry.getInstance().findEventDeclaring(UserStateChangeEvent.class)
-                                .userStatusChange(user, UserStatus.UNKNOWN, UserStatus.FORBID);
-                        continue;
-                    }
-                }
-
-                user.setUserStatus(UserStatus.INIT);
-                userCache.add(user);
-                newUserNum++;
             }
-            log.info("load {} new user data", newUserNum);
+
+            user.setUserStatus(UserStatus.INIT);
+            userCache.add(user);
+            newUserNum++;
         }
+        log.info("load {} new user data", newUserNum);
+
     }
 
     @Override
