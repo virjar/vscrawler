@@ -38,7 +38,7 @@ public class BeautyCrawler {
                         }
                         try {
                             Files.write(entity, // 文件根据网站,路径,base自动计算
-                                    new File(PathResolver.onlySource("~/Desktop/testpic", seed.getData())));
+                                    new File(PathResolver.sourceToUnderLine("~/Desktop/testpic", seed.getData())));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }

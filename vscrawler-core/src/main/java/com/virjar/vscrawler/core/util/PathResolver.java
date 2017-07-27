@@ -62,9 +62,9 @@ public class PathResolver {
 
     /**
      * calculate a file path to save http url resource, base rule is "basePath +revert domain+ path"
-     * 
+     *
      * @param basePath 起始路径
-     * @param url url ,http://sss/path/resource.html
+     * @param url      url ,http://sss/path/resource.html
      * @return path
      */
     public static String commonDownloadPath(String basePath, String url) {
@@ -112,6 +112,25 @@ public class PathResolver {
         return targetFile.getAbsolutePath();
     }
 
+    public static String sourceToUnderLine(String basePath, String url) {
+        if (basePath.startsWith("~")) {
+            basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
+        }
+        Matcher matcher = urlPattern.matcher(url);
+        if (!matcher.find()) {
+            return new File(basePath, url).getAbsolutePath();
+        }
+        String resource = matcher.group(2);
+        File targetFile = new File(basePath, Joiner.on("_").skipNulls().join(urlSeparatorSplitter.splitToList(resource)));
+        File parentFile = targetFile.getParentFile();
+        if (!parentFile.exists()) {
+            if (!parentFile.mkdirs()) {
+                return new File(basePath, url).getAbsolutePath();
+            }
+        }
+        return targetFile.getAbsolutePath();
+    }
+
     public static String domainAndSource(String basePath, String url) {
         if (basePath.startsWith("~")) {
             basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
@@ -126,6 +145,43 @@ public class PathResolver {
 
         List<String> reverse = Lists.newLinkedList(Lists.reverse(dotSplitter.splitToList(domain)));
         reverse.add(resource);
+        String filePath = filePathJoiner.join(reverse);
+        File targetFile = new File(basePath, filePath);
+        File parentFile = targetFile.getParentFile();
+        if (!parentFile.exists()) {
+            if (!parentFile.mkdirs()) {
+                return new File(basePath, url).getAbsolutePath();
+            }
+        }
+        return targetFile.getAbsolutePath();
+    }
+
+    public static String domainAndSegmentSource(String basePath, String url, int segment) {
+        if (basePath.startsWith("~")) {
+            basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
+        }
+        Matcher matcher = urlPattern.matcher(url);
+        if (!matcher.find()) {
+            return new File(basePath, url).getAbsolutePath();
+        }
+        String domain = matcher.group(1);
+        String resource = matcher.group(2);
+
+        List<String> reverse = Lists.newLinkedList(Lists.reverse(dotSplitter.splitToList(domain)));
+        if (segment <= 0) {
+            reverse.addAll(urlSeparatorSplitter.splitToList(resource));
+        } else {
+            List<String> strings = urlSeparatorSplitter.splitToList(resource);
+            List<String> tempDirSegment = Lists.newLinkedList();
+            for (int i = strings.size() - 1; i >= 0; i--) {
+                tempDirSegment.add(strings.get(i));
+                segment--;
+                if (segment <= 0) {
+                    break;
+                }
+            }
+            reverse.addAll(Lists.reverse(tempDirSegment));
+        }
         String filePath = filePathJoiner.join(reverse);
         File targetFile = new File(basePath, filePath);
         File parentFile = targetFile.getParentFile();
