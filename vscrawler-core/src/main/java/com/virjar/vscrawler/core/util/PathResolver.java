@@ -23,6 +23,7 @@ public class PathResolver {
     private static final Joiner filePathJoiner = Joiner.on("/").skipNulls();
     private static final Splitter urlSeparatorSplitter = Splitter.on("/").omitEmptyStrings().trimResults();
 
+
     public static String resolveAbsolutePath(String pathName) {
         // file protocol
         if (StringUtils.startsWithIgnoreCase(pathName, "file:")) {
@@ -79,7 +80,25 @@ public class PathResolver {
         String resource = matcher.group(2);
 
         List<String> reverse = Lists.newLinkedList(Lists.reverse(dotSplitter.splitToList(domain)));
-        reverse.addAll(urlSeparatorSplitter.splitToList(resource));
+        List<String> resources = urlSeparatorSplitter.splitToList(resource);
+        if (resources.size() > 0) {
+            String fileName = resources.get(resources.size() - 1);//最后一个代表文件名
+            if (StringUtils.contains(fileName, "#")) {
+                //有锚点,需要干掉锚点
+                String newFileName = fileName.substring(0, fileName.indexOf("#"));
+                resources.remove(resources.size() - 1);
+                resources.add(newFileName);
+            }
+            reverse.addAll(resources);
+        } else {
+            reverse.add("index.html");
+        }
+
+        String fileName = reverse.get(reverse.size() - 1);//最后一个代表文件名
+        if (!StringUtils.contains(fileName, ".")) {
+            reverse.add("index.html");
+        }
+
         String filePath = filePathJoiner.join(reverse);
         File targetFile = new File(basePath, filePath);
         File parentFile = targetFile.getParentFile();
