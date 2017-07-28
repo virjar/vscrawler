@@ -3,6 +3,9 @@ package com.virjar.vscrawler.core;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.core.event.systemevent.SeedEmptyEvent;
+import com.virjar.vscrawler.core.event.systemevent.ShutDownChecker;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.DefaultHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
@@ -134,8 +137,18 @@ public class VSCrawlerBuilder {
      */
     private long slowStartDuration = 5 * 60 * 1000;
 
+    /**
+     * 两分钟内没有新任务,则关闭爬虫
+     */
+    private long stopWhileTaskEmptyDuration = 2 * 60 * 1000;
+
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
+    }
+
+    public VSCrawlerBuilder setStopWhileTaskEmptyDuration(long stopWhileTaskEmptyDuration) {
+        this.stopWhileTaskEmptyDuration = stopWhileTaskEmptyDuration;
+        return this;
     }
 
     public VSCrawlerBuilder setSlowStart(boolean slowStart) {
@@ -338,6 +351,34 @@ public class VSCrawlerBuilder {
             }
             UserManager userManager = new UserManager(userResourceFacade);
             vsCrawler.addCrawlerStartCallBack(new AutoLoginPlugin(loginHandler, userManager));
+        }
+
+        if (stopWhileTaskEmptyDuration > 0) {
+            vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
+                @Override
+                public void onCrawlerStart(final VSCrawler vsCrawler) {
+                    AutoEventRegistry.getInstance().registerObserver(new ShutDownChecker() {
+
+                        @Override
+                        public void checkShutDown() {
+                            // 15s之后检查活跃线程数,发现为0,证明连续10s都没用任务执行了
+                            if (vsCrawler.activeWorker() == 0
+                                    && (System.currentTimeMillis() - vsCrawler.getLastActiveTime()) > 10000) {
+                                System.out.println("尝试停止爬虫");
+                                vsCrawler.stopCrawler();
+                            }
+                        }
+                    });
+                    AutoEventRegistry.getInstance().registerObserver(new SeedEmptyEvent() {
+                        @Override
+                        public void onSeedEmpty() {
+                            AutoEventRegistry.getInstance().createDelayEventSender(ShutDownChecker.class,
+                                    stopWhileTaskEmptyDuration).delegate()
+                                    .checkShutDown();
+                        }
+                    });
+                }
+            });
         }
 
         return vsCrawler;

@@ -12,7 +12,6 @@ import com.virjar.vscrawler.core.processor.AutoParseSeedProcessor;
 import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.seed.HtmlPageSeedKeyResolver;
 import com.virjar.vscrawler.core.seed.Seed;
-import com.virjar.vscrawler.core.selector.xpath.Xpath;
 import com.virjar.vscrawler.core.util.PathResolver;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;

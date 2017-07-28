@@ -73,41 +73,9 @@ public class BeautyCrawler {
         vsCrawler.pushSeed("https://www.meitulu.com/item/2124.html");
         vsCrawler.pushSeed("https://www.meitulu.com/item/2120.html");
         vsCrawler.pushSeed("https://www.meitulu.com/item/2086.html");
-        //vsCrawler.pushSeed("https://www.meitulu.com/item/2066.html");
 
-        vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
-            @Override
-            public void onCrawlerStart(final VSCrawler vsCrawler) {
-                AutoEventRegistry.getInstance().registerEvent(ShutDownChecker.class);
-                AutoEventRegistry.getInstance().registerObserver(new ShutDownChecker() {
-
-                    @Override
-                    public void checkShutDown() {
-                        // 15s之后检查活跃线程数,发现为0,证明连续10s都没用任务执行了
-                        if (vsCrawler.activeWorker() == 0
-                                && (System.currentTimeMillis() - vsCrawler.getLastActiveTime()) > 10000) {
-                            System.out.println("尝试停止爬虫");
-                            vsCrawler.stopCrawler();
-                        }
-                    }
-                });
-                AutoEventRegistry.getInstance().registerObserver(new SeedEmptyEvent() {
-                    @Override
-                    public void onSeedEmpty() {// 如果收到任务为空消息的话,尝试停止爬虫
-                        // 发送延时消息,当前收到了任务为空的消息,产生一个发生在15s之后发生的事件,
-                        AutoEventRegistry.getInstance().createDelayEventSender(ShutDownChecker.class, 15000).delegate()
-                                .checkShutDown();
-                    }
-                });
-            }
-        });
 
         // 开始爬虫
         vsCrawler.start();
-    }
-
-    interface ShutDownChecker {
-        @AutoEvent
-        void checkShutDown();
     }
 }

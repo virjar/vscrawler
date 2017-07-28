@@ -15,6 +15,8 @@ import com.google.common.collect.Lists;
 
 /**
  * Created by virjar on 17/5/15.
+ *
+ * @author virjar
  */
 public class PathResolver {
     private static final Pattern urlPattern = Pattern.compile("https?://([^/]+)(.*)");
@@ -111,6 +113,16 @@ public class PathResolver {
         // return absolutePath;
     }
 
+    /**
+     * calculate  a path for a url resource, use "base path" + "resource file name"<br/>
+     * for example: base path is "/var/log/", resource url is: "http://sss/path/resource.html" <br/>
+     * the resource file path will be:"/var/log/resource.html" <br/>
+     * domain field & path field will be ignore
+     *
+     * @param basePath file base director,the root of  resource download directory
+     * @param url      resource url ,must be http or https protocol
+     * @return the absolute file path for given url
+     */
     public static String onlySource(String basePath, String url) {
         if (basePath.startsWith("~")) {
             basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
@@ -131,6 +143,17 @@ public class PathResolver {
         return targetFile.getAbsolutePath();
     }
 
+    /**
+     * calculate download path for a url resource,use basePath for resource directory<br/>
+     * domain information will be ignore<br/>
+     * path information will be translate to under line separator<br/>
+     * for example: base path is :"/var/log/"  url is:"http://www.baidu.com/1/2/3/img/resource.html"<br/>
+     * final path will be:"/var/log/1_2_3_img_resource.html"
+     *
+     * @param basePath download root path
+     * @param url      url
+     * @return the absolute file path for given url
+     */
     public static String sourceToUnderLine(String basePath, String url) {
         if (basePath.startsWith("~")) {
             basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
@@ -174,42 +197,4 @@ public class PathResolver {
         }
         return targetFile.getAbsolutePath();
     }
-
-    public static String domainAndSegmentSource(String basePath, String url, int segment) {
-        if (basePath.startsWith("~")) {
-            basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
-        }
-        Matcher matcher = urlPattern.matcher(url);
-        if (!matcher.find()) {
-            return new File(basePath, url).getAbsolutePath();
-        }
-        String domain = matcher.group(1);
-        String resource = matcher.group(2);
-
-        List<String> reverse = Lists.newLinkedList(Lists.reverse(dotSplitter.splitToList(domain)));
-        if (segment <= 0) {
-            reverse.addAll(urlSeparatorSplitter.splitToList(resource));
-        } else {
-            List<String> strings = urlSeparatorSplitter.splitToList(resource);
-            List<String> tempDirSegment = Lists.newLinkedList();
-            for (int i = strings.size() - 1; i >= 0; i--) {
-                tempDirSegment.add(strings.get(i));
-                segment--;
-                if (segment <= 0) {
-                    break;
-                }
-            }
-            reverse.addAll(Lists.reverse(tempDirSegment));
-        }
-        String filePath = filePathJoiner.join(reverse);
-        File targetFile = new File(basePath, filePath);
-        File parentFile = targetFile.getParentFile();
-        if (!parentFile.exists()) {
-            if (!parentFile.mkdirs()) {
-                return new File(basePath, url).getAbsolutePath();
-            }
-        }
-        return targetFile.getAbsolutePath();
-    }
-
 }
