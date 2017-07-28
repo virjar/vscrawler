@@ -3,6 +3,7 @@ package com.virjar.vscrawler.core.selector.combine.convert;
 import java.util.List;
 import java.util.Map;
 
+import com.virjar.sipsoup.model.SipNodes;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -222,7 +223,7 @@ public class Converters {
             @Override
             public XpathNode convert(final StringNode from) {
                 XpathNode ret = new XpathNode(from.getBaseUrl(), null);
-                ret.setModel(Lists
+                ret.setModel(new SipNodes(Lists
                         .newLinkedList(Iterables.transform(from.createOrGetModel(), new Function<String, SIPNode>() {
                             @Override
                             public SIPNode apply(String input) {
@@ -236,7 +237,7 @@ public class Converters {
                                 }
                                 return SIPNode.t(input);
                             }
-                        })));
+                        }))));
                 return ret;
             }
         });
@@ -250,7 +251,7 @@ public class Converters {
     }
 
     public static <F extends AbstractSelectable, T extends AbstractSelectable> void register(Class<F> from, Class<T> to,
-            NodeConvert<F, T> nodeConvert) {
+                                                                                             NodeConvert<F, T> nodeConvert) {
         nodeConvertMap.put(new RegistryHolder(from, to), nodeConvert);
     }
 

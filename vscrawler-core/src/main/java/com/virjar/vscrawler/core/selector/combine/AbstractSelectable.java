@@ -2,6 +2,7 @@ package com.virjar.vscrawler.core.selector.combine;
 
 import java.util.List;
 
+import com.virjar.sipsoup.model.SipNodes;
 import org.jsoup.nodes.Element;
 
 import com.alibaba.fastjson.JSON;
@@ -67,7 +68,7 @@ public abstract class AbstractSelectable<M> {
      * @return xpath抽取结果
      */
     public XpathNode xpath(XpathEvaluator xpathEvaluator) {
-        List<SIPNode> sipNodes = xpathEvaluator.evaluate(covert(XpathNode.class).createOrGetModel());
+        SipNodes sipNodes = xpathEvaluator.evaluate(covert(XpathNode.class).createOrGetModel());
 
         // TODO rawText
         XpathNode xpathNode = new XpathNode(getBaseUrl(), getRawText());
@@ -77,7 +78,7 @@ public abstract class AbstractSelectable<M> {
 
     public XpathNode css(String css) {
         XpathNode xpathNode = new XpathNode(getBaseUrl(), null);
-        List<SIPNode> newModels = Lists.newLinkedList();
+        SipNodes newModels = new SipNodes();
         for (SIPNode sipNode : covert(XpathNode.class).createOrGetModel()) {
             if (sipNode.isText()) {
                 continue;
