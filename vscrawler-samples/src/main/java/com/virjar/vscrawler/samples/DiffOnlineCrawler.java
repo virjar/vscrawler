@@ -32,6 +32,8 @@ public class DiffOnlineCrawler {
                 .setSeedKeyResolver(new HtmlPageSeedKeyResolver())//使用网页消重器,处理锚点重复问题
                 .setProcessor(new AutoParseSeedProcessor() {
                     private List<String> allUrl(Document document) {
+                        //http://git.oschina.net/virjar/sipsoup/blob/master/src/main/java/com/virjar/sipsoup/function/select/AllUrlFunction.java
+                        //这个逻辑在SipSoup直接支持,待SipSoup发布新版本即可集成
                         List<String> strings = XpathParser.compileNoError("/css('a')::absUrl('href')").evaluateToString(document);
                         strings.addAll(XpathParser.compileNoError("/css('script')::absUrl('src')").evaluateToString(document));
                         strings.addAll(XpathParser.compileNoError("/css('link')::absUrl('href')").evaluateToString(document));
