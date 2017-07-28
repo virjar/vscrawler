@@ -97,7 +97,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver,
-            SegmentResolver segmentResolver, int cacheSize) {
+                                 SegmentResolver segmentResolver, int cacheSize) {
         this.initSeedSource = initSeedSource;
         this.seedKeyResolver = seedKeyResolver;
         this.segmentResolver = segmentResolver;
@@ -334,10 +334,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         try {
             env = new Environment(new File(dbFilePath), environmentConfig);
         } catch (EnvironmentLockedException e) {
-            if (new File(dbFilePath).delete()) {
-                log.warn("数据库文件损坏,将会清空脏数据");
+            if (new File(dbFilePath, "je.lck").delete()) {
+                log.warn("上次未正常关闭爬虫,尝试修复");
                 env = new Environment(new File(dbFilePath), environmentConfig);
             } else {
+                log.error("存在多个爬虫操作同一份数据,请确认多个爬虫的工作空间是否相同", e);
                 throw e;
             }
 

@@ -364,7 +364,7 @@ public class VSCrawlerBuilder {
                             // 15s之后检查活跃线程数,发现为0,证明连续10s都没用任务执行了
                             if (vsCrawler.activeWorker() == 0
                                     && (System.currentTimeMillis() - vsCrawler.getLastActiveTime()) > 10000) {
-                                System.out.println("尝试停止爬虫");
+                                System.out.println((stopWhileTaskEmptyDuration / 1000) + "秒没收到爬虫任务,自动爬虫关闭器,尝试停止爬虫");
                                 vsCrawler.stopCrawler();
                             }
                         }
