@@ -19,6 +19,8 @@ import org.jsoup.nodes.Document;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
 /**
@@ -33,12 +35,23 @@ public class DiffOnlineCrawler {
                 .setProcessor(new AutoParseSeedProcessor() {
                     private List<String> allUrl(Document document) {
                         //http://git.oschina.net/virjar/sipsoup/blob/master/src/main/java/com/virjar/sipsoup/function/select/AllUrlFunction.java
-                        //这个逻辑在SipSoup直接支持,待SipSoup发布新版本即可集成
-                        List<String> strings = XpathParser.compileNoError("/css('a')::absUrl('href')").evaluateToString(document);
-                        strings.addAll(XpathParser.compileNoError("/css('script')::absUrl('src')").evaluateToString(document));
-                        strings.addAll(XpathParser.compileNoError("/css('link')::absUrl('href')").evaluateToString(document));
-                        strings.addAll(XpathParser.compileNoError("/css('img')::absUrl('src')").evaluateToString(document));
-                        return strings;
+
+                        return Lists.newLinkedList(Iterables.filter(XpathParser.compileNoError("/allUrl()").evaluateToString(document), new Predicate<String>() {
+                            @Override
+                            public boolean apply(String input) {
+                                try {
+                                    new URI(input);//新版本SipSoup已经做了这个校验
+                                    return true;
+                                } catch (URISyntaxException e) {
+                                    return false;
+                                }
+                            }
+                        }));
+//                        List<String> strings = XpathParser.compileNoError("/css('a')::absUrl('href')").evaluateToString(document);
+//                        strings.addAll(XpathParser.compileNoError("/css('script')::absUrl('src')").evaluateToString(document));
+//                        strings.addAll(XpathParser.compileNoError("/css('link')::absUrl('href')").evaluateToString(document));
+//                        strings.addAll(XpathParser.compileNoError("/css('img')::absUrl('src')").evaluateToString(document));
+//                        return strings;
                     }
 
                     @Override
