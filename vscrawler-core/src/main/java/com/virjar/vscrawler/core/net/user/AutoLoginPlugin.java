@@ -12,9 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/6/3. 考虑之后,决定使用插件的形式注入自动登录功能
- * 
- * @since 0.0.1
+ *
  * @author virjar
+ * @since 0.0.1
  */
 @Slf4j
 public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionCreateEvent, SessionDestroyEvent {
@@ -45,8 +45,13 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
             return;
         }
 
-        boolean loginSuccess = loginHandler.onLogin(user, crawlerSession.getCookieStore(),
-                crawlerSession.getCrawlerHttpClient());
+        boolean loginSuccess = false;
+        try {
+            loginSuccess = loginHandler.onLogin(user, crawlerSession.getCookieStore(),
+                    crawlerSession.getCrawlerHttpClient());
+        } catch (Exception e) {
+            log.error("登录发生异常", e);
+        }
         if (loginSuccess) {
             UserUtil.setUser(crawlerSession, user);
         } else {
