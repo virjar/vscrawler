@@ -19,12 +19,6 @@
             <groupId>com.virjar</groupId>
             <artifactId>dungproxy-client</artifactId>
             <version>0.0.7</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- xpath -->

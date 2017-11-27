@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by virjar on 17/4/16. <br/>
  * 爬虫入口,目前很多逻辑参考了webmagic
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -84,8 +84,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     private List<CrawlerStartCallBack> allStartCallBacks = Lists.newLinkedList();
 
     VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
-            SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
-            long slowStartDuration) {
+              SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
+              long slowStartDuration) {
         super("VSCrawler-Dispatch");
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
@@ -146,6 +146,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
             // 种子为空处理
             if (seed == null) {
+                if (stat.get() == STAT_STOPPED) {
+                    break;
+                }
                 AutoEventRegistry.getInstance().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty();
                 if (!waitDispatchThread()) {
                     log.warn("爬虫线程休眠被打断");
