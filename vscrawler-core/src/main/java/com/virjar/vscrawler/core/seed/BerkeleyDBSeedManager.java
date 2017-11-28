@@ -604,18 +604,19 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         log.info("关闭数据库环境...");
         while (true) {
             dbLock.lock();
+            if (dbOperator <= 0) {
+                IOUtils.closeQuietly(env);
+                dbLock.unlock();
+                break;
+            }
+            dbLock.unlock();
             try {
                 dbRelease.await();
-                if (dbOperator <= 0) {
-                    break;
-                }
             } catch (InterruptedException e) {
+                IOUtils.closeQuietly(env);
                 throw new IllegalStateException("can not close db ,db operate await Interrupted");
-            } finally {
-                dbLock.unlock();
             }
         }
-        IOUtils.closeQuietly(env);
         log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
     }
 
