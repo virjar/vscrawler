@@ -461,6 +461,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
         }
 
+        int realAddSeedNumber = 0;
         // 处理各自的段
         for (Map.Entry<String, Collection<Seed>> entry : segmentSeeds.asMap().entrySet()) {
             Database runningSeedDatabase = null;
@@ -494,6 +495,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
                     DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
                     runningSeedDatabase.putNoOverwrite(null, key, value);
+                    realAddSeedNumber++;
                     // runningSeedDatabase.put(null, key, value);
                     bloomFilter.put(seed);
                     if (isSeedEmpty.compareAndSet(true, false)) {
@@ -508,6 +510,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                         }
                     }
                 }
+                log.info("实际导入种子数量:{}", realAddSeedNumber);
             } finally {
                 unlockDBOperate();
                 VSCrawlerCommonUtil.closeQuietly(runningSeedDatabase);
