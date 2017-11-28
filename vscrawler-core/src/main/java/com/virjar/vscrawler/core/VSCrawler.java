@@ -106,7 +106,10 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     public void stopCrawler() {
         if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
             new WaitThread().start();
-            VSCrawler.this.interrupt();
+            //
+            if (crawlerMainThead != null) {
+                crawlerMainThead.interrupt();
+            }
             log.info("爬虫停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent");
             System.out.flush();// 刷新系统buffer,避免影响队形
             synchronized (System.out) {
@@ -135,6 +138,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     private AtomicInteger activeTasks = new AtomicInteger(0);
+
+    private Thread crawlerMainThead = null;
 
     @Override
     public void run() {
@@ -301,6 +306,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     private void initComponent() {
+
+        crawlerMainThead = Thread.currentThread();
 
         // 开启事件循环
         EventLoop.getInstance().loop();
