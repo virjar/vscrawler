@@ -106,7 +106,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     public void stopCrawler() {
         if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
             new WaitThread().start();
-            //
+            //终止爬虫主派发线程
             if (crawlerMainThead != null) {
                 crawlerMainThead.interrupt();
             }
