@@ -341,7 +341,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         synchronized (System.out) {// 血可流头可断,队形不能乱
             System.err.println("################################################");
             System.err.println("##############     VSCrawler      ##############");
-            System.err.println("##############       0.0.1        ##############");
+            System.err.println("##############       0.1.1        ##############");
             System.err.println("############## 你有一个有意思的灵魂 ##############");
             System.err.println("################################################");
             System.err.println("##############       virjar       ##############");
