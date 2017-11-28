@@ -56,8 +56,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     private DatabaseConfig databaseConfig;
 
-    private DatabaseEntry iteratorKey = new DatabaseEntry();
-    private DatabaseEntry iteratorValue = new DatabaseEntry();
 
     private AtomicBoolean isSeedEmpty = new AtomicBoolean(false);
 
@@ -128,6 +126,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     private void loadSegments() {
         Database iteratorDatabases = env.openDatabase(null, SEGMENT, databaseConfig);
         Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
+        DatabaseEntry iteratorKey = new DatabaseEntry();
+        DatabaseEntry iteratorValue = new DatabaseEntry();
+
         try {
             while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
                 String segmentName = new String(iteratorValue.getData());
@@ -173,6 +174,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         if (isClosed) {
             return 0;
         }
+        DatabaseEntry iteratorKey = new DatabaseEntry();
+        DatabaseEntry iteratorValue = new DatabaseEntry();
+
         try {
             lockDBOperate();
 
@@ -219,33 +223,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
             return poll;
         }
-    }
-
-    @Deprecated
-    private void archive() {
-        Database iteratorDatabases = env.openDatabase(null, "crawlSeed", databaseConfig);
-        Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
-        Database finishedSeedDatabase = env.openDatabase(null, "finishedSeed", databaseConfig);
-
-        try {
-            while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-                try {
-                    Seed ret = VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
-                    if (ret.needEnd()) {
-                        finishedSeedDatabase.put(null, iteratorKey, iteratorValue);
-                        cursor.delete();
-                    }
-                } catch (Exception ex) {
-                    log.warn("Exception when generating", ex);
-                }
-
-            }
-        } finally {
-            IOUtils.closeQuietly(cursor);
-            IOUtils.closeQuietly(iteratorDatabases);
-            IOUtils.closeQuietly(finishedSeedDatabase);
-        }
-
     }
 
     private boolean saveBloomFilterInfo() {
