@@ -487,10 +487,12 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         // 处理各自的段
         for (Map.Entry<String, Collection<Seed>> entry : segmentSeeds.asMap().entrySet()) {
             Database runningSeedDatabase = null;
+            Database finishedSeedDatabase = null;
             BloomFilter<Seed> bloomFilter = getOrCreate(entry.getKey());
             try {
                 lockDBOperate();
                 runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
+                finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
                 for (Seed seed : entry.getValue()) {
                     if (bloomFilter.mightContain(seed)) {
                         continue;
@@ -506,8 +508,14 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                     }
 
                     DatabaseEntry key = new DatabaseEntry(seedKeyResolver.resolveSeedKey(seed).getBytes());
-                    DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
+                    DatabaseEntry valueEntry = new DatabaseEntry();
                     // db层面消重
+                    if (runningSeedDatabase.get(null, key, valueEntry, LockMode.DEFAULT) == OperationStatus.SUCCESS ||
+                            finishedSeedDatabase.get(null, key, valueEntry, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+                        continue;
+                    }
+
+                    DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
                     runningSeedDatabase.putNoOverwrite(null, key, value);
                     // runningSeedDatabase.put(null, key, value);
                     bloomFilter.put(seed);
@@ -526,6 +534,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             } finally {
                 unlockDBOperate();
                 VSCrawlerCommonUtil.closeQuietly(runningSeedDatabase);
+                VSCrawlerCommonUtil.closeQuietly(finishedSeedDatabase);
             }
         }
 
