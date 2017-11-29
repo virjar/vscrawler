@@ -1,6 +1,5 @@
 package com.virjar.vscrawler.core.net.proxy;
 
-import com.virjar.vscrawler.core.net.proxy.Proxy;
 import org.apache.http.Header;
 
 import java.util.List;
