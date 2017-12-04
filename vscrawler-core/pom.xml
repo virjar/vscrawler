@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.virjar</groupId>
             <artifactId>dungproxy-client</artifactId>
-            <version>0.0.7</version>
+            <version>0.0.8</version>
         </dependency>
 
         <!-- xpath -->

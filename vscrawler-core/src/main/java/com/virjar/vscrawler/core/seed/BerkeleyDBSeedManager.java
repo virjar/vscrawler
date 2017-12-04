@@ -92,6 +92,8 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     public void init() {
         // 移植游标
         // archive(); //大量数据会导致程序很慢,而且似乎没有意义
+        // 移植初始种子信息
+        migrateInitSeed();
     }
 
     public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver,
@@ -108,9 +110,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
         // 布隆过滤器数据还原
         buildBloomFilterInfo();
-
-        // 移植初始种子信息
-        migrateInitSeed();
 
         // 监听消息
         AutoEventRegistry.getInstance().registerObserver(this);
