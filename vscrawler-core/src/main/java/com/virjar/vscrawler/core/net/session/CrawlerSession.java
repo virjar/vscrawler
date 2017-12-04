@@ -2,6 +2,8 @@ package com.virjar.vscrawler.core.net.session;
 
 import java.util.Map;
 
+import com.virjar.vscrawler.core.net.user.User;
+import com.virjar.vscrawler.core.net.user.UserUtil;
 import org.apache.http.client.CookieStore;
 import org.apache.http.conn.routing.HttpRoutePlanner;
 
@@ -64,7 +66,7 @@ public class CrawlerSession {
     private Map<String, Object> ext = Maps.newHashMap();
 
     public CrawlerSession(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
-            IPPool ipPool, ProxyPlanner proxyPlanner, CrawlerSessionPool crawlerSessionPool) {
+                          IPPool ipPool, ProxyPlanner proxyPlanner, CrawlerSessionPool crawlerSessionPool) {
         ProxyFeedBackDecorateHttpClientBuilder proxyFeedBackDecorateHttpClientBuilder = new ProxyFeedBackDecorateHttpClientBuilder();
         this.crawlerHttpClient = crawlerHttpClientGenerator.gen(proxyFeedBackDecorateHttpClientBuilder);
         Preconditions.checkArgument(proxyFeedBackDecorateHttpClientBuilder.isBuild(),
@@ -90,25 +92,25 @@ public class CrawlerSession {
 
     private void determineProxyPlanner() {
         switch (proxyStrategy) {
-        case CUSTOM:
-            if (proxyPlanner == null) {
-                throw new IllegalStateException("您选择了自定义代理决策方案,但是没有设置代理决策器");
-            }
-            break;
-        case REQUEST:
-            proxyPlanner = new EveryRequestPlanner();
-            break;
-        case SESSION:
-            proxyPlanner = new EverySessionPlanner();
-            break;
-        case USER:
-            proxyPlanner = new EveryUserPlanner();
-            break;
-        case NONE:
-            proxyPlanner = new NotProxyPlanner();
-            break;
-        default:
-            proxyPlanner = new NotProxyPlanner();
+            case CUSTOM:
+                if (proxyPlanner == null) {
+                    throw new IllegalStateException("您选择了自定义代理决策方案,但是没有设置代理决策器");
+                }
+                break;
+            case REQUEST:
+                proxyPlanner = new EveryRequestPlanner();
+                break;
+            case SESSION:
+                proxyPlanner = new EverySessionPlanner();
+                break;
+            case USER:
+                proxyPlanner = new EveryUserPlanner();
+                break;
+            case NONE:
+                proxyPlanner = new NotProxyPlanner();
+                break;
+            default:
+                proxyPlanner = new NotProxyPlanner();
         }
 
     }
@@ -133,5 +135,9 @@ public class CrawlerSession {
         log.debug("session销毁");
         AutoEventRegistry.getInstance().findEventDeclaring(SessionDestroyEvent.class).onSessionDestroy(this);
         cookieStore.clear();
+    }
+
+    public User getUser() {
+        return UserUtil.getUser(this);
     }
 }

@@ -5,9 +5,9 @@ import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 /**
  * Created by virjar on 17/6/4.
- * 
- * @since 0.0.1
+ *
  * @author virjar
+ * @since 0.0.1
  */
 public class UserUtil {
     public static User getUser(CrawlerSession crawlerSession) {
