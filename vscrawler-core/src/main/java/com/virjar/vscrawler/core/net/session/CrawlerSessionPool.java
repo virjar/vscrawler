@@ -56,7 +56,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     private ReentrantLock lock = new ReentrantLock();
     protected Condition empty = lock.newCondition();
 
-    private CreateSessionThread createSessionThread;
+    private SessionDaemonThread sessionDaemonThread;
     private DelayQueue<SessionHolder> sessionQueue = new DelayQueue<>();
     private Set<CrawlerSession> runningSessions = Sets.newConcurrentHashSet();
 
@@ -118,8 +118,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 }
             }
 
-            createSessionThread = new CreateSessionThread();
-            createSessionThread.start();
+            sessionDaemonThread = new SessionDaemonThread();
+            sessionDaemonThread.start();
         } finally {
             inited = true;
             lock.unlock();
@@ -133,8 +133,10 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 .onSessionCreateEvent(crawlerSession);
         if (crawlerSession.isValid()) {
             crawlerSession.setInitTimeStamp(System.currentTimeMillis());
+            createNewSessionStatus = true;
             return crawlerSession;
         }
+        createNewSessionStatus = false;
         return null;
     }
 
@@ -155,8 +157,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
         // logger.info("当前会话池中,共有:{}个用户可用", allSessions.size());
 
+        long startRequestTimeStamp = System.currentTimeMillis();
         for (; ; ) {
-            long startRequestTimeStamp = System.currentTimeMillis();
             CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
             if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
                 if (sessionQueue.size() + runningSessions.size() < maxSize) {
@@ -171,7 +173,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
             if (crawlerSession == null && lessTimeMillis < 0 && maxWaitMillis > 0) {
                 return null;
             }
-            lessTimeMillis = lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp);
+            lessTimeMillis = maxWaitMillis > 0 ? lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp) : maxWaitMillis;
             if (crawlerSession == null) {
                 continue;
             }
@@ -273,43 +275,42 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
     @Override
     public void crawlerEnd() {
-        createSessionThread.interrupt();
+        sessionDaemonThread.interrupt();
     }
 
-    private class CreateSessionThread extends Thread {
-        CreateSessionThread() {
-            super("createNewSession");
+    private volatile boolean createNewSessionStatus = true;
+
+    private class SessionDaemonThread extends Thread {
+        SessionDaemonThread() {
+            super("SessionDaemonThread");
             setDaemon(true);
         }
 
         @Override
         public void run() {
+            long initSleepTimeStamp = 2000L;
+            long sleepTimeStamp = initSleepTimeStamp;
             while (!Thread.currentThread().isInterrupted()) {
-                lock.lock();
-                try {
-                    empty.await();
-                } catch (InterruptedException e) {
-                    log.warn("wait interrupted", e);
-                    break;
-                } finally {
-                    lock.unlock();
-                }
-                int expected = coreSize - sessionQueue.size() - runningSessions.size();
-
-                for (int i = 0; i < expected * 2; i++) {
-                    CrawlerSession newSession = createNewSession();
-                    if (newSession != null) {
-                        sessionQueue.add(new SessionHolder(newSession));
-                    } else {
-                        CommonUtil.sleep(2000);
-                    }
-                    if (sessionQueue.size() + runningSessions.size() >= coreSize) {
+                if (runningSessions.size() + sessionQueue.size() > maxSize) {
+                    lock.lock();
+                    try {
+                        empty.await();
+                    } catch (InterruptedException e) {
+                        log.warn("wait interrupted", e);
                         break;
+                    } finally {
+                        lock.unlock();
                     }
                 }
-                if (sessionQueue.size() + runningSessions.size() < coreSize) {
-                    log.warn("many of sessions create failed,please check  your config");
+
+                CrawlerSession newSession = createNewSession();
+                if (!createNewSessionStatus) {
+                    sleepTimeStamp += 1000L;
+                    CommonUtil.sleep(sleepTimeStamp);
+                    continue;
                 }
+                sleepTimeStamp = initSleepTimeStamp;
+                sessionQueue.add(new SessionHolder(newSession));
             }
         }
     }
