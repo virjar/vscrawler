@@ -304,6 +304,9 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 }
 
                 CrawlerSession newSession = createNewSession();
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
                 if (!createNewSessionStatus) {
                     sleepTimeStamp += 1000L;
                     CommonUtil.sleep(sleepTimeStamp);
