@@ -65,7 +65,7 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
     public void onSessionDestroy(CrawlerSession crawlerSession) {
         User user = UserUtil.getUser(crawlerSession);
         if (user != null) {
-            if(!crawlerSession.isValid()){
+            if (!crawlerSession.isValid()) {
                 user.setUserStatus(UserStatus.BLOCK);
             }
             userManager.returnUser(user);
