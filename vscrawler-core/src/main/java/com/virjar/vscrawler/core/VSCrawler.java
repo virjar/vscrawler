@@ -290,7 +290,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     @Override
-    public void configChange(Properties oldProperties, Properties newProperties) {
+    public void configChange(Properties newProperties) {
         config(newProperties);
     }
 

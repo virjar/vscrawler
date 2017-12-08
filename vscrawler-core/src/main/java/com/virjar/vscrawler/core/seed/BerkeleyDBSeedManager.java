@@ -579,7 +579,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     @Override
-    public void configChange(Properties oldProperties, Properties newProperties) {
+    public void configChange(Properties newProperties) {
 
     }
 

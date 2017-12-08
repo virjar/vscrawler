@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by virjar on 17/5/2.<br/>
  * 监控vsCrawler.properties的配置变更,实现策略实时变更的功能
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -51,7 +51,7 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
             if (resource == null) {
                 URL classPathRoot = VSCrawlerConfigFileWatcher.class.getResource("/");
                 if (classPathRoot != null) {
-                    dir  = new File(classPathRoot.getPath()).getAbsolutePath();
+                    dir = new File(classPathRoot.getPath()).getAbsolutePath();
                 } else {
                     dir = System.getProperty("java.class.path ");
                 }
@@ -99,7 +99,7 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
 
             // 没有报异常才发送通知
             AutoEventRegistry.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class)
-                    .configChange(oldProperties, tempProperties);
+                    .configChange(tempProperties);
             oldProperties = tempProperties;
         } catch (Exception e) {
             e.printStackTrace();
@@ -115,7 +115,7 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
         if (oldProperties == null) {
             throw new IllegalStateException("不能加载配置,加载发生过异常,请排查后重新启动程序");
         }
-        AutoEventRegistry.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class).configChange(null,
+        AutoEventRegistry.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class).configChange(
                 oldProperties);
     }
 }

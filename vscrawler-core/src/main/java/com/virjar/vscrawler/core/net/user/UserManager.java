@@ -10,6 +10,7 @@ import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.UserStateChangeEvent;
 
+import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -48,7 +49,7 @@ public class UserManager implements UserStateChangeEvent {
 
     /**
      * recycle user resource to user resources pool, must make user instance detach from session
-     * 
+     *
      * @param user user instance
      */
     public void returnUser(User user) {
@@ -68,16 +69,15 @@ public class UserManager implements UserStateChangeEvent {
         }
 
         if (poll == null) {
-            Collection<User> users = userResourceFacade.importUser();
-            if (users != null) {
-                for (User user : users) {
-                    if (!allUser.contains(user)) {
-                        allUser.add(user);
-                        idleUsers.offer(user);
-                    }
+            Collection<User> users = VSCrawlerCommonUtil.confusionSequence(userResourceFacade.importUser());
+            for (User user : users) {
+                if (!allUser.contains(user)) {
+                    allUser.add(user);
+                    idleUsers.offer(user);
                 }
-                poll = idleUsers.poll();
             }
+            poll = idleUsers.poll();
+
         }
 
         while (poll != null) {

@@ -2,7 +2,7 @@ package com.virjar.vscrawler.core.net.user;
 
 /**
  * Created by virjar on 17/4/30.
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */

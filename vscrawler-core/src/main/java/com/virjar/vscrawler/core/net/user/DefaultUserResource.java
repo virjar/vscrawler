@@ -20,13 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/5/6. <br/>
- * 
+ * <p>
  * <pre>
  * 用户数据加载源,默认有两种策略
  * 1.如果vsCrawler配置文件配置了用户数据,那么加载配置文件中的用户数据,且会实时load新增用户数据
  * 2.如果vsCrawler中没有配置用户数据,那么mock用户数据,产生用户名密码均为空的账户信息
  * </pre>
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -41,13 +41,14 @@ public class DefaultUserResource implements UserResourceFacade, CrawlerConfigCha
     private AtomicInteger userMockIndex = new AtomicInteger(0);
     private Splitter userSplitter = Splitter.on(",").omitEmptyStrings().trimResults();
     private Splitter userItemSplitter = Splitter.on(":").omitEmptyStrings().trimResults();
+    private String userAccountString = null;
 
     public DefaultUserResource() {
         AutoEventRegistry.getInstance().registerObserver(this);
     }
 
     @Override
-    public void configChange(Properties oldProperties, Properties newProperties) {
+    public void configChange(Properties newProperties) {
         String property = newProperties.getProperty(VSCrawlerConstant.USER_RESOURCE_USERINFO);
         hasConfig = property != null;
         if (property == null) {
@@ -56,8 +57,7 @@ public class DefaultUserResource implements UserResourceFacade, CrawlerConfigCha
             return;
         }
 
-        if (oldProperties != null
-                && property.equals(oldProperties.getProperty(VSCrawlerConstant.USER_RESOURCE_USERINFO))) {
+        if (property.equals(userAccountString)) {
             return;
         }
 
