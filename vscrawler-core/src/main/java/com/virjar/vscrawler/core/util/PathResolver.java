@@ -25,15 +25,18 @@ public class PathResolver {
     private static final Joiner filePathJoiner = Joiner.on("/").skipNulls();
     private static final Splitter urlSeparatorSplitter = Splitter.on("/").omitEmptyStrings().trimResults();
 
+    private static String dealWithHomeFlag(String input) {
+        return StringUtils.startsWith(input, "~") ? new File(System.getProperty("user.home"), input.substring(1)).getAbsolutePath() : input;
+    }
 
     public static String resolveAbsolutePath(String pathName) {
         // file protocol
         if (StringUtils.startsWithIgnoreCase(pathName, "file:")) {
-            return pathName.substring("file:".length());
+            return dealWithHomeFlag(pathName.substring("file:".length()));
         }
 
         // think as normal file
-        File tempFile = new File(pathName);
+        File tempFile = new File(dealWithHomeFlag(pathName));
         if (tempFile.exists()) {
             return tempFile.getAbsolutePath();
         }
@@ -71,9 +74,7 @@ public class PathResolver {
      * @return path
      */
     public static String commonDownloadPath(String basePath, String url) {
-        if (basePath.startsWith("~")) {
-            basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
-        }
+        basePath = dealWithHomeFlag(basePath);
         Matcher matcher = urlPattern.matcher(url);
         if (!matcher.find()) {
             return new File(basePath, url).getAbsolutePath();
@@ -124,9 +125,7 @@ public class PathResolver {
      * @return the absolute file path for given url
      */
     public static String onlySource(String basePath, String url) {
-        if (basePath.startsWith("~")) {
-            basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
-        }
+        basePath = dealWithHomeFlag(basePath);
 
         Matcher matcher = fileNamePattern.matcher(url);
         if (!matcher.find()) {
@@ -155,9 +154,7 @@ public class PathResolver {
      * @return the absolute file path for given url
      */
     public static String sourceToUnderLine(String basePath, String url) {
-        if (basePath.startsWith("~")) {
-            basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
-        }
+        basePath = dealWithHomeFlag(basePath);
         Matcher matcher = urlPattern.matcher(url);
         if (!matcher.find()) {
             return new File(basePath, url).getAbsolutePath();
@@ -174,9 +171,7 @@ public class PathResolver {
     }
 
     public static String domainAndSource(String basePath, String url) {
-        if (basePath.startsWith("~")) {
-            basePath = new File(System.getProperty("user.home"), basePath.substring(1)).getAbsolutePath();
-        }
+        basePath = dealWithHomeFlag(basePath);
 
         Matcher matcher = fileNamePattern.matcher(url);
         if (!matcher.find()) {
