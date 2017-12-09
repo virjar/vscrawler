@@ -1,5 +1,22 @@
 package com.virjar.vscrawler.core.seed;
 
+import com.google.common.collect.*;
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnel;
+import com.google.common.hash.PrimitiveSink;
+import com.sleepycat.je.*;
+import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
+import com.virjar.vscrawler.core.event.systemevent.FirstSeedPushEvent;
+import com.virjar.vscrawler.core.event.systemevent.NewSeedArrivalEvent;
+import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -10,27 +27,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
-
-import com.google.common.collect.*;
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnel;
-import com.google.common.hash.PrimitiveSink;
-import com.sleepycat.je.*;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
-import com.virjar.vscrawler.core.event.systemevent.FirstSeedPushEvent;
-import com.virjar.vscrawler.core.event.systemevent.NewSeedArrivalEvent;
-import com.virjar.vscrawler.core.util.PathResolver;
-import com.virjar.vscrawler.core.util.SingtonObjectHolder;
-import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/5/14. <br/>
@@ -68,7 +64,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     private Condition dbRelease = dbLock.newCondition();
     private volatile int dbOperator = 0;
     private int cacheSize;
-
+    private VSCrawlerContext vsCrawlerContext;
     /**
      * 段信息
      */
@@ -96,8 +92,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         migrateInitSeed();
     }
 
-    public BerkeleyDBSeedManager(InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver,
+    public BerkeleyDBSeedManager(final VSCrawlerContext vsCrawlerContext, InitSeedSource initSeedSource, SeedKeyResolver seedKeyResolver,
                                  SegmentResolver segmentResolver, int cacheSize) {
+        this.vsCrawlerContext = vsCrawlerContext;
         this.initSeedSource = initSeedSource;
         this.seedKeyResolver = seedKeyResolver;
         this.segmentResolver = segmentResolver;
@@ -112,12 +109,12 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         buildBloomFilterInfo();
 
         // 监听消息
-        AutoEventRegistry.getInstance().registerObserver(this);
+        vsCrawlerContext.getAutoEventRegistry().registerObserver(this);
 
         Runtime.getRuntime().addShutdownHook(new Thread("DBAutoCloseThread") {
             @Override
             public void run() {
-                BerkeleyDBSeedManager.this.crawlerEnd();
+                BerkeleyDBSeedManager.this.crawlerEnd(vsCrawlerContext);
             }
         });
     }
@@ -238,7 +235,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private boolean saveBloomFilterInfo(String segment) {
-        File bloomData = new File(SingtonObjectHolder.workPath, segment);
+        File bloomData = new File(vsCrawlerContext.getWorkPath(), segment);
         if (!bloomData.exists()) {
             try {
                 if (!bloomData.createNewFile()) {
@@ -272,7 +269,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private BloomFilter<Seed> buildBloomFilterInfo(String segment) {
-        File bloomData = new File(SingtonObjectHolder.workPath, segment);
+        File bloomData = new File(vsCrawlerContext.getWorkPath(), segment);
         if (bloomData.exists()) {
             FileInputStream inputStream = null;
             try {
@@ -290,7 +287,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
         }
 
-        long expectedNumber = NumberUtils.toLong(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties()
+        long expectedNumber = NumberUtils.toLong(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties()
                 .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
 
         // any way, build a filter instance if not exist
@@ -499,13 +496,13 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                     bloomFilter.put(seed);
                     if (isSeedEmpty.compareAndSet(true, false)) {
                         if (seed.getActiveTimeStamp() == null) {
-                            AutoEventRegistry.getInstance().findEventDeclaring(FirstSeedPushEvent.class)
-                                    .firstSeed(seed);
+                            vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(FirstSeedPushEvent.class)
+                                    .firstSeed(vsCrawlerContext, seed);
                         } else {
                             // 如果这种子是在未来执行,那么发送未来的延时消息
-                            AutoEventRegistry.getInstance().createDelayEventSender(FirstSeedPushEvent.class)
+                            vsCrawlerContext.getAutoEventRegistry().createDelayEventSender(FirstSeedPushEvent.class)
                                     .sendDelay(seed.getActiveTimeStamp() - System.currentTimeMillis() + 10L).delegate()
-                                    .firstSeed(seed);
+                                    .firstSeed(vsCrawlerContext, seed);
                         }
                     }
                 }
@@ -530,7 +527,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 return seedBloomFilter;
             }
 
-            long expectedNumber = NumberUtils.toLong(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties()
+            long expectedNumber = NumberUtils.toLong(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties()
                     .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
 
             // any way, build a filter instance if not exist
@@ -548,26 +545,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     private void resolveDBFile() {
         // 配置数据库文件地址
-        // TODO 移植这段代码
-        Properties properties = SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties();
-        String workpath = properties.getProperty(VSCrawlerConstant.VSCRAWLER_WORKING_DIRECTORY, "classpath:work");
-
-        log.info("vsCrawler配置工作目录:{}", workpath);
-        workpath = PathResolver.resolveAbsolutePath(workpath);
-        SingtonObjectHolder.workPath = workpath;
-        log.info("vsCrawler实际工作目录:{}", workpath);
-        File workFile = new File(workpath);
-        if (workFile.exists() && !workFile.isDirectory()) {
-            throw new IllegalStateException(workpath + "不是目录,无法写入数据");
-        }
-
-        if (!workFile.exists()) {
-            if (!workFile.mkdirs()) {
-                throw new IllegalStateException(workpath + "文件夹创建失败");
-            }
-        }
-
-        File dbFile = new File(workFile, "berkeleyDB");
+        File dbFile = new File(vsCrawlerContext.getWorkPath(), "berkeleyDB");
         if (!dbFile.exists()) {
             if (!dbFile.mkdirs()) {
                 throw new IllegalStateException(dbFile.getAbsolutePath() + "文件夹创建失败");
@@ -579,17 +557,17 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     @Override
-    public void configChange(Properties newProperties) {
+    public void configChange(VSCrawlerContext vsCrawlerContext, Properties newProperties) {
 
     }
 
     @Override
-    public void needSeed(Collection<Seed> newSeeds) {
+    public void needSeed(VSCrawlerContext vsCrawlerContext, Collection<Seed> newSeeds) {
         addNewSeeds(newSeeds);
     }
 
     @Override
-    public void crawlerEnd() {
+    public void crawlerEnd(VSCrawlerContext vsCrawlerContext) {
         if (isClosed) {
             return;
         }
@@ -621,7 +599,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     public void clear() {
         List<String> databaseNames = env.getDatabaseNames();
-        long expectedNumber = NumberUtils.toLong(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties()
+        long expectedNumber = NumberUtils.toLong(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties()
                 .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
         for (Long segment : allSegments) {
             String segmentName = RUNNING_SEGMENT_PREFIX + segment;

@@ -1,23 +1,9 @@
 package com.virjar.vscrawler.core;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.commons.lang3.math.NumberUtils;
-
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
 import com.virjar.dungproxy.client.util.CommonUtil;
-import com.virjar.vscrawler.core.event.EventLoop;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.*;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
@@ -27,12 +13,21 @@ import com.virjar.vscrawler.core.seed.BerkeleyDBSeedManager;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
-import com.virjar.vscrawler.core.util.SingtonObjectHolder;
 import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by virjar on 17/4/16. <br/>
@@ -45,7 +40,6 @@ import lombok.extern.slf4j.Slf4j;
 public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, FirstSeedPushEvent {
 
     private CrawlerSessionPool crawlerSessionPool;
-    // private SimpleFileSeedManager simpleFileSeedManager;
     private BerkeleyDBSeedManager berkeleyDBSeedManager;
     private SeedProcessor seedProcessor;
     private List<Pipeline> pipeline = Lists.newArrayList();
@@ -83,13 +77,14 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     private List<CrawlerStartCallBack> allStartCallBacks = Lists.newLinkedList();
 
-    private String crawlerName;
+    @Getter
+    private VSCrawlerContext vsCrawlerContext;
 
-    VSCrawler(String crawlerName, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
+    VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
               SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
               long slowStartDuration) {
         super("VSCrawler-Dispatch");
-        this.crawlerName = crawlerName;
+        this.vsCrawlerContext = vsCrawlerContext;
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
         this.seedProcessor = seedProcessor;
@@ -126,7 +121,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 System.err.println("                      相顾无言，惟有泪千行。");
                 System.err.println("                  每晚灯火阑珊处，夜难寐，加班狂。");
             }
-            AutoEventRegistry.getInstance().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd();
+            vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd(vsCrawlerContext);
         } else {
             log.info("爬虫已经停止,不需要发生爬虫停止事件消息");
         }
@@ -157,7 +152,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 if (stat.get() == STAT_STOPPED) {
                     break;
                 }
-                AutoEventRegistry.getInstance().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty();
+                vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty(vsCrawlerContext);
                 if (!waitDispatchThread()) {
                     log.warn("爬虫线程休眠被打断");
                     break;
@@ -295,7 +290,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     @Override
-    public void configChange(Properties newProperties) {
+    public void configChange(VSCrawlerContext vsCrawlerContext, Properties newProperties) {
         config(newProperties);
     }
 
@@ -315,10 +310,11 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         crawlerMainThread = Thread.currentThread();
 
         // 开启事件循环
-        EventLoop.getInstance().loop();
+        vsCrawlerContext.getEventLoop().loop();
+        vsCrawlerContext.getAutoEventRegistry().registerObserver(vsCrawlerContext.getEventLoop());
 
         // 开启文件监听,并发送初始化配置事件
-        SingtonObjectHolder.vsCrawlerConfigFileWatcher.watchAndBindEvent();
+        VSCrawlerContext.vsCrawlerConfigFileWatcher.watchAndBindEvent();
 
         // config 会设置 threadPool
         if (threadPool == null || threadPool.isShutdown()) {
@@ -328,10 +324,10 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
 
         // 加载初始化配置
-        config(SingtonObjectHolder.vsCrawlerConfigFileWatcher.loadedProperties());
+        config(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties());
 
         // 让本类监听配置文件变更事件
-        AutoEventRegistry.getInstance().registerObserver(this);
+        vsCrawlerContext.getAutoEventRegistry().registerObserver(this);
 
         if (pipeline.size() == 0) {
             pipeline.add(new ConsolePipeline());
@@ -345,7 +341,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             crawlerStartCallBack.onCrawlerStart(this);
         }
 
-        AutoEventRegistry.getInstance().findEventDeclaring(CrawlerStartEvent.class).onCrawlerStart();
+        vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerStartEvent.class).onCrawlerStart(vsCrawlerContext);
 
         // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
         // 一般请求请正常停止程序,关机拦截这是挽救方案,并不一定可以完整的实现收尾工作
@@ -375,7 +371,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     @Override
-    public void firstSeed(Seed seed) {
+    public void firstSeed(VSCrawlerContext vsCrawlerContext, Seed seed) {
         log.info("新的种子加入,激活爬虫派发线程");
         try {
             taskDispatchLock.lock();

@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.event.systemevent;
 
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.support.AutoEvent;
 import com.virjar.vscrawler.core.seed.Seed;
 
@@ -9,5 +10,5 @@ import com.virjar.vscrawler.core.seed.Seed;
  */
 public interface FirstSeedPushEvent {
     @AutoEvent
-    void firstSeed(Seed seed);
+    void firstSeed(VSCrawlerContext vsCrawlerContext, Seed seed);
 }

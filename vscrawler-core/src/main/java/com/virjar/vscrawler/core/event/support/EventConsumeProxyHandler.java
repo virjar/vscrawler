@@ -1,10 +1,10 @@
 package com.virjar.vscrawler.core.event.support;
 
+import com.virjar.vscrawler.core.event.Event;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Map;
-
-import com.virjar.vscrawler.core.event.Event;
 
 /**
  * Created by virjar on 17/5/1.

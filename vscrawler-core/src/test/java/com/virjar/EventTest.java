@@ -1,6 +1,7 @@
 package com.virjar;
 
 import com.virjar.dungproxy.client.util.CommonUtil;
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.EventLoop;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.UserLoginEvent;
@@ -11,20 +12,22 @@ import com.virjar.vscrawler.core.net.user.User;
  */
 public class EventTest {
     public static void main(String[] args) {
-        EventLoop.getInstance().loop();
+        VSCrawlerContext vsCrawlerContext = VSCrawlerContext.create("testCrawler");
 
-        AutoEventRegistry eventRegister = AutoEventRegistry.getInstance();
+        vsCrawlerContext.getEventLoop().loop();
+
+        AutoEventRegistry eventRegister = vsCrawlerContext.getAutoEventRegistry();
 
         eventRegister.registerObserver(new UserLoginEvent() {
             @Override
-            public void afterUserLogin(User user, boolean loginSucces) {
+            public void afterUserLogin(VSCrawlerContext vsCrawlerContext1, User user, boolean loginSucces) {
                 System.out.println(Thread.currentThread() + "用户登录:" + (loginSucces ? "成功" : "失败"));
             }
         });
 
         UserLoginEvent userLoginEvent = eventRegister.findEventDeclaring(UserLoginEvent.class);
         for (int i = 0; i < 10; i++) {
-            userLoginEvent.afterUserLogin(null, false);
+            userLoginEvent.afterUserLogin(vsCrawlerContext, null, false);
         }
 
         CommonUtil.sleep(20000);

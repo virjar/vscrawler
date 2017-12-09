@@ -1,5 +1,7 @@
 package com.virjar.vscrawler.core.event.support;
 
+import com.virjar.vscrawler.core.VSCrawlerContext;
+
 import java.lang.reflect.Proxy;
 
 /**
@@ -8,9 +10,11 @@ import java.lang.reflect.Proxy;
 public class DelayEventSender<T> {
     private Class<T> clazz;
     private long activeTime = 0;
+    private VSCrawlerContext vsCrawlerContext;
 
-    DelayEventSender(Class<T> clazz,long afterMillis) {
+    DelayEventSender(Class<T> clazz, long afterMillis, VSCrawlerContext vsCrawlerContext) {
         this.clazz = clazz;
+        this.vsCrawlerContext = vsCrawlerContext;
         if (afterMillis < 0) {
             afterMillis = 0;
         }
@@ -27,8 +31,8 @@ public class DelayEventSender<T> {
 
     @SuppressWarnings("unchecked")
     public T delegate() {
-        DelayEventHandler delayEventHandler = new DelayEventHandler(activeTime);
-        return (T) Proxy.newProxyInstance(DelayEventSender.class.getClassLoader(), new Class[] { clazz },
+        DelayEventHandler delayEventHandler = new DelayEventHandler(activeTime, vsCrawlerContext);
+        return (T) Proxy.newProxyInstance(DelayEventSender.class.getClassLoader(), new Class[]{clazz},
                 delayEventHandler);
     }
 }

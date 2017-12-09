@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.event.systemevent;
 
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.support.AutoEvent;
 
 /**
@@ -15,5 +16,5 @@ public interface CrawlerEndEvent {
      * 爬虫终止事件为同步事件,不占用事件循环线程
      */
     @AutoEvent(sync = true)
-    void crawlerEnd();
+    void crawlerEnd(VSCrawlerContext vsCrawlerContext);
 }

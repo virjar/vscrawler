@@ -1,17 +1,17 @@
 package com.virjar.vscrawler.core.net.user;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.event.systemevent.UserStateChangeEvent;
+import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.UserStateChangeEvent;
-
-import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/5/4. <br/>
@@ -30,16 +30,21 @@ public class UserManager implements UserStateChangeEvent {
 
     private Set<User> blockUsers = Sets.newHashSet();
 
-    public UserManager(UserResourceFacade userResourceFacade) {
+    @Getter
+    private VSCrawlerContext vsCrawlerContext;
+
+    public UserManager(UserResourceFacade userResourceFacade, VSCrawlerContext vsCrawlerContext) {
         if (userResourceFacade == null) {
             userResourceFacade = new DefaultUserResource();
         }
+        this.vsCrawlerContext = vsCrawlerContext;
         this.userResourceFacade = userResourceFacade;
-        AutoEventRegistry.getInstance().registerObserver(this);
+        vsCrawlerContext.getAutoEventRegistry().registerObserver(this);
+        vsCrawlerContext.getAutoEventRegistry().registerObserver(userResourceFacade);
     }
 
     @Override
-    public void userStatusChange(User user, UserStatus originStatus, UserStatus newStatus) {
+    public void userStatusChange(VSCrawlerContext vsCrawlerContext, User user, UserStatus originStatus, UserStatus newStatus) {
         for (User tempUser : allUser) {
             if (tempUser.equals(user)) {// 虽然equal,但是可能不是同一个对象
                 tempUser.setUserStatus(newStatus);

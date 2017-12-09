@@ -6,6 +6,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
@@ -44,11 +45,11 @@ public class DefaultUserResource implements UserResourceFacade, CrawlerConfigCha
     private String userAccountString = null;
 
     public DefaultUserResource() {
-        AutoEventRegistry.getInstance().registerObserver(this);
+        //AutoEventRegistry.getInstance().registerObserver(this);
     }
 
     @Override
-    public void configChange(Properties newProperties) {
+    public void configChange(VSCrawlerContext vsCrawlerContext, Properties newProperties) {
         String property = newProperties.getProperty(VSCrawlerConstant.USER_RESOURCE_USERINFO);
         hasConfig = property != null;
         if (property == null) {
@@ -76,8 +77,8 @@ public class DefaultUserResource implements UserResourceFacade, CrawlerConfigCha
             if (strings.size() >= 3) {
                 String status = strings.get(2);
                 if (StringUtils.equalsIgnoreCase(status, "false")) {
-                    AutoEventRegistry.getInstance().findEventDeclaring(UserStateChangeEvent.class)
-                            .userStatusChange(user, UserStatus.UNKNOWN, UserStatus.FORBID);
+                    vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(UserStateChangeEvent.class)
+                            .userStatusChange(vsCrawlerContext, user, UserStatus.UNKNOWN, UserStatus.FORBID);
                     continue;
                 }
             }

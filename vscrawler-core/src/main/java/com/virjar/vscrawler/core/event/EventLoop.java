@@ -1,21 +1,19 @@
 package com.virjar.vscrawler.core.event;
 
-import java.util.Collection;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
-
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Created by virjar on 17/4/30.
@@ -25,18 +23,13 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Slf4j
 public class EventLoop implements CrawlerEndEvent {
-    private static EventLoop instance = new EventLoop();
     private AtomicBoolean isRunning = new AtomicBoolean(false);
-
-    public static EventLoop getInstance() {
-        return instance;
-    }
 
     private Thread loopThread = null;
 
     private ConcurrentMap<String, Set<EventHandler>> allHandlers = Maps.newConcurrentMap();
 
-    private EventLoop() {
+    public EventLoop() {
 
     }
 
@@ -68,8 +61,7 @@ public class EventLoop implements CrawlerEndEvent {
 
     }
 
-    public synchronized static void registerHandler(String topic, EventHandler eventHandler) {
-        ConcurrentMap<String, Set<EventHandler>> allHandlers = instance.allHandlers;
+    public synchronized void registerHandler(String topic, EventHandler eventHandler) {
         Set<EventHandler> eventHandlers = allHandlers.get(topic);
         if (eventHandlers == null) {
             eventHandlers = Sets.newHashSet();
@@ -80,7 +72,6 @@ public class EventLoop implements CrawlerEndEvent {
     }
 
     public void loop() {
-        AutoEventRegistry.getInstance().registerObserver(this);
         if (isRunning.compareAndSet(false, true)) {
             loopThread = new Thread("vsCrawlerEventLoop") {
                 @Override
@@ -117,7 +108,7 @@ public class EventLoop implements CrawlerEndEvent {
     }
 
     @Override
-    public void crawlerEnd() {
+    public void crawlerEnd(VSCrawlerContext vsCrawlerContext) {
         // 事件循环本身收到了事件消息
         isRunning.set(false);
         log.info("收到爬虫结束消息,停止事件循环,未处理将被忽略,当前待处理事件个数:{}", eventQueue.size());

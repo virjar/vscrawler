@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.event.systemevent;
 
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.support.AutoEvent;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 
@@ -8,5 +9,5 @@ import com.virjar.vscrawler.core.net.session.CrawlerSession;
  */
 public interface SessionBorrowEvent {
     @AutoEvent(sync = true)
-    void onSessionBorrow(CrawlerSession crawlerSession);
+    void onSessionBorrow(VSCrawlerContext vsCrawlerContext, CrawlerSession crawlerSession);
 }

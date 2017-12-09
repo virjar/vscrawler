@@ -1,28 +1,24 @@
 package com.virjar.vscrawler.core.net.session;
 
-import java.util.Map;
-
-import com.virjar.vscrawler.core.net.user.User;
-import com.virjar.vscrawler.core.net.user.UserUtil;
-import org.apache.http.client.CookieStore;
-import org.apache.http.conn.routing.HttpRoutePlanner;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.virjar.dungproxy.client.httpclient.CrawlerHttpClient;
 import com.virjar.dungproxy.client.httpclient.conn.ProxyBindRoutPlanner;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
 import com.virjar.vscrawler.core.net.proxy.ProxyFeedBackDecorateHttpClientBuilder;
 import com.virjar.vscrawler.core.net.proxy.VSCrawlerRoutePlanner;
 import com.virjar.vscrawler.core.net.proxy.strategy.*;
-
+import com.virjar.vscrawler.core.net.user.User;
+import com.virjar.vscrawler.core.net.user.UserUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.client.CookieStore;
+import org.apache.http.conn.routing.HttpRoutePlanner;
+
+import java.util.Map;
 
 /**
  * Created by virjar on 17/4/15. <br/>
@@ -133,7 +129,7 @@ public class CrawlerSession {
      */
     public void destroy() {
         log.debug("session销毁");
-        AutoEventRegistry.getInstance().findEventDeclaring(SessionDestroyEvent.class).onSessionDestroy(this);
+        crawlerSessionPool.getVsCrawlerContext().getAutoEventRegistry().findEventDeclaring(SessionDestroyEvent.class).onSessionDestroy(crawlerSessionPool.getVsCrawlerContext(), this);
         cookieStore.clear();
     }
 

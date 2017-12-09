@@ -1,20 +1,27 @@
 package com.virjar.vscrawler.core.event.support;
 
+import com.google.common.collect.Maps;
+import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.event.Event;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-import com.virjar.vscrawler.core.event.Event;
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.collect.Maps;
-
 /**
  * Created by virjar on 17/5/1.
+ *
  * @author virjar
  * @since 0.0.1
  */
+@RequiredArgsConstructor
 public class EventSendProxyHandler implements InvocationHandler {
+    @NonNull
+    private VSCrawlerContext vsCrawlerContext;
+
 
     @Override
     @SuppressWarnings("unchecked")
@@ -39,7 +46,7 @@ public class EventSendProxyHandler implements InvocationHandler {
         data.put("args", args);
         event.setData(data);
         event.setSync(sync);
-        event.send();
+        vsCrawlerContext.getEventLoop().offerEvent(event);
         return null;
     }
 }

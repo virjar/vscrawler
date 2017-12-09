@@ -1,8 +1,9 @@
 package com.virjar.vscrawler.core.event.systemevent;
 
-import java.util.Properties;
-
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.support.AutoEvent;
+
+import java.util.Properties;
 
 /**
  * Created by virjar on 17/5/2.
@@ -17,5 +18,5 @@ public interface CrawlerConfigChangeEvent {
      * @param vsCrawlerConfigProperties 配置文件内容
      */
     @AutoEvent(sync = true)
-    void configChange(Properties vsCrawlerConfigProperties);
+    void configChange(VSCrawlerContext vsCrawlerContext, Properties vsCrawlerConfigProperties);
 }

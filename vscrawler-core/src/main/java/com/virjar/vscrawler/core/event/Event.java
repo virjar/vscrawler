@@ -50,10 +50,6 @@ public class Event implements Delayed {
         handled = true;
     }
 
-    public void send() {
-        EventLoop.getInstance().offerEvent(this);
-    }
-
     @Override
     public long getDelay(TimeUnit unit) {
         if (time == 0) {

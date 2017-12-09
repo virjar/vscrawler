@@ -1,5 +1,11 @@
 package com.virjar.vscrawler.core.config;
 
+import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerStartEvent;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -8,15 +14,6 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerStartEvent;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/5/2.<br/>
@@ -33,7 +30,7 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
     private AtomicBoolean hasStartWatch = new AtomicBoolean(false);
 
     public VSCrawlerConfigFileWatcher() {
-        AutoEventRegistry.getInstance().registerObserver(this);
+        // AutoEventRegistry.getInstance().registerObserver(this);
     }
 
     public Properties loadedProperties() {
@@ -98,8 +95,10 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
             }
 
             // 没有报异常才发送通知
-            AutoEventRegistry.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class)
-                    .configChange(tempProperties);
+            for (VSCrawlerContext vsCrawlerContext : VSCrawlerContext.getAllContext()) {
+                vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerConfigChangeEvent.class)
+                        .configChange(vsCrawlerContext, tempProperties);
+            }
             oldProperties = tempProperties;
         } catch (Exception e) {
             e.printStackTrace();
@@ -110,12 +109,12 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
     }
 
     @Override
-    public void onCrawlerStart() {
+    public void onCrawlerStart(VSCrawlerContext vsCrawlerContext) {
         watchAndBindEvent();
         if (oldProperties == null) {
             throw new IllegalStateException("不能加载配置,加载发生过异常,请排查后重新启动程序");
         }
-        AutoEventRegistry.getInstance().findEventDeclaring(CrawlerConfigChangeEvent.class).configChange(
+        vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerConfigChangeEvent.class).configChange(vsCrawlerContext,
                 oldProperties);
     }
 }

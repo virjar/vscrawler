@@ -1,15 +1,8 @@
 package com.virjar.vscrawler.core.net.session;
 
-import java.util.Set;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-
 import com.google.common.collect.Sets;
 import com.virjar.dungproxy.client.util.CommonUtil;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionBorrowEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
@@ -17,8 +10,15 @@ import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyStrategy;
-
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Set;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by virjar on 17/4/15.<br/>
@@ -51,7 +51,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     private ProxyPlanner proxyPlanner = null;
 
     // 是否初始化
-    protected volatile boolean inited = false;
+    private volatile boolean inited = false;
 
     private ReentrantLock lock = new ReentrantLock();
     protected Condition empty = lock.newCondition();
@@ -60,9 +60,13 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     private DelayQueue<SessionHolder> sessionQueue = new DelayQueue<>();
     private Set<CrawlerSession> runningSessions = Sets.newConcurrentHashSet();
 
-    public CrawlerSessionPool(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
+    @Getter
+    private VSCrawlerContext vsCrawlerContext;
+
+    public CrawlerSessionPool(VSCrawlerContext vsCrawlerContext, CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
                               IPPool ipPool, ProxyPlanner proxyPlanner, int maxSize, int coreSize, int initialSize, long reuseDuration,
                               long maxOnlineDuration) {
+        this.vsCrawlerContext = vsCrawlerContext;
         this.crawlerHttpClientGenerator = crawlerHttpClientGenerator;
         this.proxyStrategy = proxyStrategy;
         this.ipPool = ipPool;
@@ -129,8 +133,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     private CrawlerSession createNewSession() {
         CrawlerSession crawlerSession = new CrawlerSession(crawlerHttpClientGenerator, proxyStrategy, ipPool,
                 proxyPlanner, this);
-        AutoEventRegistry.getInstance().findEventDeclaring(SessionCreateEvent.class)
-                .onSessionCreateEvent(crawlerSession);
+        vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SessionCreateEvent.class)
+                .onSessionCreateEvent(vsCrawlerContext, crawlerSession);
         if (crawlerSession.isValid()) {
             crawlerSession.setInitTimeStamp(System.currentTimeMillis());
             createNewSessionStatus = true;
@@ -198,8 +202,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 continue;
             }
 
-            AutoEventRegistry.getInstance().findEventDeclaring(SessionBorrowEvent.class)
-                    .onSessionBorrow(crawlerSession);
+            vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SessionBorrowEvent.class)
+                    .onSessionBorrow(vsCrawlerContext, crawlerSession);
             log.debug("当前session数量:{}", sessionQueue.size() + runningSessions.size());
             runningSessions.add(crawlerSession);
             return crawlerSession;
@@ -274,7 +278,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     }
 
     @Override
-    public void crawlerEnd() {
+    public void crawlerEnd(VSCrawlerContext vsCrawlerContext) {
         sessionDaemonThread.interrupt();
     }
 
@@ -289,6 +293,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
         @Override
         public void run() {
             long initSleepTimeStamp = 2000L;
+            long maxSleepTimeStamp = initSleepTimeStamp * 15;
             long sleepTimeStamp = initSleepTimeStamp;
             while (!Thread.currentThread().isInterrupted()) {
                 if (runningSessions.size() + sessionQueue.size() > maxSize) {
@@ -308,7 +313,9 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                     break;
                 }
                 if (!createNewSessionStatus) {
-                    sleepTimeStamp += 1000L;
+                    if (sleepTimeStamp < maxSleepTimeStamp) {
+                        sleepTimeStamp += 1000L;
+                    }
                     CommonUtil.sleep(sleepTimeStamp);
                     continue;
                 }

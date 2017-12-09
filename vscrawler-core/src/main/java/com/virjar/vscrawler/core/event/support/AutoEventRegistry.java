@@ -1,5 +1,18 @@
 package com.virjar.vscrawler.core.event.support;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.event.EventHandler;
+import com.virjar.vscrawler.core.util.ClassScanner;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
@@ -7,71 +20,44 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-import com.virjar.vscrawler.core.event.EventHandler;
-import com.virjar.vscrawler.core.event.EventLoop;
-import com.virjar.vscrawler.core.util.ClassScanner;
-
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * Created by virjar on 17/4/30.<br/>
  * 处理由注解自动标注的事件绑定
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
 @Slf4j
+@RequiredArgsConstructor
 public class AutoEventRegistry {
-    private static AutoEventRegistry instance = null;
-    private static Set<String> basePackges = Sets.newHashSet("com.virjar.vscrawler.core.event.systemevent");
+    @NonNull
+    private VSCrawlerContext vsCrawlerContext;
+    private static Set<String> basePackages = Sets.newHashSet("com.virjar.vscrawler.core.event.systemevent");
 
     public synchronized static void addBasePackage(String basePackage) {
-        Iterator<String> iterator = basePackges.iterator();
+        Iterator<String> iterator = basePackages.iterator();
         while (iterator.hasNext()) {
             String oldBasePackage = iterator.next();
             if (oldBasePackage.startsWith(basePackage)) {
                 iterator.remove();
-                basePackges.add(basePackage);
+                basePackages.add(basePackage);
                 return;
             } else if (basePackage.startsWith(oldBasePackage)) {
                 return;
             }
         }
-        basePackges.add(basePackage);
+        basePackages.add(basePackage);
     }
 
-    private AutoEventRegistry() {
+    public AutoEventRegistry() {
         scanDelegate();
-    }
-
-    /**
-     * 懒汉式的单例模式
-     * 
-     * @return
-     */
-    public static AutoEventRegistry getInstance() {
-        if (instance == null) {
-            synchronized (AutoEventRegistry.class) {
-                if (instance == null) {
-                    instance = new AutoEventRegistry();
-                }
-            }
-        }
-        return instance;
     }
 
     private Map<Class, Object> allAutoEventMap = Maps.newHashMap();
 
     private void scanDelegate() {
         AnnotationMethodVisitor eventVisitor = new AnnotationMethodVisitor(AutoEvent.class);
-        ClassScanner.scan(eventVisitor, basePackges);
+        ClassScanner.scan(eventVisitor, basePackages);
         // 所有自动事件的声明
         registerMethods(eventVisitor.getMethodSet());
     }
@@ -95,7 +81,7 @@ public class AutoEventRegistry {
 
     /**
      * 注册事件观察者,通过注解的事件观察者
-     * 
+     *
      * @param observer 观察者对象
      */
     public void registerObserver(Object observer) {
@@ -147,11 +133,11 @@ public class AutoEventRegistry {
         }
     }
 
-    private void registerMethod(Object obverser, Method obverserMethod, String topic) {
-        EventConsumeProxyHandler eventConsumeProxyHandler = new EventConsumeProxyHandler(obverser, obverserMethod);
+    private void registerMethod(Object observer, Method observerMethod, String topic) {
+        EventConsumeProxyHandler eventConsumeProxyHandler = new EventConsumeProxyHandler(observer, observerMethod);
         EventHandler eventHandler = (EventHandler) Proxy.newProxyInstance(AutoEventRegistry.class.getClassLoader(),
-                new Class[] { EventHandler.class }, eventConsumeProxyHandler);
-        EventLoop.registerHandler(topic, eventHandler);
+                new Class[]{EventHandler.class}, eventConsumeProxyHandler);
+        vsCrawlerContext.getEventLoop().registerHandler(topic, eventHandler);
     }
 
     private void delegateMethod(Class interfaze, Collection<Method> methods) {
@@ -170,14 +156,14 @@ public class AutoEventRegistry {
             methodNameSet.add(method.getName());
         }
 
-        EventSendProxyHandler eventSendProxyHandler = new EventSendProxyHandler();
-        Object o = Proxy.newProxyInstance(AutoEventRegistry.class.getClassLoader(), new Class[] { interfaze },
+        EventSendProxyHandler eventSendProxyHandler = new EventSendProxyHandler(vsCrawlerContext);
+        Object o = Proxy.newProxyInstance(AutoEventRegistry.class.getClassLoader(), new Class[]{interfaze},
                 eventSendProxyHandler);
         allAutoEventMap.put(interfaze, o);
     }
 
     public <T> DelayEventSender<T> createDelayEventSender(Class<T> interfaze, long afterTimeMillis) {
-        return new DelayEventSender<>(interfaze, afterTimeMillis);
+        return new DelayEventSender<>(interfaze, afterTimeMillis, vsCrawlerContext);
     }
 
     public <T> DelayEventSender<T> createDelayEventSender(Class<T> interfaze) {

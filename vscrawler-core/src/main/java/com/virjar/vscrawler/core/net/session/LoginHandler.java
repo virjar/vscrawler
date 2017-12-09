@@ -1,9 +1,8 @@
 package com.virjar.vscrawler.core.net.session;
 
-import org.apache.http.client.CookieStore;
-
 import com.virjar.dungproxy.client.httpclient.CrawlerHttpClient;
 import com.virjar.vscrawler.core.net.user.User;
+import org.apache.http.client.CookieStore;
 
 /**
  * Created by virjar on 17/4/15.

@@ -1,5 +1,12 @@
 package com.virjar.vscrawler.core.config;
 
+import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
+import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -10,19 +17,12 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
-
 /**
  * 文件系统目录和文件监控服务
- * 
+ *
  * @author 杨尚川
  */
-public class DirectoryWatcher implements CrawlerEndEvent {
+public class DirectoryWatcher {
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectoryWatcher.class);
 
     private WatchService watchService = null;
@@ -31,13 +31,13 @@ public class DirectoryWatcher implements CrawlerEndEvent {
     private WatchEvent.Kind<?>[] events;
 
     public static DirectoryWatcher getDirectoryWatcher(final WatcherCallback watcherCallback,
-            WatchEvent.Kind<?>... events) {
+                                                       WatchEvent.Kind<?>... events) {
         return new DirectoryWatcher(watcherCallback, events);
 
     }
 
     private DirectoryWatcher(final WatcherCallback watcherCallback, WatchEvent.Kind<?>... events) {
-        AutoEventRegistry.getInstance().registerObserver(this);
+        //AutoEventRegistry.getInstance().registerObserver(this);
         try {
             if (events.length == 0) {
                 throw new RuntimeException(
@@ -64,6 +64,15 @@ public class DirectoryWatcher implements CrawlerEndEvent {
                 }
 
             });
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    if (!EXECUTOR_SERVICE.isShutdown()) {
+                        //线程池本身就是deamo的
+                        EXECUTOR_SERVICE.shutdown();
+                    }
+                }
+            });
         } catch (IOException ex) {
             LOGGER.error("构造文件系统监控服务失败：", ex);
             throw new RuntimeException(ex);
@@ -72,7 +81,7 @@ public class DirectoryWatcher implements CrawlerEndEvent {
 
     /**
      * 监控指定目录，不监控子目录
-     * 
+     *
      * @param path
      */
     public void watchDirectory(String path) {
@@ -81,7 +90,7 @@ public class DirectoryWatcher implements CrawlerEndEvent {
 
     /**
      * 监控指定目录，不监控子目录
-     * 
+     *
      * @param path
      */
     public void watchDirectory(Path path) {
@@ -90,7 +99,7 @@ public class DirectoryWatcher implements CrawlerEndEvent {
 
     /**
      * 监控指定的目录及其所有子目录
-     * 
+     *
      * @param path
      */
     public void watchDirectoryTree(String path) {
@@ -99,7 +108,7 @@ public class DirectoryWatcher implements CrawlerEndEvent {
 
     /**
      * 监控指定的目录及其所有子目录
-     * 
+     *
      * @param path
      */
     public void watchDirectoryTree(Path path) {
@@ -115,12 +124,12 @@ public class DirectoryWatcher implements CrawlerEndEvent {
 
     /**
      * 监控事件分发器
-     * 
+     *
      * @param watcherCallback 事件回调
      */
     private void watch(WatcherCallback watcherCallback) {
         try {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 final WatchKey key = watchService.take();
                 if (key == null) {
                     continue;
@@ -144,21 +153,21 @@ public class DirectoryWatcher implements CrawlerEndEvent {
                     LOGGER.info("kind:" + kind);
                     // 判断事件类别
                     switch (kind.name()) {
-                    case "ENTRY_CREATE":
-                        if (Files.isDirectory(absolutePath, LinkOption.NOFOLLOW_LINKS)) {
-                            LOGGER.info("新增目录：" + absolutePath);
-                            // 为新增的目录及其所有子目录注册监控事件
-                            registerDirectoryTree(absolutePath);
-                        } else {
-                            LOGGER.info("新增文件：" + absolutePath);
-                        }
-                        break;
-                    case "ENTRY_DELETE":
-                        LOGGER.info("删除：" + absolutePath);
-                        break;
-                    case "ENTRY_MODIFY":
-                        LOGGER.info("修改：" + absolutePath);
-                        break;
+                        case "ENTRY_CREATE":
+                            if (Files.isDirectory(absolutePath, LinkOption.NOFOLLOW_LINKS)) {
+                                LOGGER.info("新增目录：" + absolutePath);
+                                // 为新增的目录及其所有子目录注册监控事件
+                                registerDirectoryTree(absolutePath);
+                            } else {
+                                LOGGER.info("新增文件：" + absolutePath);
+                            }
+                            break;
+                        case "ENTRY_DELETE":
+                            LOGGER.info("删除：" + absolutePath);
+                            break;
+                        case "ENTRY_MODIFY":
+                            LOGGER.info("修改：" + absolutePath);
+                            break;
                     }
                     // 业务逻辑
                     watcherCallback.execute(kind, absolutePath.toAbsolutePath().toString());
@@ -185,7 +194,7 @@ public class DirectoryWatcher implements CrawlerEndEvent {
 
     /**
      * 为指定目录及其所有子目录注册监控事件
-     * 
+     *
      * @param path 目录
      */
     private void registerDirectoryTree(Path path) {
@@ -204,7 +213,7 @@ public class DirectoryWatcher implements CrawlerEndEvent {
 
     /**
      * 为指定目录注册监控事件
-     * 
+     *
      * @param path
      */
     private void registerDirectory(Path path) {
@@ -217,34 +226,8 @@ public class DirectoryWatcher implements CrawlerEndEvent {
         }
     }
 
-    public static void main(String[] args) {
-        DirectoryWatcher dictionaryWatcher = new DirectoryWatcher(new WatcherCallback() {
-            private long lastExecute = System.currentTimeMillis();
 
-            @Override
-            public void execute(WatchEvent.Kind<?> kind, String path) {
-                if (System.currentTimeMillis() - lastExecute > 1000) {
-                    lastExecute = System.currentTimeMillis();
-                    // 刷新词典
-                    System.out.println("事件：" + kind.name() + " ,路径：" + path);
-                }
-            }
-        }, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY,
-                StandardWatchEventKinds.ENTRY_DELETE);
-        // 监控DIC目录及其所有子目录的子目录...递归
-        dictionaryWatcher.watchDirectoryTree("d:/DIC");
-        // 只监控DIC2目录
-        dictionaryWatcher.watchDirectory("d:/DIC2");
-    }
-
-    @Override
-    public void crawlerEnd() {
-        if (!EXECUTOR_SERVICE.isShutdown()) {
-            EXECUTOR_SERVICE.shutdownNow();
-        }
-    }
-
-    public static interface WatcherCallback {
-        public void execute(WatchEvent.Kind<?> kind, String path);
+    public interface WatcherCallback {
+        void execute(WatchEvent.Kind<?> kind, String path);
     }
 }

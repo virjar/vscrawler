@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.event.systemevent;
 
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.support.AutoEvent;
 
 /**
@@ -7,5 +8,5 @@ import com.virjar.vscrawler.core.event.support.AutoEvent;
  */
 public interface ShutDownChecker {
     @AutoEvent(clearExpire = true)
-    void checkShutDown();
+    void checkShutDown(VSCrawlerContext vsCrawlerContext);
 }

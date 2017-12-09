@@ -1,10 +1,10 @@
 package com.virjar.vscrawler.core.event.support;
 
-import java.lang.reflect.Method;
-import java.util.Set;
-
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.util.ClassScanner;
+
+import java.lang.reflect.Method;
+import java.util.Set;
 
 /**
  * Created by virjar on 17/4/30.

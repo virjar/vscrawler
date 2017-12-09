@@ -1,9 +1,6 @@
 package com.virjar.vscrawler.core;
 
-import java.util.List;
-
 import com.google.common.collect.Lists;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.SeedEmptyEvent;
 import com.virjar.vscrawler.core.event.systemevent.ShutDownChecker;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
@@ -24,6 +21,8 @@ import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.*;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
+
+import java.util.List;
 
 /**
  * Created by virjar on 17/4/30.<br/>
@@ -296,6 +295,8 @@ public class VSCrawlerBuilder {
 
     public VSCrawler build() {
 
+        final VSCrawlerContext vsCrawlerContext = VSCrawlerContext.create(crawlerName);
+
         if (crawlerHttpClientGenerator == null) {
             crawlerHttpClientGenerator = new DefaultHttpClientGenerator();
         }
@@ -308,7 +309,7 @@ public class VSCrawlerBuilder {
             throw new IllegalStateException("proxyPlanner must exist if proxyStrategy is custom");
         }
 
-        CrawlerSessionPool crawlerSessionPool = new CrawlerSessionPool(crawlerHttpClientGenerator, proxyStrategy,
+        CrawlerSessionPool crawlerSessionPool = new CrawlerSessionPool(vsCrawlerContext, crawlerHttpClientGenerator, proxyStrategy,
                 ipPool, proxyPlanner, sessionPoolMaxSize, sessionPoolCoreSize, sessionPoolInitialSize,
                 sessionPoolReuseDuration, sessionPoolMaxOnlineDuration);
 
@@ -324,7 +325,7 @@ public class VSCrawlerBuilder {
             segmentResolver = new DefaultSegmentResolver();
         }
 
-        BerkeleyDBSeedManager berkeleyDBSeedManager = new BerkeleyDBSeedManager(initSeedSource, seedKeyResolver,
+        BerkeleyDBSeedManager berkeleyDBSeedManager = new BerkeleyDBSeedManager(vsCrawlerContext, initSeedSource, seedKeyResolver,
                 segmentResolver, seedManagerCacheSize);
 
         if (processor == null && seedRouters.isEmpty()) {
@@ -345,7 +346,7 @@ public class VSCrawlerBuilder {
             pipelineList.add(new ConsolePipeline());
         }
 
-        VSCrawler vsCrawler = new VSCrawler(crawlerName, crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList,
+        VSCrawler vsCrawler = new VSCrawler(vsCrawlerContext, crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList,
                 workerThreadNumber, slowStart, slowStartDuration);
         if (loginOnSessionCreate) {
             if (userResourceFacade == null) {
@@ -356,7 +357,7 @@ public class VSCrawlerBuilder {
             if (loginHandler == null) {
                 throw new IllegalStateException("login handler is null ,but open login switch");
             }
-            UserManager userManager = new UserManager(userResourceFacade);
+            UserManager userManager = new UserManager(userResourceFacade, vsCrawlerContext);
             vsCrawler.addCrawlerStartCallBack(new AutoLoginPlugin(loginHandler, userManager));
         }
 
@@ -364,10 +365,10 @@ public class VSCrawlerBuilder {
             vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
                 @Override
                 public void onCrawlerStart(final VSCrawler vsCrawler) {
-                    AutoEventRegistry.getInstance().registerObserver(new ShutDownChecker() {
+                    vsCrawler.getVsCrawlerContext().getAutoEventRegistry().registerObserver(new ShutDownChecker() {
 
                         @Override
-                        public void checkShutDown() {
+                        public void checkShutDown(VSCrawlerContext vsCrawlerContext1) {
                             // 15s之后检查活跃线程数,发现为0,证明连续10s都没用任务执行了
                             if (vsCrawler.activeWorker() == 0
                                     && (System.currentTimeMillis() - vsCrawler.getLastActiveTime()) > 10000) {
@@ -376,12 +377,12 @@ public class VSCrawlerBuilder {
                             }
                         }
                     });
-                    AutoEventRegistry.getInstance().registerObserver(new SeedEmptyEvent() {
+                    vsCrawler.getVsCrawlerContext().getAutoEventRegistry().registerObserver(new SeedEmptyEvent() {
                         @Override
-                        public void onSeedEmpty() {
-                            AutoEventRegistry.getInstance().createDelayEventSender(ShutDownChecker.class,
+                        public void onSeedEmpty(VSCrawlerContext vsCrawlerContext1) {
+                            vsCrawler.getVsCrawlerContext().getAutoEventRegistry().createDelayEventSender(ShutDownChecker.class,
                                     stopWhileTaskEmptyDuration).delegate()
-                                    .checkShutDown();
+                                    .checkShutDown(vsCrawlerContext);
                         }
                     });
                 }

@@ -2,6 +2,7 @@ package com.virjar.vscrawler.core.net.user;
 
 import com.alibaba.fastjson.JSONObject;
 import com.virjar.vscrawler.core.VSCrawler;
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
@@ -28,11 +29,11 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
 
     @Override
     public void onCrawlerStart(VSCrawler vsCrawler) {
-        AutoEventRegistry.getInstance().registerObserver(this);
+        vsCrawler.getVsCrawlerContext().getAutoEventRegistry().registerObserver(this);
     }
 
     @Override
-    public void onSessionCreateEvent(CrawlerSession crawlerSession) {
+    public void onSessionCreateEvent(VSCrawlerContext vsCrawlerContext, CrawlerSession crawlerSession) {
         // 其他插件已经把这个session判定为无效,不需要走登录流程
         if (!crawlerSession.isValid()) {
             return;
@@ -62,7 +63,7 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
     }
 
     @Override
-    public void onSessionDestroy(CrawlerSession crawlerSession) {
+    public void onSessionDestroy(VSCrawlerContext vsCrawlerContext, CrawlerSession crawlerSession) {
         User user = UserUtil.getUser(crawlerSession);
         if (user != null) {
             if (!crawlerSession.isValid()) {
