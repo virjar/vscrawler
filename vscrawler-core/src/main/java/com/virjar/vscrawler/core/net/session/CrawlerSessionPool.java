@@ -154,7 +154,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
         }
     }
 
-    public CrawlerSession borrowOne(long maxWaitMillis) {
+    public CrawlerSession borrowOne(long maxWaitMillis, boolean forceCreate) {
         init();
         long lessTimeMillis = maxWaitMillis;
         // LinkedList<CrawlerSession> tempCrawlerSession = Lists.newLinkedList();
@@ -165,8 +165,12 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
         for (; ; ) {
             CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
             if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
-                if (sessionQueue.size() + runningSessions.size() < maxSize) {
+                if (sessionQueue.size() + runningSessions.size() < maxSize || forceCreate) {
                     crawlerSession = createNewSession();
+                    //forceCreate 模式下,多做一次尝试,避免偶然因素导致session创建失败,因为此模式下代码请求需要一定实时性,需要最快的返回
+                    if (forceCreate && crawlerSession == null) {
+                        crawlerSession = createNewSession();
+                    }
                     if (crawlerSession == null) {
                         CommonUtil.sleep(2000);
                     }

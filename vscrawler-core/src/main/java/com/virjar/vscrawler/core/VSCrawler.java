@@ -135,6 +135,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         berkeleyDBSeedManager.addNewSeeds(Lists.newArrayList(new Seed(seed)));
     }
 
+
     private AtomicInteger activeTasks = new AtomicInteger(0);
 
     private Thread crawlerMainThread = null;
@@ -240,9 +241,34 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             }
         }
 
-        private void processSeed(Seed seed) {
 
-            CrawlerSession session = crawlerSessionPool.borrowOne(-1);
+        /**
+         * 同步执行抓取任务,适合booking场景,该抓取任务不入库,抓取结果不入pipeline,seesion创建不等待
+         *
+         * @param seed 任务种子
+         * @return 抓取结果
+         */
+        public CrawlResult grabSync(Seed seed) {
+            CrawlerSession session = crawlerSessionPool.borrowOne(-1, true);
+            CrawlResult crawlResult = new CrawlResult();
+            try {
+                seed.setStatus(Seed.STATUS_RUNNING);
+                VSCrawlerCommonUtil.setCrawlerSession(session);
+                seedProcessor.process(seed, session, crawlResult);
+                return crawlResult;
+            } finally {
+                // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
+                VSCrawlerCommonUtil.clearCrawlerSession();
+                crawlerSessionPool.recycle(session);
+            }
+        }
+
+        public CrawlResult grabSync(String seed) {
+            return grabSync(new Seed(seed));
+        }
+
+        private void processSeed(Seed seed) {
+            CrawlerSession session = crawlerSessionPool.borrowOne(-1, false);
             int originRetryCount = seed.getRetry();
             CrawlResult crawlResult = new CrawlResult();
             try {
