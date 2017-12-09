@@ -2,7 +2,6 @@ package com.virjar.vscrawler.core.util;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.virjar.vscrawler.core.constant.CommonConstant;
 import net.sourceforge.pinyin4j.PinyinHelper;
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
@@ -136,7 +135,7 @@ public class ChineseUtil {
         if (StringUtils.isBlank(jsonStr) || !jsonStr.startsWith("[")) {
             return "jsonString is null or blank , or jsonStr not start with '[',can not be converted!";
         }
-        return jsonConvertKeyChineseToPinyin(jsonStr, CommonConstant.JSONStringType.JSON_ARRAY.getValue(), replace);
+        return jsonConvertKeyChineseToPinyin(jsonStr, VSCrawlerCommonUtil.JSONStringType.JSON_ARRAY.getValue(), replace);
     }
 
     /**
@@ -159,7 +158,7 @@ public class ChineseUtil {
         if (StringUtils.isBlank(jsonStr) || !jsonStr.startsWith("{")) {
             return "jsonString is null or blank , or jsonStr not start with '{',can not be converted!";
         }
-        return jsonConvertKeyChineseToPinyin(jsonStr, CommonConstant.JSONStringType.JSON_OBJECT.getValue(), replace);
+        return jsonConvertKeyChineseToPinyin(jsonStr, VSCrawlerCommonUtil.JSONStringType.JSON_OBJECT.getValue(), replace);
     }
 
     public static String jsonConvertKeyChineseToPinyin(String sourceJsonString, String type, boolean replace) {
@@ -167,7 +166,7 @@ public class ChineseUtil {
             return StringUtils.EMPTY;
         }
         JSONArray result = new JSONArray();
-        if (CommonConstant.JSONStringType.JSON_ARRAY.getValue().equals(type)) {
+        if (VSCrawlerCommonUtil.JSONStringType.JSON_ARRAY.getValue().equals(type)) {
             JSONArray sourceJsonArray = JSONArray.parseArray(sourceJsonString);
             for (Object object : sourceJsonArray) {
                 JSONObject jsonObj = new JSONObject();
@@ -191,7 +190,7 @@ public class ChineseUtil {
                 result.add(jsonObj);
             }
             return result.toJSONString();
-        } else if (CommonConstant.JSONStringType.JSON_OBJECT.getValue().equals(type)) {
+        } else if (VSCrawlerCommonUtil.JSONStringType.JSON_OBJECT.getValue().equals(type)) {
             JSONObject jsonObj = new JSONObject();
             JSONObject sourceJsonObj = JSONObject.parseObject(sourceJsonString);
             Set<String> keySet = sourceJsonObj.keySet();

@@ -109,4 +109,20 @@ public class VSCrawlerCommonUtil {
         return ret;
     }
 
+    public enum JSONStringType {
+        // Json 数组
+        JSON_ARRAY("0"),
+        // Json 对象
+        JSON_OBJECT("1");
+
+        public String getValue() {
+            return value;
+        }
+
+        private String value;
+
+        JSONStringType(String string) {
+            this.value = string;
+        }
+    }
 }
