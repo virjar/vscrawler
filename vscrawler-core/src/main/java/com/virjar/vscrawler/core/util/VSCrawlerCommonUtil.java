@@ -7,6 +7,7 @@ import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
+import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.seed.Seed;
 
@@ -17,7 +18,8 @@ import java.util.*;
  */
 public class VSCrawlerCommonUtil {
 
-    private static InheritableThreadLocal<CrawlerSession> threadLocal = new InheritableThreadLocal<>();
+    private static InheritableThreadLocal<CrawlerSession> crawlerSessionThreadLocal = new InheritableThreadLocal<>();
+    private static InheritableThreadLocal<VSCrawlerContext> crawlerContextThreadLocal = new InheritableThreadLocal<>();
 
     public static boolean closeQuietly(Environment environment) {
         if (environment == null) {
@@ -64,15 +66,23 @@ public class VSCrawlerCommonUtil {
     }
 
     public static CrawlerSession crawlerSessionInThread() {
-        return threadLocal.get();
+        return crawlerSessionThreadLocal.get();
     }
 
     public static void setCrawlerSession(CrawlerSession crawlerSession) {
-        threadLocal.set(crawlerSession);
+        crawlerSessionThreadLocal.set(crawlerSession);
     }
 
     public static void clearCrawlerSession() {
-        threadLocal.remove();
+        crawlerSessionThreadLocal.remove();
+    }
+
+    public static void setVSCrawlerContext(VSCrawlerContext vsCrawlerContext) {
+        crawlerContextThreadLocal.set(vsCrawlerContext);
+    }
+
+    public static VSCrawlerContext getVSCrawlerContext() {
+        return crawlerContextThreadLocal.get();
     }
 
     /**

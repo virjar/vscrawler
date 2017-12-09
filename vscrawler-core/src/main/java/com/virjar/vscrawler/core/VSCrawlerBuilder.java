@@ -124,7 +124,7 @@ public class VSCrawlerBuilder {
     /**
      * 爬虫工作线程数
      */
-    private int workerThreadNumber = 10;
+    private int workerThreadNumber = Runtime.getRuntime().availableProcessors() * 10;
 
     /**
      * 慢启动控制

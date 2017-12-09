@@ -249,6 +249,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
          * @return 抓取结果
          */
         public CrawlResult grabSync(Seed seed) {
+            //set vsCrawlerContext into ThreadLocal ,for support event loop
+            VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
             CrawlerSession session = crawlerSessionPool.borrowOne(-1, true);
             CrawlResult crawlResult = new CrawlResult();
             try {
@@ -268,6 +270,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
 
         private void processSeed(Seed seed) {
+            //set vsCrawlerContext into ThreadLocal ,for support event loop
+            VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
             CrawlerSession session = crawlerSessionPool.borrowOne(-1, false);
             int originRetryCount = seed.getRetry();
             CrawlResult crawlResult = new CrawlResult();
@@ -375,7 +379,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         synchronized (System.out) {// 血可流头可断,队形不能乱
             System.err.println("################################################");
             System.err.println("##############     VSCrawler      ##############");
-            System.err.println("##############       0.1.2        ##############");
+            System.err.println("##############       0.2.0        ##############");
             System.err.println("############## 你有一个有意思的灵魂 ##############");
             System.err.println("################################################");
             System.err.println("##############       virjar       ##############");
