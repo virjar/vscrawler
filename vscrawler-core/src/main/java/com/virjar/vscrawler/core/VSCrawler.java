@@ -51,16 +51,16 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     private List<Pipeline> pipeline = Lists.newArrayList();
     private int threadNumber = 10;
 
-    protected ThreadPoolExecutor threadPool;
+    private ThreadPoolExecutor threadPool;
     private Date startTime;
 
-    protected AtomicInteger stat = new AtomicInteger(STAT_INIT);
+    private AtomicInteger stat = new AtomicInteger(STAT_INIT);
 
-    protected final static int STAT_INIT = 0;
+    private final static int STAT_INIT = 0;
 
-    protected final static int STAT_RUNNING = 1;
+    private final static int STAT_RUNNING = 1;
 
-    protected final static int STAT_STOPPED = 2;
+    private final static int STAT_STOPPED = 2;
 
     private ReentrantLock taskDispatchLock = new ReentrantLock();
 
@@ -69,12 +69,12 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     /**
      * 慢启动,默认为true,慢启动打开后,爬虫启动的时候线程不会瞬间变到最大,否则这个时候并发应该是最大的,因为这个时候没有线程阻塞, 另外考虑有些 资源分配问题,慢启动避免初始化的时候初始化资源请求qps过高
      */
-    protected boolean slowStart = false;
+    private boolean slowStart = false;
 
     /**
      * 慢启动过程是10分钟默认
      */
-    protected long slowStartDuration = 5 * 60 * 1000;
+    private long slowStartDuration = 5 * 60 * 1000;
 
     private int slowStartThreadNumber = 0;
 
@@ -83,10 +83,13 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     private List<CrawlerStartCallBack> allStartCallBacks = Lists.newLinkedList();
 
-    VSCrawler(CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
+    private String crawlerName;
+
+    VSCrawler(String crawlerName, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
               SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
               long slowStartDuration) {
         super("VSCrawler-Dispatch");
+        this.crawlerName = crawlerName;
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
         this.seedProcessor = seedProcessor;
@@ -96,7 +99,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         this.slowStartDuration = slowStartDuration;
     }
 
-    public class WaitThread extends Thread {
+    private class WaitThread extends Thread {
         @Override
         public void run() {
             CommonUtil.sleep(120000);
@@ -230,6 +233,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         public void run() {
             try {
                 activeTasks.incrementAndGet();
+                //为了性能,不打印json
+                log.info("handle seed: {}", seed.getData());
                 processSeed(seed);
             } catch (Exception e) {
                 log.error("process request {} error", JSONObject.toJSONString(seed), e);
@@ -348,7 +353,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         synchronized (System.out) {// 血可流头可断,队形不能乱
             System.err.println("################################################");
             System.err.println("##############     VSCrawler      ##############");
-            System.err.println("##############       0.1.1        ##############");
+            System.err.println("##############       0.1.2        ##############");
             System.err.println("############## 你有一个有意思的灵魂 ##############");
             System.err.println("################################################");
             System.err.println("##############       virjar       ##############");

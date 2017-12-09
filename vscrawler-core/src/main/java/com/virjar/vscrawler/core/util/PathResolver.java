@@ -63,7 +63,7 @@ public class PathResolver {
         if (url != null) {
             return new File(url.getFile()).getAbsolutePath();
         }
-        return pathName;
+        return dealWithHomeFlag(pathName);
     }
 
     /**

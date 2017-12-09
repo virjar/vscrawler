@@ -142,6 +142,8 @@ public class VSCrawlerBuilder {
      */
     private long stopWhileTaskEmptyDuration = 2 * 60 * 1000;
 
+    private String crawlerName = "vsCrawler";
+
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
     }
@@ -233,6 +235,11 @@ public class VSCrawlerBuilder {
 
     public VSCrawlerBuilder setUserResourceFacade(UserResourceFacade userResourceFacade) {
         this.userResourceFacade = userResourceFacade;
+        return this;
+    }
+
+    public VSCrawlerBuilder setCrawlerName(String crawlerName) {
+        this.crawlerName = crawlerName;
         return this;
     }
 
@@ -338,7 +345,7 @@ public class VSCrawlerBuilder {
             pipelineList.add(new ConsolePipeline());
         }
 
-        VSCrawler vsCrawler = new VSCrawler(crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList,
+        VSCrawler vsCrawler = new VSCrawler(crawlerName, crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList,
                 workerThreadNumber, slowStart, slowStartDuration);
         if (loginOnSessionCreate) {
             if (userResourceFacade == null) {
