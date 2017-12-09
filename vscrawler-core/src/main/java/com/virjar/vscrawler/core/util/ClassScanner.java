@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 类扫描器
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -56,6 +56,12 @@ public class ClassScanner {
     public static <T> void scan(ClassVisitor<T> subClassVisitor, Collection<String> basePackages) {
 
         List<File> jarFiles = allJar();
+        if (jarFiles.size() == 0) {
+            URL location = ClassScanner.class.getProtectionDomain().getCodeSource().getLocation();
+            if (location != null) {
+                jarFiles.add(new File(location.getPath()));
+            }
+        }
         for (File f : jarFiles) {
             scan(f, subClassVisitor, basePackages);
         }
@@ -223,7 +229,7 @@ public class ClassScanner {
     }
 
     private static <T> void visitClass(String className, Collection<String> basePackages,
-            ClassVisitor<T> classVisitor) {
+                                       ClassVisitor<T> classVisitor) {
         if (basePackages.size() == 0) {
             Class<T> clazz = classForName(className);
             if (clazz != null) {

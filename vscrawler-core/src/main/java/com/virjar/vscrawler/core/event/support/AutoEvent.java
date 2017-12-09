@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * Created by virjar on 17/4/30.
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -16,4 +17,6 @@ public @interface AutoEvent {
     String topic() default "";
 
     boolean sync() default false;
+
+    boolean clearExpire() default false;
 }

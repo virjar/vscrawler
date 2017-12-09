@@ -33,6 +33,8 @@ public class DelayEventHandler implements InvocationHandler {
 
         boolean sync = annotation.sync();
 
+        boolean clearExpire = annotation.clearExpire();
+
         Event event = new Event(topic);
 
         Map data = Maps.newHashMap();
@@ -43,6 +45,7 @@ public class DelayEventHandler implements InvocationHandler {
         event.setTime(activeTime);
         event.setData(data);
         event.setSync(sync);
+        event.setCleanExpire(clearExpire);
         event.send();
         return null;
     }

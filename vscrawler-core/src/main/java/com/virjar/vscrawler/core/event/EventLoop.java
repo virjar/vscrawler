@@ -1,20 +1,25 @@
 package com.virjar.vscrawler.core.event;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Created by virjar on 17/4/30.
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -37,25 +42,30 @@ public class EventLoop implements CrawlerEndEvent {
 
     private DelayQueue<Event> eventQueue = new DelayQueue<>();
 
-    public void offerEvent(Event event) {
+    public void offerEvent(final Event event) {
         if (!isRunning.get()) {
             log.warn("程序已停止");
             return;
         }
-        /*
-         * Preconditions.checkArgument( allHandlers.containsKey(event.getTopic()) &&
-         * allHandlers.get(event.getTopic()).size() > 0, "cannot find handle for event:{}", event.getTopic());
-         */
         if (!allHandlers.containsKey(event.getTopic()) || allHandlers.get(event.getTopic()).size() < 0) {
             log.debug("cannot find handle for event:{}", event.getTopic());
             return;
         }
         if (event.isSync()) {
             disPatch(event);
-        } else {
-            eventQueue.put(event);
-
+            return;
         }
+        if (event.isCleanExpire()) {
+            eventQueue.removeAll(Collections2.filter(eventQueue, new Predicate<Event>() {
+                @Override
+                public boolean apply(Event input) {
+                    return StringUtils.equals(input.getTopic(), event.getTopic());
+                }
+            }));
+        }
+        eventQueue.put(event);
+
+
     }
 
     public synchronized static void registerHandler(String topic, EventHandler eventHandler) {

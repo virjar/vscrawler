@@ -38,6 +38,10 @@ public class Event implements Delayed {
     @Setter
     private long time;
 
+    @Getter
+    @Setter
+    private boolean cleanExpire = false;
+
     public Event(String topic) {
         this.topic = topic;
     }

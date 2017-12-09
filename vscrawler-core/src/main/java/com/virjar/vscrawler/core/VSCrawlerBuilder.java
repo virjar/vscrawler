@@ -372,7 +372,6 @@ public class VSCrawlerBuilder {
                     AutoEventRegistry.getInstance().registerObserver(new SeedEmptyEvent() {
                         @Override
                         public void onSeedEmpty() {
-                            //TODO 爬虫结束的时候,这里的empty消息太多,考虑如何处理
                             AutoEventRegistry.getInstance().createDelayEventSender(ShutDownChecker.class,
                                     stopWhileTaskEmptyDuration).delegate()
                                     .checkShutDown();
