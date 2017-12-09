@@ -325,7 +325,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
      * 如果用户配置了初始的种子源那么启动时加载种子源
      */
     private void migrateInitSeed() {
-        Collection<Seed> seeds = initSeedSource.initSeeds();
+        Collection<Seed> seeds = initSeedSource.initSeeds(vsCrawlerContext);
         if (seeds == null) {
             return;
         }

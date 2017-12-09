@@ -1,17 +1,16 @@
 package com.virjar.vscrawler.core.util;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.net.URL;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
 
 /**
  * Created by virjar on 17/5/15.
@@ -30,6 +29,9 @@ public class PathResolver {
     }
 
     public static String resolveAbsolutePath(String pathName) {
+        if (pathName == null) {
+            return null;
+        }
         // file protocol
         if (StringUtils.startsWithIgnoreCase(pathName, "file:")) {
             return dealWithHomeFlag(pathName.substring("file:".length()));

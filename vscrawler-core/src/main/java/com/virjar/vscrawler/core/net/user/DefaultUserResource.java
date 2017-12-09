@@ -1,23 +1,20 @@
 package com.virjar.vscrawler.core.net.user;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
+import com.virjar.vscrawler.core.event.systemevent.UserStateChangeEvent;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.virjar.vscrawler.core.VSCrawlerContext;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
-
-import com.google.common.base.Splitter;
-import com.google.common.collect.Sets;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
-import com.virjar.vscrawler.core.event.systemevent.UserStateChangeEvent;
-import com.virjar.vscrawler.core.util.VSCrawlerConstant;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 17/5/6. <br/>
@@ -50,11 +47,11 @@ public class DefaultUserResource implements UserResourceFacade, CrawlerConfigCha
 
     @Override
     public void configChange(VSCrawlerContext vsCrawlerContext, Properties newProperties) {
-        String property = newProperties.getProperty(VSCrawlerConstant.USER_RESOURCE_USERINFO);
+        String property = newProperties.getProperty(String.format(VSCrawlerConstant.USER_RESOURCE_USERINFO, vsCrawlerContext.getCrawlerName()));
         hasConfig = property != null;
         if (property == null) {
             crawlerThreadNumber = NumberUtils
-                    .toInt(newProperties.getProperty(VSCrawlerConstant.VSCRAWLER_THREAD_NUMBER));
+                    .toInt(newProperties.getProperty(String.format(VSCrawlerConstant.VSCRAWLER_THREAD_NUMBER, vsCrawlerContext.getCrawlerName())));
             return;
         }
 

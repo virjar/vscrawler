@@ -1,5 +1,7 @@
 package com.virjar.vscrawler.core.seed;
 
+import com.virjar.vscrawler.core.VSCrawlerContext;
+
 import java.util.Collection;
 
 /**
@@ -11,5 +13,5 @@ public interface InitSeedSource {
      *
      * @return 种子数据, 注意种子一旦被倒入, 就不应该在保存
      */
-    Collection<Seed> initSeeds();
+    Collection<Seed> initSeeds(VSCrawlerContext vsCrawlerContext);
 }

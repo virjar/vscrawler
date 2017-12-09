@@ -2,7 +2,7 @@ package com.virjar.vscrawler.core.util;
 
 /**
  * Created by virjar on 17/5/2.
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -16,16 +16,17 @@ public class VSCrawlerConstant {
 
     public static final String SESSION_POOL_MONTOR_THREAD_NUMBER = "sessionPool.monitorThreadNumber";
 
-    public static final String VSCRAWLER_THREAD_NUMBER = "vsCrawler.threadNumber";
+    public static final String VSCRAWLER_THREAD_NUMBER = "vsCrawler.%s.threadNumber";
 
-    public static final String USER_RESOURCE_USERINFO = "userResource.userInfo";
+    public static final String USER_RESOURCE_USERINFO = "userResource.%s.userInfo";
 
     public static final String VSCRAWLER_AVPROXY_KEY = "vsCrawler.avProxy.key";
 
     public static final String VSCRAWLER_WORKING_DIRECTORY = "vsCrawler.Working.directory";
 
-    public static final String VSCRAWLER_INIT_SEED_FILE = "vsCrawler.initSeedFile";
+    public static final String VSCRAWLER_INIT_SEED_FILE = "vsCrawler.%s.initSeedFile";
 
+    public static final String DEFAULT_CRAWLER_NAME = "vsCrawler";
 
     public static final String VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER = "seedManager.expectedSeedNumber";
 }

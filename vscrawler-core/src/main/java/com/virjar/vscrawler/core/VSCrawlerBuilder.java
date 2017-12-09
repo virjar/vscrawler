@@ -21,6 +21,7 @@ import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.*;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 import java.util.List;
 
@@ -141,7 +142,7 @@ public class VSCrawlerBuilder {
      */
     private long stopWhileTaskEmptyDuration = 2 * 60 * 1000;
 
-    private String crawlerName = "vsCrawler";
+    private String crawlerName = VSCrawlerConstant.DEFAULT_CRAWLER_NAME;
 
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();

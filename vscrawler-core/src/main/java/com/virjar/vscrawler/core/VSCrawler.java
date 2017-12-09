@@ -326,7 +326,10 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     private void config(Properties properties) {
         // 事件循环是单线程的,所以设计上来说,不会有并发问题
-        int newThreadNumber = NumberUtils.toInt(properties.getProperty(VSCrawlerConstant.VSCRAWLER_THREAD_NUMBER));
+        int newThreadNumber = NumberUtils.toInt(properties.getProperty(String.format(VSCrawlerConstant.VSCRAWLER_THREAD_NUMBER, vsCrawlerContext.getCrawlerName())), -1);
+        if (newThreadNumber < 0) {
+            return;
+        }
         if (newThreadNumber != threadNumber) {
             log.info("爬虫线程数目变更,由:{}  变化为:{}", threadNumber, newThreadNumber);
             threadPool.setCorePoolSize(newThreadNumber);
