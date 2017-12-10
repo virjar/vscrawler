@@ -235,7 +235,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private boolean saveBloomFilterInfo(String segment) {
-        File bloomData = new File(vsCrawlerContext.getWorkPath(), segment);
+        File bloomData = new File(vsCrawlerContext.getWorkPath(), segment + ".bloom");
         if (!bloomData.exists()) {
             try {
                 if (!bloomData.createNewFile()) {
@@ -269,7 +269,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private BloomFilter<Seed> buildBloomFilterInfo(String segment) {
-        File bloomData = new File(vsCrawlerContext.getWorkPath(), segment);
+        File bloomData = new File(vsCrawlerContext.getWorkPath(), segment + ".bloom");
         if (bloomData.exists()) {
             FileInputStream inputStream = null;
             try {
