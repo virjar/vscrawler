@@ -2,9 +2,6 @@ package com.virjar.vscrawler.core.net.useragent;
 
 import java.util.Random;
 
-/**
- * Created by tyreke.xu on 21/09/2017.
- */
 public enum AppUserAgentEnum {
 
     Android_Chrome(1, "android chrome ua") {

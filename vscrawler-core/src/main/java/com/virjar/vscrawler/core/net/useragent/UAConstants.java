@@ -2,9 +2,6 @@ package com.virjar.vscrawler.core.net.useragent;
 
 import com.google.common.collect.ImmutableList;
 
-/**
- * Created by tyreke.xu on 21/09/2017.
- */
 public interface UAConstants {
 
     ImmutableList<String> iphoneDeviceNums = ImmutableList.<String>builder()
