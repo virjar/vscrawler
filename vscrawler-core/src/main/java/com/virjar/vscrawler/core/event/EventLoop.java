@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class EventLoop implements CrawlerEndEvent {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
 
-    private Thread loopThread = null;
-
     private ConcurrentMap<String, Set<EventHandler>> allHandlers = Maps.newConcurrentMap();
 
     public EventLoop() {
@@ -72,7 +70,7 @@ public class EventLoop implements CrawlerEndEvent {
 
     public void loop() {
         if (isRunning.compareAndSet(false, true)) {
-            loopThread = new Thread("vsCrawlerEventLoop") {
+            Thread loopThread = new Thread("vsCrawlerEventLoop") {
                 @Override
                 public void run() {
                     while (isRunning.get()) {
@@ -81,6 +79,7 @@ public class EventLoop implements CrawlerEndEvent {
                             disPatch(poll);
                         } catch (InterruptedException e) {
                             log.info("event loop end");
+                            break;
                         }
 
                     }
@@ -111,6 +110,9 @@ public class EventLoop implements CrawlerEndEvent {
         // 事件循环本身收到了事件消息
         isRunning.set(false);
         log.info("收到爬虫结束消息,停止事件循环,未处理将被忽略,当前待处理事件个数:{}", eventQueue.size());
-        loopThread.interrupt();
+        //可能自己杀掉了自己,导致任务没有处理完成,所以不能直接中断
+//        if (Thread.currentThread() != loopThread) {
+//            loopThread.interrupt();
+//        }
     }
 }

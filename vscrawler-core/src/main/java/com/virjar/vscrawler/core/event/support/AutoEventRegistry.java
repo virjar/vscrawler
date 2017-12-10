@@ -9,7 +9,6 @@ import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.EventHandler;
 import com.virjar.vscrawler.core.util.ClassScanner;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -28,7 +27,6 @@ import java.util.Set;
  * @since 0.0.1
  */
 @Slf4j
-@RequiredArgsConstructor
 public class AutoEventRegistry {
     @NonNull
     private VSCrawlerContext vsCrawlerContext;
@@ -49,7 +47,8 @@ public class AutoEventRegistry {
         basePackages.add(basePackage);
     }
 
-    public AutoEventRegistry() {
+    public AutoEventRegistry(VSCrawlerContext vsCrawlerContext) {
+        this.vsCrawlerContext = vsCrawlerContext;
         scanDelegate();
     }
 

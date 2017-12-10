@@ -84,6 +84,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
               SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
               long slowStartDuration) {
         super("VSCrawler-Dispatch");
+        setDaemon(false);
         this.vsCrawlerContext = vsCrawlerContext;
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
@@ -94,20 +95,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         this.slowStartDuration = slowStartDuration;
     }
 
-    private class WaitThread extends Thread {
-        @Override
-        public void run() {
-            CommonUtil.sleep(120000);
-        }
-    }
 
     public void stopCrawler() {
         if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
-            new WaitThread().start();
-            //终止爬虫主派发线程
-            if (crawlerMainThread != null) {
-                crawlerMainThread.interrupt();
-            }
             log.info("爬虫停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent");
             System.out.flush();// 刷新系统buffer,避免影响队形
             synchronized (System.out) {
@@ -122,6 +112,10 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 System.err.println("                  每晚灯火阑珊处，夜难寐，加班狂。");
             }
             vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd(vsCrawlerContext);
+            //终止爬虫主派发线程,派发线程是宿主线程,需要最后中断,否则容易引起其他非守护线程提前被中断
+            if (crawlerMainThread != null) {
+                crawlerMainThread.interrupt();
+            }
         } else {
             log.info("爬虫已经停止,不需要发生爬虫停止事件消息");
         }

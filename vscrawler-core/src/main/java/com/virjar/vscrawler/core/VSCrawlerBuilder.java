@@ -138,9 +138,9 @@ public class VSCrawlerBuilder {
     private long slowStartDuration = 5 * 60 * 1000;
 
     /**
-     * 两分钟内没有新任务,则关闭爬虫
+     * 一分钟内没有新任务,则关闭爬虫
      */
-    private long stopWhileTaskEmptyDuration = 2 * 60 * 1000;
+    private long stopWhileTaskEmptyDuration = 60 * 1000;
 
     private String crawlerName = VSCrawlerConstant.DEFAULT_CRAWLER_NAME;
 

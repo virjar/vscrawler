@@ -10,6 +10,7 @@ import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -40,7 +41,7 @@ public class VSCrawlerContext {
     private EventLoop eventLoop;
 
     @Getter
-    @NonNull
+    @Setter
     private AutoEventRegistry autoEventRegistry;
 
     // 爬虫主控文件监听器
@@ -82,7 +83,9 @@ public class VSCrawlerContext {
                 return allContext.get(crawlerName);
             }
 
-            VSCrawlerContext vsCrawlerContext = new VSCrawlerContext(crawlerName, new EventLoop(), new AutoEventRegistry());
+            VSCrawlerContext vsCrawlerContext = new VSCrawlerContext(crawlerName, new EventLoop());
+            AutoEventRegistry autoEventRegistry = new AutoEventRegistry(vsCrawlerContext);
+            vsCrawlerContext.setAutoEventRegistry(autoEventRegistry);
             vsCrawlerContext.resolveWorkPath();
             vsCrawlerContext.getAutoEventRegistry().registerObserver(vsCrawlerConfigFileWatcher);
             allContext.put(crawlerName, vsCrawlerContext);

@@ -1,23 +1,19 @@
 package com.virjar.vscrawler.samples;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.commons.lang3.StringUtils;
-import org.jsoup.Jsoup;
-
 import com.google.common.io.Files;
 import com.virjar.sipsoup.parse.XpathParser;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerBuilder;
-import com.virjar.vscrawler.core.event.support.AutoEvent;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.SeedEmptyEvent;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.util.PathResolver;
+import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Created by virjar on 17/6/11.<br/>
@@ -27,7 +23,8 @@ public class BeautyCrawler {
 
     public static void main(String[] args) throws IOException {
 
-        VSCrawler vsCrawler = VSCrawlerBuilder.create().addPipeline(new EmptyPipeline())
+        VSCrawler vsCrawler = VSCrawlerBuilder.create()
+                .setCrawlerName("beautyCrawler")
                 .setProcessor(new SeedProcessor() {
 
                     private void handlePic(Seed seed, CrawlerSession crawlerSession) {
