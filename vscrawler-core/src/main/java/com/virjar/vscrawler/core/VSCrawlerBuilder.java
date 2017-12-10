@@ -239,6 +239,9 @@ public class VSCrawlerBuilder {
     }
 
     public VSCrawlerBuilder setCrawlerName(String crawlerName) {
+        if (crawlerName == null || !crawlerName.matches("[0-9a-zA-Z]+")) {
+            throw new IllegalArgumentException("crawlerName must be identified,for :" + crawlerName);
+        }
         this.crawlerName = crawlerName;
         return this;
     }

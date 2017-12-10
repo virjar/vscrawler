@@ -509,8 +509,8 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 log.info("实际导入种子数量:{}", realAddSeedNumber);
             } finally {
                 unlockDBOperate();
-                VSCrawlerCommonUtil.closeQuietly(runningSeedDatabase);
-                VSCrawlerCommonUtil.closeQuietly(finishedSeedDatabase);
+                IOUtils.closeQuietly(runningSeedDatabase);
+                IOUtils.closeQuietly(finishedSeedDatabase);
             }
         }
 

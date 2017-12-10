@@ -243,7 +243,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
 
         /**
-         * 同步执行抓取任务,适合booking场景,该抓取任务不入库,抓取结果不入pipeline,seesion创建不等待
+         * 同步执行抓取任务,适合booking场景,该抓取任务不入库,抓取结果不入pipeline,session创建不等待
          *
          * @param seed 任务种子
          * @return 抓取结果
