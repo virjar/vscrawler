@@ -11,5 +11,5 @@ import java.util.Collection;
  */
 public interface NewSeedArrivalEvent {
     @AutoEvent
-    void needSeed(VSCrawlerContext vsCrawlerContext, Collection<Seed> newSeeds);
+    void newSeed(VSCrawlerContext vsCrawlerContext, Collection<Seed> newSeeds);
 }

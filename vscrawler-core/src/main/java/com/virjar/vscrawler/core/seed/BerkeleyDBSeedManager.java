@@ -575,7 +575,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     @Override
-    public void needSeed(VSCrawlerContext vsCrawlerContext, Collection<Seed> newSeeds) {
+    public void newSeed(VSCrawlerContext vsCrawlerContext, Collection<Seed> newSeeds) {
         addNewSeeds(newSeeds);
     }
 
