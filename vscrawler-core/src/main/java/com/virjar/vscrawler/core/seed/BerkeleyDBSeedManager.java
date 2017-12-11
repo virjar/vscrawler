@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -65,6 +66,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     private volatile int dbOperator = 0;
     private int cacheSize;
     private VSCrawlerContext vsCrawlerContext;
+    private ConcurrentMap<String, Database> openedDataBase = Maps.newConcurrentMap();
     /**
      * 段信息
      */
@@ -86,8 +88,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
      * 这个方法和pool必须在同一个线程里面
      */
     public void init() {
-        // 移植游标
-        // archive(); //大量数据会导致程序很慢,而且似乎没有意义
         // 移植初始种子信息
         migrateInitSeed();
     }
@@ -162,6 +162,27 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         }
     }
 
+    private Database createOrGetDataBase(String key) {
+        if (openedDataBase.containsKey(key)) {
+            return openedDataBase.get(key);
+        }
+        synchronized (BerkeleyDBSeedManager.class) {
+            if (openedDataBase.containsKey(key)) {
+                return openedDataBase.get(key);
+            }
+            Database database = env.openDatabase(null, key, databaseConfig);
+            openedDataBase.put(key, database);
+            return database;
+        }
+    }
+
+    private void closeAllDatabase() {
+        for (Database database : openedDataBase.values()) {
+            IOUtils.closeQuietly(database);
+        }
+        openedDataBase.clear();
+    }
+
     private synchronized int loadCache(String segmentName) {
         int loadSize = 0;
         Database iteratorDatabases = null;
@@ -176,9 +197,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         try {
             lockDBOperate();
 
-            iteratorDatabases = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + segmentName, databaseConfig);
+            iteratorDatabases = createOrGetDataBase(RUNNING_SEGMENT_PREFIX + segmentName); //env.openDatabase(null, RUNNING_SEGMENT_PREFIX + segmentName, databaseConfig);
             cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
-            finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + segmentName, databaseConfig);
+            finishedSeedDatabase = createOrGetDataBase(FINISHED_SEGMENT_PREFIX + segmentName); //env.openDatabase(null, FINISHED_SEGMENT_PREFIX + segmentName, databaseConfig);
             while (cursor.getNext(iteratorKey, iteratorValue, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
                 loadSize++;
                 Seed ret = VSCrawlerCommonUtil.transferStringToSeed(new String(iteratorValue.getData()));
@@ -196,8 +217,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         } finally {
             unlockDBOperate();
             IOUtils.closeQuietly(cursor);
-            IOUtils.closeQuietly(iteratorDatabases);
-            IOUtils.closeQuietly(finishedSeedDatabase);
         }
         return loadSize;
     }
@@ -356,20 +375,14 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             lockDBOperate();
 
             if (seed.needEnd()) {
-                Database finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + seed.getSegmentKey(),
-                        databaseConfig);
+                Database finishedSeedDatabase = createOrGetDataBase(FINISHED_SEGMENT_PREFIX + seed.getSegmentKey());
                 finishedSeedDatabase.put(null, key, value);
-                finishedSeedDatabase.close();
 
-                Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + seed.getSegmentKey(),
-                        databaseConfig);
+                Database runningSeedDatabase = createOrGetDataBase(RUNNING_SEGMENT_PREFIX + seed.getSegmentKey());
                 runningSeedDatabase.removeSequence(null, key);
-                runningSeedDatabase.close();
             } else {
-                Database runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + seed.getSegmentKey(),
-                        databaseConfig);
+                Database runningSeedDatabase = createOrGetDataBase(RUNNING_SEGMENT_PREFIX + seed.getSegmentKey());
                 runningSeedDatabase.put(null, key, value);
-                runningSeedDatabase.close();
             }
         } finally {
             unlockDBOperate();
@@ -465,8 +478,8 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             BloomFilter<Seed> bloomFilter = getOrCreate(entry.getKey());
             try {
                 lockDBOperate();
-                runningSeedDatabase = env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
-                finishedSeedDatabase = env.openDatabase(null, FINISHED_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
+                runningSeedDatabase = createOrGetDataBase(RUNNING_SEGMENT_PREFIX + entry.getKey());// env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
+                finishedSeedDatabase = createOrGetDataBase(FINISHED_SEGMENT_PREFIX + entry.getKey());// env.openDatabase(null, FINISHED_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
                 for (Seed seed : entry.getValue()) {
                     if (bloomFilter.mightContain(seed)) {
                         continue;
@@ -509,8 +522,8 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 log.info("实际导入种子数量:{}", realAddSeedNumber);
             } finally {
                 unlockDBOperate();
-                IOUtils.closeQuietly(runningSeedDatabase);
-                IOUtils.closeQuietly(finishedSeedDatabase);
+                // IOUtils.closeQuietly(runningSeedDatabase);
+                //IOUtils.closeQuietly(finishedSeedDatabase);
             }
         }
 
@@ -582,6 +595,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         while (true) {
             dbLock.lock();
             if (dbOperator <= 0) {
+                closeAllDatabase();
                 IOUtils.closeQuietly(env);
                 dbLock.unlock();
                 break;
@@ -590,6 +604,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             try {
                 dbRelease.await();
             } catch (InterruptedException e) {
+                closeAllDatabase();
                 IOUtils.closeQuietly(env);
                 throw new IllegalStateException("can not close db ,db operate await Interrupted");
             }

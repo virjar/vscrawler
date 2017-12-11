@@ -286,8 +286,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             } finally {
                 // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
                 VSCrawlerCommonUtil.clearCrawlerSession();
-                berkeleyDBSeedManager.finish(seed);
                 crawlerSessionPool.recycle(session);
+                berkeleyDBSeedManager.finish(seed);
             }
             processResult(seed, crawlResult);
 
