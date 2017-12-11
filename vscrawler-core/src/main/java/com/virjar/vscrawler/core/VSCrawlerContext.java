@@ -53,6 +53,9 @@ public class VSCrawlerContext {
         return Lists.newArrayList(allContext.values());
     }
 
+    public static void removeContext(VSCrawlerContext vsCrawlerContext) {
+        allContext.remove(vsCrawlerContext.getCrawlerName());
+    }
 
     private void resolveWorkPath() {
         Properties properties = vsCrawlerConfigFileWatcher.loadedProperties();

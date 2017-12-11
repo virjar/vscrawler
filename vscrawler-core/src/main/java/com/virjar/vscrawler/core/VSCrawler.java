@@ -112,8 +112,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 System.err.println("                  每晚灯火阑珊处，夜难寐，加班狂。");
             }
             vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd(vsCrawlerContext);
+            VSCrawlerContext.removeContext(vsCrawlerContext);
             //终止爬虫主派发线程,派发线程是宿主线程,需要最后中断,否则容易引起其他非守护线程提前被中断
-            if (crawlerMainThread != null) {
+            if (crawlerMainThread != null && !crawlerMainThread.isInterrupted()) {
                 crawlerMainThread.interrupt();
             }
         } else {
@@ -376,7 +377,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         synchronized (System.out) {// 血可流头可断,队形不能乱
             System.err.println("################################################");
             System.err.println("##############     VSCrawler      ##############");
-            System.err.println("##############       0.2.0        ##############");
+            System.err.println("##############       0.2.1        ##############");
             System.err.println("############## 你有一个有意思的灵魂 ##############");
             System.err.println("################################################");
             System.err.println("##############       virjar       ##############");
