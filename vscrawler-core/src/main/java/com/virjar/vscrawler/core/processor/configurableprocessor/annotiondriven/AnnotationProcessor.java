@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven;
 
+import com.alibaba.fastjson.JSON;
 import com.google.common.base.Preconditions;
 import com.virjar.sipsoup.util.ObjectFactory;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
@@ -16,43 +17,64 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
+import java.util.Collection;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
  * Created by virjar on 2017/12/10.<br/>基于注解的处理器
  */
 @Slf4j
-public class AnnotationProcessor<T> implements BindRouteProcessor {
+public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements BindRouteProcessor {
     private Class<T> aClass;
     private MatchStrategy matchStrategy;
     private Downloader<T> downloader;
-    private Render render;
+    private Render<T> render;
+    private ModelSelector rootSelector;
 
     public AnnotationProcessor(Class<T> aClass) {
         this.aClass = aClass;
         judgeMatchStrategy();
         judgeDownloader();
         judgeRender();
+        judgeRootSelector();
+    }
+
+    private void judgeRootSelector() {
+        FetchChain fetchChain = aClass.getAnnotation(FetchChain.class);
+        if (fetchChain == null || StringUtils.isBlank(fetchChain.value())) {
+            rootSelector = new ModelSelector() {
+                @Override
+                public AbstractSelectable select(AbstractSelectable abstractSelectable) {
+                    return abstractSelectable;
+                }
+            };
+            return;
+        }
+        rootSelector = ChainRuleParser.parse(fetchChain.value());
     }
 
     private void judgeRender() {
-        render = new Render();
+        render = new Render<>();
         Field[] fields = aClass.getFields();
         for (Field field : fields) {
             FetchTask fetchTask = matchFetchTask(field);
             if (fetchTask != null) {
-                render.regiesterTask(fetchTask);
+                render.registerTask(fetchTask);
             }
         }
     }
 
     private FetchTask matchFetchTask(Field field) {
+
+        boolean newSeed = field.getAnnotation(NewSeed.class) != null;
+
         final JSONPath jsonPath = field.getAnnotation(JSONPath.class);
         if (jsonPath != null) {
             if (StringUtils.isBlank(jsonPath.value())) {
                 log.warn("jsonPath annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("jsonpath", jsonPath.value()));
+                return new FetchTask(field, ChainRuleParser.create("jsonpath", jsonPath.value()), newSeed);
             }
         }
 
@@ -61,7 +83,7 @@ public class AnnotationProcessor<T> implements BindRouteProcessor {
             if (StringUtils.isBlank(css.value())) {
                 log.warn("css annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("css", css.value()));
+                return new FetchTask(field, ChainRuleParser.create("css", css.value()), newSeed);
             }
         }
 
@@ -70,7 +92,7 @@ public class AnnotationProcessor<T> implements BindRouteProcessor {
             if (StringUtils.isBlank(xpath.value())) {
                 log.warn("xpath annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("xpath", xpath.value()));
+                return new FetchTask(field, ChainRuleParser.create("xpath", xpath.value()), newSeed);
             }
         }
         final Regex regex = field.getAnnotation(Regex.class);
@@ -78,7 +100,7 @@ public class AnnotationProcessor<T> implements BindRouteProcessor {
             if (StringUtils.isBlank(regex.value())) {
                 log.warn("regex annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("regex", regex.value() + "," + regex.value()));
+                return new FetchTask(field, ChainRuleParser.create("regex", regex.value() + "," + regex.value()), newSeed);
             }
         }
 
@@ -87,7 +109,7 @@ public class AnnotationProcessor<T> implements BindRouteProcessor {
             if (StringUtils.isBlank(stringRule.value())) {
                 log.warn("stringRule annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("stringrule", stringRule.value()));
+                return new FetchTask(field, ChainRuleParser.create("stringrule", stringRule.value()), newSeed);
             }
         }
 
@@ -96,7 +118,7 @@ public class AnnotationProcessor<T> implements BindRouteProcessor {
             if (StringUtils.isBlank(fetchChain.value())) {
                 log.warn("fetchChain annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.parse(fetchChain.value()));
+                return new FetchTask(field, ChainRuleParser.parse(fetchChain.value()), newSeed);
             }
         }
         return null;
@@ -185,7 +207,26 @@ public class AnnotationProcessor<T> implements BindRouteProcessor {
             //ignore
         }
         AbstractSelectable baseSelectable = Selector.rawText(url, content);
+        AbstractSelectable root = rootSelector.select(baseSelectable);
+        Object selectModel = root.createOrGetModel();
+        if (root == baseSelectable || !(selectModel instanceof Collection)) {
+            //证明模型只有一个,不是多行数据的模型
+            model.setRawText(content);
+            model.setOriginSelectable(baseSelectable);
+            model.setSeed(seed);
+            if (!model.hasGrabSuccess()) {
+                seed.retry();
+                return;
+            }
+            List<Seed> newSeeds = render.injectField(model, root);
+            model.afterAutoFetch();
+            newSeeds.addAll(model.newSeeds());
 
+            crawlResult.addSeeds(newSeeds);
+            crawlResult.addResult(JSON.toJSONString(model));
+            return;
+        }
+        Collection selectModels = (Collection) selectModel;
     }
 
     @Override

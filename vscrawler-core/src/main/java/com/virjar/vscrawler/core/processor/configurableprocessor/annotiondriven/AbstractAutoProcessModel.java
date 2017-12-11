@@ -4,9 +4,13 @@ import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
 import lombok.Setter;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Created by virjar on 2017/12/11.<br/>
  * 所有自动抽取的类都需要继承这个
+ * TODO jsonignore
  */
 public abstract class AbstractAutoProcessModel {
     /**
@@ -30,5 +34,9 @@ public abstract class AbstractAutoProcessModel {
 
     protected void afterAutoFetch() {
 
+    }
+
+    protected List<Seed> newSeeds() {
+        return Collections.emptyList();
     }
 }

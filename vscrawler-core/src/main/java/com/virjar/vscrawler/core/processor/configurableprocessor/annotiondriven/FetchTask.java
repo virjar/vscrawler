@@ -15,4 +15,6 @@ public class FetchTask {
     @Getter
     private ModelSelector modelSelector;
 
+    @Getter
+    private boolean newSeed = false;
 }
