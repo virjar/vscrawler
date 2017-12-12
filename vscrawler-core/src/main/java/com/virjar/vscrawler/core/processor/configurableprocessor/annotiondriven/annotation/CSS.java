@@ -7,6 +7,10 @@ import java.lang.annotation.Target;
 
 /**
  * Created by virjar on 2017/12/10.
+ * *
+ *
+ * @author virjar
+ * @since 0.2.1
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)

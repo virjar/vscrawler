@@ -8,6 +8,10 @@ import java.lang.annotation.Target;
 /**
  * Created by virjar on 2017/12/10.<br/>
  * 标记这个模型可以处理那种类型的种子
+ * *
+ *
+ * @author virjar
+ * @since 0.2.1
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

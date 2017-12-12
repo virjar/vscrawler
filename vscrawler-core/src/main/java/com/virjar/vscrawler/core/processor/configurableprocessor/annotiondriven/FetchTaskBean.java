@@ -7,9 +7,13 @@ import java.lang.reflect.Field;
 
 /**
  * Created by virjar on 2017/12/10.
+ * *
+ *
+ * @author virjar
+ * @since 0.2.1
  */
 @AllArgsConstructor
-public class FetchTask {
+public class FetchTaskBean {
     @Getter
     private Field field;
     @Getter

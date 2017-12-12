@@ -7,6 +7,9 @@ import java.lang.annotation.Target;
 
 /**
  * Created by virjar on 2017/12/10.<br/>标记一个类可以转化为自动抽取模型对象
+ *
+ * @author virjar
+ * @since 0.2.1
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

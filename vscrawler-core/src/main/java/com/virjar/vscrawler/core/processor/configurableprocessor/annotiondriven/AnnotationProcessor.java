@@ -22,21 +22,26 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Created by virjar on 2017/12/10.<br/>基于注解的处理器
+ * Created by virjar on 2017/12/10.<br/>
+ * 基于注解的处理器
+ * *
+ *
+ * @author virjar
+ * @since 0.2.1
  */
 @Slf4j
 public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements BindRouteProcessor {
     private Class<T> aClass;
     private MatchStrategy matchStrategy;
     private Downloader<T> downloader;
-    private Render<T> render;
+    private FetchTaskProcessor<T> fetchTaskProcessor;
     private ModelSelector rootSelector;
 
-    public AnnotationProcessor(Class<T> aClass) {
+    public AnnotationProcessor(Class<T> aClass, AnnotationProcessorFactory annotationProcessorFactory) {
         this.aClass = aClass;
         judgeMatchStrategy();
         judgeDownloader();
-        judgeRender();
+        judgeRender(annotationProcessorFactory);
         judgeRootSelector();
     }
 
@@ -54,18 +59,18 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
         rootSelector = ChainRuleParser.parse(fetchChain.value());
     }
 
-    private void judgeRender() {
-        render = new Render<>();
+    private void judgeRender(AnnotationProcessorFactory annotationProcessorFactory) {
+        fetchTaskProcessor = new FetchTaskProcessor<>(annotationProcessorFactory);
         Field[] fields = aClass.getFields();
         for (Field field : fields) {
-            FetchTask fetchTask = matchFetchTask(field);
-            if (fetchTask != null) {
-                render.registerTask(fetchTask);
+            FetchTaskBean fetchTaskBean = matchFetchTask(field);
+            if (fetchTaskBean != null) {
+                fetchTaskProcessor.registerTask(fetchTaskBean);
             }
         }
     }
 
-    private FetchTask matchFetchTask(Field field) {
+    private FetchTaskBean matchFetchTask(Field field) {
 
         boolean newSeed = field.getAnnotation(NewSeed.class) != null;
 
@@ -74,7 +79,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
             if (StringUtils.isBlank(jsonPath.value())) {
                 log.warn("jsonPath annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("jsonpath", jsonPath.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("jsonpath", jsonPath.value()), newSeed);
             }
         }
 
@@ -83,7 +88,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
             if (StringUtils.isBlank(css.value())) {
                 log.warn("css annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("css", css.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("css", css.value()), newSeed);
             }
         }
 
@@ -92,7 +97,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
             if (StringUtils.isBlank(xpath.value())) {
                 log.warn("xpath annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("xpath", xpath.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("xpath", xpath.value()), newSeed);
             }
         }
         final Regex regex = field.getAnnotation(Regex.class);
@@ -100,7 +105,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
             if (StringUtils.isBlank(regex.value())) {
                 log.warn("regex annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("regex", regex.value() + "," + regex.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("regex", regex.value() + "," + regex.value()), newSeed);
             }
         }
 
@@ -109,7 +114,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
             if (StringUtils.isBlank(stringRule.value())) {
                 log.warn("stringRule annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.create("stringrule", stringRule.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("stringrule", stringRule.value()), newSeed);
             }
         }
 
@@ -118,7 +123,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
             if (StringUtils.isBlank(fetchChain.value())) {
                 log.warn("fetchChain annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTask(field, ChainRuleParser.parse(fetchChain.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.parse(fetchChain.value()), newSeed);
             }
         }
         return null;
@@ -195,6 +200,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
         //创建模型对象
         T model = ObjectFactory.newInstance(aClass);
@@ -218,7 +224,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
                 seed.retry();
                 return;
             }
-            List<Seed> newSeeds = render.injectField(model, root);
+            List<Seed> newSeeds = fetchTaskProcessor.injectField(model, root);
             model.afterAutoFetch();
             newSeeds.addAll(model.newSeeds());
 
@@ -236,7 +242,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
                 seed.retry();
                 return;
             }
-            List<Seed> newSeeds = render.injectField(t, root);
+            List<Seed> newSeeds = fetchTaskProcessor.injectField(t, root);
             t.afterAutoFetch();
             newSeeds.addAll(t.newSeeds());
 

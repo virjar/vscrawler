@@ -10,6 +10,10 @@ import java.util.List;
 /**
  * Created by virjar on 2017/12/11.<br/>
  * 所有自动抽取的类都需要继承这个
+ * *
+ *
+ * @author virjar
+ * @since 0.2.1
  * TODO jsonignore
  */
 public abstract class AbstractAutoProcessModel {

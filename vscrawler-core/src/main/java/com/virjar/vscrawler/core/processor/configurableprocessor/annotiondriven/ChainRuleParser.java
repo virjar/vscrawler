@@ -17,6 +17,10 @@ import java.util.regex.Pattern;
 /**
  * Created by virjar on 2017/12/10.<br/>
  * 支持链式规则 $css{} $xpath{} $regex{} $jsonpath{} $stringrule{}
+ * *
+ *
+ * @author virjar
+ * @since 0.2.1
  */
 public class ChainRuleParser {
     public static ModelSelector parse(String rule) {
