@@ -196,7 +196,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
             if (System.currentTimeMillis() - crawlerSession.getLastActiveTimeStamp() < reuseDuration) {
                 // tempCrawlerSession.add(crawlerSession);
                 sessionQueue.offer(new SessionHolder(crawlerSession));
-                CommonUtil.sleep(2000);//否则可能cpu飙高
+                long sleepTimeStamp = crawlerSession.getLastActiveTimeStamp() + reuseDuration - System.currentTimeMillis();
+                CommonUtil.sleep(sleepTimeStamp > 0 ? sleepTimeStamp : 100);//否则可能cpu飙高
                 continue;
             }
 
