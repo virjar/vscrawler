@@ -206,7 +206,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
         } catch (Exception e) {
             //ignore
         }
-        AbstractSelectable baseSelectable = Selector.rawText(url, content);
+        AbstractSelectable<String> baseSelectable = Selector.rawText(url, content);
         AbstractSelectable root = rootSelector.select(baseSelectable);
         Object selectModel = root.createOrGetModel();
         if (root == baseSelectable || !(selectModel instanceof Collection)) {
@@ -226,7 +226,23 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
             crawlResult.addResult(JSON.toJSONString(model));
             return;
         }
-        Collection selectModels = (Collection) selectModel;
+        List<AbstractSelectable> list = root.toMultiSelectable();
+        for (AbstractSelectable abstractSelectable : list) {
+            T t = ObjectFactory.newInstance(aClass);
+            t.setRawText(abstractSelectable.getRawText());
+            t.setOriginSelectable(abstractSelectable);
+            t.setSeed(seed);
+            if (!t.hasGrabSuccess()) {
+                seed.retry();
+                return;
+            }
+            List<Seed> newSeeds = render.injectField(t, root);
+            t.afterAutoFetch();
+            newSeeds.addAll(t.newSeeds());
+
+            crawlResult.addSeeds(newSeeds);
+            crawlResult.addResult(JSON.toJSONString(t));
+        }
     }
 
     @Override

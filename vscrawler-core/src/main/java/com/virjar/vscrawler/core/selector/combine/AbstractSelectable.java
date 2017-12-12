@@ -1,15 +1,11 @@
 package com.virjar.vscrawler.core.selector.combine;
 
-import java.util.List;
-
-import com.virjar.sipsoup.model.SipNodes;
-import org.jsoup.nodes.Element;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONPath;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.virjar.sipsoup.model.SIPNode;
+import com.virjar.sipsoup.model.SipNodes;
 import com.virjar.sipsoup.model.XpathEvaluator;
 import com.virjar.sipsoup.parse.XpathParser;
 import com.virjar.vscrawler.core.selector.combine.convert.Converters;
@@ -23,10 +19,12 @@ import com.virjar.vscrawler.core.selector.string.function.StringFunctionEnv;
 import com.virjar.vscrawler.core.selector.string.syntax.FunctionSyntaxNode;
 import com.virjar.vscrawler.core.selector.string.syntax.NumberSyntaxNode;
 import com.virjar.vscrawler.core.selector.string.syntax.StringSyntaxNode;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.nodes.Element;
+
+import java.util.List;
 
 /**
  * Created by virjar on 17/6/30.
@@ -52,6 +50,8 @@ public abstract class AbstractSelectable<M> {
     protected M model;
 
     public abstract M createOrGetModel();
+
+    public abstract List<AbstractSelectable<M>> toMultiSelectable();
 
     protected <T extends AbstractSelectable> T covert(Class<T> mClass) {
         return Converters.findConvert(getClass(), mClass).convert(this);

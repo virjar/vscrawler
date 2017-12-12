@@ -1,10 +1,10 @@
 package com.virjar.vscrawler.core.selector.combine.selectables;
 
-import java.util.List;
-
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
+
+import java.util.List;
 
 /**
  * Created by virjar on 17/6/30.<br/>
@@ -22,6 +22,18 @@ public class JsonNode extends AbstractSelectable<List<JSON>> {
             model = Lists.newArrayList((JSON) JSON.toJSON(getRawText()));
         }
         return model;
+    }
+
+    @Override
+    public List<AbstractSelectable<List<JSON>>> toMultiSelectable() {
+        List<JSON> models = createOrGetModel();
+        List<AbstractSelectable<List<JSON>>> ret = Lists.newLinkedList();
+        for (JSON json : models) {
+            JsonNode jsonNode = new JsonNode(getBaseUrl(), json.toJSONString());
+            jsonNode.setModel(Lists.newArrayList(json));
+            ret.add(jsonNode);
+        }
+        return ret;
     }
 
     public JsonNode(String rowText) {

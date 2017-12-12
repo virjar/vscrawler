@@ -1,6 +1,9 @@
 package com.virjar.vscrawler.core.selector.combine.selectables;
 
+import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
+
+import java.util.List;
 
 /**
  * Created by virjar on 17/6/30.
@@ -16,6 +19,11 @@ public class RawNode extends AbstractSelectable<String> {
             model = getRawText();
         }
         return model;
+    }
+
+    @Override
+    public List<AbstractSelectable<String>> toMultiSelectable() {
+        return Lists.<AbstractSelectable<String>>newArrayList(this);
     }
 
     public RawNode(String rowText) {

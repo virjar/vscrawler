@@ -50,11 +50,7 @@ public class LocalFileSeedSource implements InitSeedSource, LoadNextBatchSeedEve
                 vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(NewSeedArrivalEvent.class).newSeed(vsCrawlerContext, seeds);
             }
         } finally {
-            if (seeds != null && seeds.size() > 0) {
-                vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(LoadNextBatchSeedEvent.class).nextBatch(vsCrawlerContext);
-            } else {
-                IOUtils.closeQuietly(fileReader);
-            }
+            closeOrReadNextBatch(seeds, vsCrawlerContext);
         }
 
     }
@@ -106,12 +102,18 @@ public class LocalFileSeedSource implements InitSeedSource, LoadNextBatchSeedEve
             log.error("error when load init seed resource");
             return Collections.emptyList();
         } finally {
-            if (seeds != null && seeds.size() > 0) {
-                vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(LoadNextBatchSeedEvent.class).nextBatch(vsCrawlerContext);
-            } else {
-                IOUtils.closeQuietly(fileReader);
-            }
+            closeOrReadNextBatch(seeds, vsCrawlerContext);
         }
+    }
+
+    private void closeOrReadNextBatch(Collection<Seed> seeds, VSCrawlerContext vsCrawlerContext) {
+        if (seeds != null && seeds.size() > 0) {
+            vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(LoadNextBatchSeedEvent.class).nextBatch(vsCrawlerContext);
+            return;
+        }
+        IOUtils.closeQuietly(fileReader);
+        fileReader = null;
+        lineReader = null;
 
     }
 }

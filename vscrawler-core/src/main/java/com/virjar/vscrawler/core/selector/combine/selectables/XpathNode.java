@@ -1,10 +1,13 @@
 package com.virjar.vscrawler.core.selector.combine.selectables;
 
+import com.google.common.collect.Lists;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.sipsoup.model.SipNodes;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+
+import java.util.List;
 
 /**
  * Created by virjar on 17/6/30.
@@ -28,6 +31,18 @@ public class XpathNode extends AbstractSelectable<SipNodes> {
             }
         }
         return model;
+    }
+
+    @Override
+    public List<AbstractSelectable<SipNodes>> toMultiSelectable() {
+        SipNodes sipNodes = createOrGetModel();
+        List<AbstractSelectable<SipNodes>> ret = Lists.newLinkedList();
+        for (SIPNode sipNode : sipNodes) {
+            XpathNode xpathNode = new XpathNode(getBaseUrl(), sipNode.isText() ? sipNode.getTextVal() : sipNode.getElement().toString());
+            xpathNode.setModel(new SipNodes(sipNode));
+            ret.add(xpathNode);
+        }
+        return ret;
     }
 
     public XpathNode(String rowText) {

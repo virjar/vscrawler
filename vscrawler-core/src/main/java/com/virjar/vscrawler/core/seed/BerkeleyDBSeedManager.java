@@ -120,7 +120,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private void loadSegments() {
-        Database iteratorDatabases = env.openDatabase(null, SEGMENT, databaseConfig);
+        Database iteratorDatabases = createOrGetDataBase(SEGMENT);// env.openDatabase(null, SEGMENT, databaseConfig);
         Cursor cursor = iteratorDatabases.openCursor(null, CursorConfig.DEFAULT);
         DatabaseEntry iteratorKey = new DatabaseEntry();
         DatabaseEntry iteratorValue = new DatabaseEntry();
@@ -133,7 +133,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
         } finally {
             IOUtils.closeQuietly(cursor);
-            IOUtils.closeQuietly(iteratorDatabases);
+           // IOUtils.closeQuietly(iteratorDatabases);
         }
     }
 
@@ -424,7 +424,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         Database iteratorDatabases = null;
         try {
             lockDBOperate();
-            iteratorDatabases = env.openDatabase(null, SEGMENT, databaseConfig);
+            iteratorDatabases = createOrGetDataBase(SEGMENT);// env.openDatabase(null, SEGMENT, databaseConfig);
             for (Long segment : allSegments) {
                 DatabaseEntry key = new DatabaseEntry(segment.toString().getBytes());
                 DatabaseEntry value = new DatabaseEntry(segment.toString().getBytes());
@@ -432,7 +432,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
         } finally {
             unlockDBOperate();
-            IOUtils.closeQuietly(iteratorDatabases);
+           // IOUtils.closeQuietly(iteratorDatabases);
         }
     }
 
