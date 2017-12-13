@@ -129,7 +129,7 @@ public abstract class AbstractSelectable<M> {
         return stringRule(new StingEvaluator(new FunctionSyntaxNode(StringFunctionEnv.findFunction("regex"), Lists.newArrayList(new StringSyntaxNode(regex), new NumberSyntaxNode(group)))));
     }
 
-    public static AbstractSelectable createModel(String baseUrl, String rawText) {
+    public static AbstractSelectable<String> createModel(String baseUrl, String rawText) {
         return new RawNode(baseUrl, rawText);
     }
 }

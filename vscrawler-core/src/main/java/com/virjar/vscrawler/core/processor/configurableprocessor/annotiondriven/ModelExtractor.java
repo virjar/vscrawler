@@ -4,45 +4,40 @@ import com.alibaba.fastjson.JSON;
 import com.google.common.base.Preconditions;
 import com.virjar.sipsoup.util.ObjectFactory;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
-import com.virjar.vscrawler.core.processor.BindRouteProcessor;
 import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.*;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
-import com.virjar.vscrawler.core.selector.combine.Selector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
- * Created by virjar on 2017/12/10.<br/>
- * 基于注解的处理器
- * *
- *
- * @author virjar
- * @since 0.2.1
+ * Created by virjar on 2017/12/13.
  */
 @Slf4j
-public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements BindRouteProcessor {
+public class ModelExtractor<T extends AbstractAutoProcessModel> {
     private Class<T> aClass;
-    private MatchStrategy matchStrategy;
     private Downloader<T> downloader;
     private FetchTaskProcessor<T> fetchTaskProcessor;
     private ModelSelector rootSelector;
 
-    public AnnotationProcessor(Class<T> aClass, AnnotationProcessorFactory annotationProcessorFactory) {
+
+    public ModelExtractor(Class<T> aClass, AnnotationProcessorFactory annotationProcessorFactory) {
         this.aClass = aClass;
-        judgeMatchStrategy();
+        //TODO 有些子model不需要下载,考虑如何处理
         judgeDownloader();
         judgeRender(annotationProcessorFactory);
         judgeRootSelector();
+    }
+
+    private interface Downloader<T> {
+        String download(Seed seed, T model, CrawlerSession crawlerSession);
     }
 
     private void judgeRootSelector() {
@@ -162,45 +157,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
         };
     }
 
-    private void judgeMatchStrategy() {
-        AutoProcessor autoProcessor = aClass.getAnnotation(AutoProcessor.class);
-        Preconditions.checkNotNull(autoProcessor);
-        String seedPattern = autoProcessor.seedPattern();
-        if (StringUtils.isNotBlank(seedPattern)) {
-            final Pattern pattern = Pattern.compile(seedPattern);
-            matchStrategy = new MatchStrategy() {
-                @Override
-                public boolean matchSeed(Seed seed) {
-                    return pattern.matcher(seed.getData()).matches();
-                }
-            };
-            return;
-        }
 
-        Method[] methods = aClass.getMethods();
-        for (final Method method : methods) {
-            if (method.getAnnotation(MatchSeed.class) == null) {
-                continue;
-            }
-            Preconditions.checkArgument(Boolean.class.isAssignableFrom(method.getReturnType()));
-            Preconditions.checkArgument(Modifier.isStatic(method.getModifiers()));
-            matchStrategy = new MatchStrategy() {
-                @Override
-                public boolean matchSeed(Seed seed) {
-                    try {
-                        return (Boolean) method.invoke(null, seed);
-                    } catch (Exception e) {
-                        throw new IllegalStateException("can not jude seed match method", e);
-                    }
-                }
-            };
-            return;
-        }
-        throw new IllegalStateException("auto processor must has seedPattern or matchSeed method");
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
     public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
         //创建模型对象
         T model = ObjectFactory.newInstance(aClass);
@@ -212,7 +169,7 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
         } catch (Exception e) {
             //ignore
         }
-        AbstractSelectable<String> baseSelectable = Selector.rawText(url, content);
+        AbstractSelectable<String> baseSelectable = AbstractSelectable.createModel(url, content);
         AbstractSelectable root = rootSelector.select(baseSelectable);
         Object selectModel = root.createOrGetModel();
         if (root == baseSelectable || !(selectModel instanceof Collection)) {
@@ -249,18 +206,5 @@ public class AnnotationProcessor<T extends AbstractAutoProcessModel> implements 
             crawlResult.addSeeds(newSeeds);
             crawlResult.addResult(JSON.toJSONString(t));
         }
-    }
-
-    @Override
-    public boolean matchSeed(Seed seed) {
-        return matchStrategy.matchSeed(seed);
-    }
-
-    private interface MatchStrategy {
-        boolean matchSeed(Seed seed);
-    }
-
-    private interface Downloader<T> {
-        String download(Seed seed, T model, CrawlerSession crawlerSession);
     }
 }
