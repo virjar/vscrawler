@@ -18,7 +18,7 @@ import java.util.List;
  * @since 0.2.1
  */
 @RequiredArgsConstructor
-public class FetchTaskProcessor<T extends AbstractAutoProcessModel> {
+public class FetchTaskProcessor {
     private List<FetchTaskBean> fetchTaskBeanList = Lists.newLinkedList();
     @NonNull
     private AnnotationProcessorFactory annotationProcessorFactory;
@@ -27,7 +27,7 @@ public class FetchTaskProcessor<T extends AbstractAutoProcessModel> {
         fetchTaskBeanList.add(fetchTaskBean);
     }
 
-    public List<Seed> injectField(T model, AbstractSelectable abstractSelectable) {
+    public List<Seed> injectField(AbstractAutoProcessModel model, AbstractSelectable abstractSelectable) {
         List<Seed> newSeeds = Lists.newLinkedList();
         try {
             for (FetchTaskBean fetchTaskBean : fetchTaskBeanList) {

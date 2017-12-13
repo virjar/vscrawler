@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 public class AnnotationProcessorFactory {
     private List<String> scanPackage = Lists.newLinkedList();
     private List<AnnotationSeedProcessor<? extends AbstractAutoProcessModel>> annotationSeedProcessors = Lists.newLinkedList();
-    private Map<Class<? extends AbstractAutoProcessModel>, ModelExtractor<? extends AbstractAutoProcessModel>> allModels = Maps.newHashMap();
+    private Map<Class<? extends AbstractAutoProcessModel>, ModelExtractor<? extends AbstractAutoProcessModel>> allExtractors = Maps.newHashMap();
 
     private AnnotationProcessorFactory() {
     }
@@ -43,7 +43,7 @@ public class AnnotationProcessorFactory {
 
     public AnnotationProcessorFactory registryBean(Class<? extends AbstractAutoProcessModel> clazz) {
         //所有抽取规则
-        allModels.put(clazz, new ModelExtractor<>(clazz, this));
+        allExtractors.put(clazz, new ModelExtractor<>(clazz, this));
         //存在match seed的bean,可以标记为种子处理器,会被注册为processor
         AnnotationSeedProcessor.MatchStrategy matchStrategy = judgeMatchStrategy(clazz);
         if (matchStrategy != null) {
@@ -98,11 +98,14 @@ public class AnnotationProcessorFactory {
     }
 
     ModelExtractor<? extends AbstractAutoProcessModel> findExtractor(Class<? extends AbstractAutoProcessModel> clazz) {
-        return allModels.get(clazz);
+        return allExtractors.get(clazz);
     }
 
     private SeedProcessor build() {
         scan();
+        for (ModelExtractor<? extends AbstractAutoProcessModel> modelExtractor : allExtractors.values()) {
+            modelExtractor.init();
+        }
         RouteProcessor routeProcessor = new RouteProcessor();
         for (AnnotationSeedProcessor annotationSeedProcessor : annotationSeedProcessors) {
             routeProcessor.addRouter(annotationSeedProcessor);

@@ -1,9 +1,7 @@
 package com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven;
 
 import com.alibaba.fastjson.JSON;
-import com.google.common.base.Preconditions;
 import com.virjar.sipsoup.util.ObjectFactory;
-import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.*;
 import com.virjar.vscrawler.core.seed.Seed;
@@ -12,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
@@ -21,24 +18,23 @@ import java.util.List;
  * Created by virjar on 2017/12/13.
  */
 @Slf4j
-public class ModelExtractor<T extends AbstractAutoProcessModel> {
-    private Class<T> aClass;
-    private Downloader<T> downloader;
-    private FetchTaskProcessor<T> fetchTaskProcessor;
+public class ModelExtractor {
+    private Class<? extends AbstractAutoProcessModel> aClass;
+    private FetchTaskProcessor fetchTaskProcessor;
     private ModelSelector rootSelector;
+    private AnnotationProcessorFactory annotationProcessorFactory;
 
 
-    public ModelExtractor(Class<T> aClass, AnnotationProcessorFactory annotationProcessorFactory) {
+    public ModelExtractor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorFactory annotationProcessorFactory) {
         this.aClass = aClass;
-        //TODO 有些子model不需要下载,考虑如何处理
-        judgeDownloader();
+        this.annotationProcessorFactory = annotationProcessorFactory;
+    }
+
+    public void init() {
         judgeRender(annotationProcessorFactory);
         judgeRootSelector();
     }
 
-    private interface Downloader<T> {
-        String download(Seed seed, T model, CrawlerSession crawlerSession);
-    }
 
     private void judgeRootSelector() {
         FetchChain fetchChain = aClass.getAnnotation(FetchChain.class);
@@ -55,7 +51,7 @@ public class ModelExtractor<T extends AbstractAutoProcessModel> {
     }
 
     private void judgeRender(AnnotationProcessorFactory annotationProcessorFactory) {
-        fetchTaskProcessor = new FetchTaskProcessor<>(annotationProcessorFactory);
+        fetchTaskProcessor = new FetchTaskProcessor(annotationProcessorFactory);
         Field[] fields = aClass.getFields();
         for (Field field : fields) {
             FetchTaskBean fetchTaskBean = matchFetchTask(field);
@@ -125,43 +121,7 @@ public class ModelExtractor<T extends AbstractAutoProcessModel> {
     }
 
 
-    private void judgeDownloader() {
-        Method[] methods = aClass.getMethods();
-        for (final Method method : methods) {
-            if (method.getAnnotation(DownLoadMethod.class) == null) {
-                continue;
-            }
-            Preconditions.checkArgument(String.class.isAssignableFrom(method.getReturnType()));
-            Preconditions.checkArgument(method.getParameterTypes().length >= 2);
-            Preconditions.checkArgument(method.getParameterTypes()[0].isAssignableFrom(Seed.class));
-            Preconditions.checkArgument(method.getParameterTypes()[1].isAssignableFrom(CrawlerSession.class));
-
-            downloader = new Downloader<T>() {
-                @Override
-                public String download(Seed seed, T model, CrawlerSession crawlerSession) {
-                    try {
-                        return (String) method.invoke(model, seed, crawlerSession);
-                    } catch (Exception e) {
-                        throw new RuntimeException("invoke download method :" + method.toGenericString() + " failed", e);
-                    }
-                }
-            };
-            return;
-        }
-
-        downloader = new Downloader<T>() {
-            @Override
-            public String download(Seed seed, T model, CrawlerSession crawlerSession) {
-                return crawlerSession.getCrawlerHttpClient().get(seed.getData());
-            }
-        };
-    }
-
-
-    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
-        //创建模型对象
-        T model = ObjectFactory.newInstance(aClass);
-        String content = downloader.download(seed, model, crawlerSession);
+    public void process(Seed seed, String content, CrawlResult crawlResult, AbstractAutoProcessModel model) {
         String url = null;
         try {
             new URI(seed.getData());
@@ -191,7 +151,7 @@ public class ModelExtractor<T extends AbstractAutoProcessModel> {
         }
         List<AbstractSelectable> list = root.toMultiSelectable();
         for (AbstractSelectable abstractSelectable : list) {
-            T t = ObjectFactory.newInstance(aClass);
+            AbstractAutoProcessModel t = ObjectFactory.newInstance(aClass);
             t.setRawText(abstractSelectable.getRawText());
             t.setOriginSelectable(abstractSelectable);
             t.setSeed(seed);
