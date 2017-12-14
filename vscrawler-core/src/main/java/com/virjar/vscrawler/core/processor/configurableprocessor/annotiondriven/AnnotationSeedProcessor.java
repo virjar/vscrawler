@@ -47,7 +47,7 @@ public class AnnotationSeedProcessor<T extends AbstractAutoProcessModel> impleme
         return matchStrategy.matchSeed(seed);
     }
 
-    public interface MatchStrategy {
+    interface MatchStrategy {
         boolean matchSeed(Seed seed);
     }
 

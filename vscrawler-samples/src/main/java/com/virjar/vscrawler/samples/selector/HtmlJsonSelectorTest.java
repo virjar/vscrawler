@@ -8,7 +8,6 @@ import org.apache.commons.io.IOUtils;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
-import com.virjar.vscrawler.core.selector.combine.Selector;
 
 /**
  * Created by virjar on 17/7/10.
@@ -16,7 +15,7 @@ import com.virjar.vscrawler.core.selector.combine.Selector;
 public class HtmlJsonSelectorTest {
     public static void main(String[] args) throws IOException {
 
-        AbstractSelectable selectable = Selector.rawText("http://www.virjar.com",
+        AbstractSelectable selectable =  AbstractSelectable.createModel("http://www.virjar.com",
                 IOUtils.toString(HtmlJsonSelectorTest.class.getResourceAsStream("/htmljson.html"), Charsets.UTF_8));
 
         List<String> allDepartureDate = selectable.css("#testid pre").xpath("/text()")

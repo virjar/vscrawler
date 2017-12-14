@@ -12,12 +12,7 @@ public class CrawlerDemo {
         // 启动爬虫
         VSCrawler vsCrawler = VSCrawlerBuilder.create()// 创建一个构造器
                 .addPipeline(new EmptyPipeline())// 添加一个空的pipeline,为了测试
-                .setSessionPoolCoreSize(15)// 核心15个用户
-                .setSessionPoolMaxSize(55)// 最多55个用户
-                .setSessionPoolReuseDuration(60 * 1000)// 每个用户1分钟之内不能同时使用
-                .setSessionPoolMaxOnlineDuration(10 * 60 * 1000)// 每个用户最多存活10分钟
                 .setWorkerThreadNumber(10).build();
-        vsCrawler.clearTask();
 
         vsCrawler.start();
 

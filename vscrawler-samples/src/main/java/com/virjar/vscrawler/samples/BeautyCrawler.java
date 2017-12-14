@@ -1,6 +1,10 @@
 package com.virjar.vscrawler.samples;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import com.virjar.dungproxy.client.httpclient.HeaderBuilder;
 import com.virjar.sipsoup.parse.XpathParser;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerBuilder;
@@ -10,6 +14,7 @@ import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.util.PathResolver;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
 import org.jsoup.Jsoup;
 
 import java.io.File;
@@ -28,7 +33,8 @@ public class BeautyCrawler {
                 .setProcessor(new SeedProcessor() {
 
                     private void handlePic(Seed seed, CrawlerSession crawlerSession) {
-                        byte[] entity = crawlerSession.getCrawlerHttpClient().getEntity(seed.getData());
+                        Header[] headers = HeaderBuilder.create().withRefer(seed.getExt().get("refer")).defaultCommonHeader().buildArray();
+                        byte[] entity = crawlerSession.getCrawlerHttpClient().getEntity(seed.getData(), headers);
                         if (entity == null) {
                             seed.retry();
                             return;
@@ -43,7 +49,7 @@ public class BeautyCrawler {
                     }
 
                     @Override
-                    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+                    public void process(final Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
                         if (StringUtils.endsWithIgnoreCase(seed.getData(), ".jpg")) {
                             handlePic(seed, crawlerSession);
                         } else {
@@ -53,14 +59,23 @@ public class BeautyCrawler {
                                 return;
                             }
                             // 将下一页的链接和图片链接抽取出来
-                            crawlResult.addStrSeeds(XpathParser
+                            crawlResult.addSeeds(Lists.newArrayList(Iterables.transform(XpathParser
                                     .compileNoError(
                                             "/css('#pages a')::self()[contains(text(),'下一页')]/absUrl('href') | /css('.content')::center/img/@src")
-                                    .evaluateToString(Jsoup.parse(s, seed.getData())));
+                                    .evaluateToString(Jsoup.parse(s, seed.getData())), new Function<String, Seed>() {
+                                @Override
+                                public Seed apply(String input) {
+                                    Seed ret = new Seed(input);
+                                    if (StringUtils.endsWith(input, ".jpg")) {
+                                        ret.getExt().put("refer", seed.getData());
+                                    }
+                                    return ret;
+                                }
+                            })));
                         }
                     }
 
-                }).build();
+                }).setWorkerThreadNumber(15).setSessionPoolCoreSize(20).setSessionPoolMaxSize(25).build();
 
         // 清空历史爬去数据,或者会断点续爬
         vsCrawler.clearTask();
@@ -70,7 +85,6 @@ public class BeautyCrawler {
         vsCrawler.pushSeed("https://www.meitulu.com/item/2124.html");
         vsCrawler.pushSeed("https://www.meitulu.com/item/2120.html");
         vsCrawler.pushSeed("https://www.meitulu.com/item/2086.html");
-
 
         // 开始爬虫
         vsCrawler.start();
