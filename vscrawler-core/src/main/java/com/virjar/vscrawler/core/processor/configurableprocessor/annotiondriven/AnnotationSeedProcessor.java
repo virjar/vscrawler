@@ -39,7 +39,7 @@ public class AnnotationSeedProcessor implements BindRouteProcessor {
         //创建模型对象
         AbstractAutoProcessModel model = ObjectFactory.newInstance(aClass);
         String content = downloader.download(seed, model, crawlerSession);
-        modelExtractor.process(seed, content, crawlResult, model);
+        modelExtractor.process(seed, content, crawlResult, model, null,true);
     }
 
     @Override

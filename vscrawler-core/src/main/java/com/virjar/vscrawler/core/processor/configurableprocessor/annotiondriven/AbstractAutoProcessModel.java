@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
 import lombok.Getter;
@@ -15,25 +16,28 @@ import java.util.List;
  *
  * @author virjar
  * @since 0.2.1
- * TODO jsonignore
  */
 public abstract class AbstractAutoProcessModel {
     /**
      * 对应抓取种子
      */
     @Setter
+    @JSONField(serialize = false)
     protected Seed seed;
     /**
      * 对应原始文本
      */
     @Setter
+    @JSONField(serialize = false)
     protected String rawText;
 
     @Setter
+    @JSONField(serialize = false)
     protected AbstractSelectable originSelectable;
 
     @Setter
     @Getter
+    @JSONField(serialize = false)
     protected String baseUrl;
 
 

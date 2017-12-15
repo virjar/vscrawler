@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
@@ -52,13 +53,20 @@ public class ModelExtractor {
 
     private void judgeRender(AnnotationProcessorFactory annotationProcessorFactory) {
         fetchTaskProcessor = new FetchTaskProcessor(annotationProcessorFactory);
-        Field[] fields = aClass.getFields();
-        for (Field field : fields) {
-            FetchTaskBean fetchTaskBean = matchFetchTask(field);
-            if (fetchTaskBean != null) {
-                fetchTaskProcessor.registerTask(fetchTaskBean);
+
+        Class clazz = aClass;
+        do {
+            Field[] fields = clazz.getDeclaredFields();
+            for (Field field : fields) {
+                FetchTaskBean fetchTaskBean = matchFetchTask(field);
+                if (fetchTaskBean != null) {
+                    if (!Modifier.isPublic(field.getModifiers())) {
+                        field.setAccessible(true);
+                    }
+                    fetchTaskProcessor.registerTask(fetchTaskBean);
+                }
             }
-        }
+        } while ((clazz = clazz.getSuperclass()) != null);
     }
 
     private FetchTaskBean matchFetchTask(Field field) {
@@ -122,7 +130,7 @@ public class ModelExtractor {
 
 
     @SuppressWarnings("unchecked")
-    public void process(Seed seed, String content, CrawlResult crawlResult, AbstractAutoProcessModel model) {
+    public void process(Seed seed, String content, CrawlResult crawlResult, AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, boolean save) {
         String url = model.getBaseUrl();
         if (StringUtils.isBlank(url)) {
             try {
@@ -133,7 +141,11 @@ public class ModelExtractor {
                 //ignore
             }
         }
-        AbstractSelectable<String> baseSelectable = AbstractSelectable.createModel(url, content);
+        AbstractSelectable baseSelectable = abstractSelectable;
+        if (baseSelectable == null) {
+            baseSelectable = AbstractSelectable.createModel(url, content);
+        }
+
         Iterator<AbstractSelectable> iterator = rootSelector.select(baseSelectable).toMultiSelectable().iterator();
         if (!iterator.hasNext()) {
             return;
@@ -154,12 +166,14 @@ public class ModelExtractor {
                 continue;
             }
             model.beforeAutoFetch();
-            List<Seed> newSeeds = fetchTaskProcessor.injectField(model, next, crawlResult);
+            List<Seed> newSeeds = fetchTaskProcessor.injectField(model, next, crawlResult, false);
             model.afterAutoFetch();
             newSeeds.addAll(model.newSeeds());
 
             crawlResult.addSeeds(newSeeds);
-            crawlResult.addResult(JSON.toJSONString(model));
+            if (save) {
+                crawlResult.addResult(JSON.toJSONString(model));
+            }
             if (iterator.hasNext()) {
                 model = ObjectFactory.newInstance(aClass);
             } else {
