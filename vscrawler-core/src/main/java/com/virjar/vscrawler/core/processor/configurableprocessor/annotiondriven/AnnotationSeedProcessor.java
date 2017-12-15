@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
  * @since 0.2.1
  */
 @Slf4j
-public class AnnotationSeedProcessor<T extends AbstractAutoProcessModel> implements BindRouteProcessor {
+public class AnnotationSeedProcessor implements BindRouteProcessor {
     private MatchStrategy matchStrategy;
     private ModelExtractor modelExtractor;
     private Downloader downloader;

@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  */
 public class AnnotationProcessorFactory {
     private List<String> scanPackage = Lists.newLinkedList();
-    private List<AnnotationSeedProcessor<? extends AbstractAutoProcessModel>> annotationSeedProcessors = Lists.newLinkedList();
+    private List<AnnotationSeedProcessor> annotationSeedProcessors = Lists.newLinkedList();
     private Map<Class<? extends AbstractAutoProcessModel>, ModelExtractor> allExtractors = Maps.newHashMap();
 
     private AnnotationProcessorFactory() {
@@ -47,7 +47,7 @@ public class AnnotationProcessorFactory {
         //存在match seed的bean,可以标记为种子处理器,会被注册为processor
         AnnotationSeedProcessor.MatchStrategy matchStrategy = judgeMatchStrategy(clazz);
         if (matchStrategy != null) {
-            annotationSeedProcessors.add(new AnnotationSeedProcessor<>(clazz, this, matchStrategy));
+            annotationSeedProcessors.add(new AnnotationSeedProcessor(clazz, this, matchStrategy));
         }
         return this;
     }

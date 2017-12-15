@@ -2,6 +2,7 @@ package com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven
 
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Collections;
@@ -21,15 +22,19 @@ public abstract class AbstractAutoProcessModel {
      * 对应抓取种子
      */
     @Setter
-    private Seed seed;
+    protected Seed seed;
     /**
      * 对应原始文本
      */
     @Setter
-    private String rawText;
+    protected String rawText;
 
     @Setter
-    private AbstractSelectable originSelectable;
+    protected AbstractSelectable originSelectable;
+
+    @Setter
+    @Getter
+    protected String baseUrl;
 
 
     protected boolean hasGrabSuccess() {
@@ -37,6 +42,10 @@ public abstract class AbstractAutoProcessModel {
     }
 
     protected void afterAutoFetch() {
+
+    }
+
+    protected void beforeAutoFetch() {
 
     }
 

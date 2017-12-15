@@ -22,8 +22,8 @@ public class RawNode extends AbstractSelectable<String> {
     }
 
     @Override
-    public List<AbstractSelectable<String>> toMultiSelectable() {
-        return Lists.<AbstractSelectable<String>>newArrayList(this);
+    public List<AbstractSelectable> toMultiSelectable() {
+        return Lists.<AbstractSelectable>newArrayList(this);
     }
 
     public RawNode(String rowText) {

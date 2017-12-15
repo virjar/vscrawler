@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.sipsoup.model.SipNodes;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
+import com.virjar.vscrawler.core.selector.combine.RawTextStringFactory;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -14,6 +15,10 @@ import java.util.List;
  */
 public class XpathNode extends AbstractSelectable<SipNodes> {
     public XpathNode(String baseUrl, String rowText) {
+        super(baseUrl, rowText);
+    }
+
+    public XpathNode(String baseUrl, RawTextStringFactory rowText) {
         super(baseUrl, rowText);
     }
 
@@ -34,16 +39,28 @@ public class XpathNode extends AbstractSelectable<SipNodes> {
     }
 
     @Override
-    public List<AbstractSelectable<SipNodes>> toMultiSelectable() {
+    public List<AbstractSelectable> toMultiSelectable() {
         SipNodes sipNodes = createOrGetModel();
-        List<AbstractSelectable<SipNodes>> ret = Lists.newLinkedList();
-        for (SIPNode sipNode : sipNodes) {
-            XpathNode xpathNode = new XpathNode(getBaseUrl(), sipNode.isText() ? sipNode.getTextVal() : sipNode.getElement().toString());
+        List<AbstractSelectable> ret = Lists.newLinkedList();
+        for (final SIPNode sipNode : sipNodes) {
+            XpathNode xpathNode;
+            if (sipNode.isText()) {
+                xpathNode = new XpathNode(getBaseUrl(), sipNode.getTextVal());
+            } else {
+                xpathNode = new XpathNode(getBaseUrl(), new RawTextStringFactory() {
+                    @Override
+                    public String rawText() {
+                        return sipNode.toString();
+                    }
+                });
+            }
+
             xpathNode.setModel(new SipNodes(sipNode));
             ret.add(xpathNode);
         }
         return ret;
     }
+
 
     public XpathNode(String rowText) {
         super(rowText);

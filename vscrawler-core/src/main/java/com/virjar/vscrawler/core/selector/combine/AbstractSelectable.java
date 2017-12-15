@@ -22,6 +22,7 @@ import com.virjar.vscrawler.core.selector.string.syntax.StringSyntaxNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 
 import java.util.List;
@@ -32,8 +33,19 @@ import java.util.List;
 @Slf4j
 public abstract class AbstractSelectable<M> {
 
-    @Getter
+
     private String rawText;
+    private boolean hasRawTextLoad = false;
+    private RawTextStringFactory rawTextStringFactory;
+
+    public String getRawText() {
+        if (StringUtils.isBlank(rawText) && !hasRawTextLoad) {
+            hasRawTextLoad = true;
+            rawText = rawTextStringFactory.rawText();
+        }
+        return rawText;
+    }
+
     @Getter
     private String baseUrl;
 
@@ -46,12 +58,17 @@ public abstract class AbstractSelectable<M> {
         this.rawText = rawText;
     }
 
+    public AbstractSelectable(String baseUrl, RawTextStringFactory rawTextStringFactory) {
+        this.baseUrl = baseUrl;
+        this.rawTextStringFactory = rawTextStringFactory;
+    }
+
     @Setter
     protected M model;
 
     public abstract M createOrGetModel();
 
-    public abstract List<AbstractSelectable<M>> toMultiSelectable();
+    public abstract List<AbstractSelectable> toMultiSelectable();
 
     protected <T extends AbstractSelectable> T covert(Class<T> mClass) {
         return Converters.findConvert(getClass(), mClass).convert(this);
@@ -77,7 +94,7 @@ public abstract class AbstractSelectable<M> {
     }
 
     public XpathNode css(String css) {
-        XpathNode xpathNode = new XpathNode(getBaseUrl(), null);
+        XpathNode xpathNode = new XpathNode(getBaseUrl(), (String) null);
         SipNodes newModels = new SipNodes();
         for (SIPNode sipNode : covert(XpathNode.class).createOrGetModel()) {
             if (sipNode.isText()) {
@@ -102,7 +119,7 @@ public abstract class AbstractSelectable<M> {
             }
         });
 
-        JsonNode jsonNode = new JsonNode(getBaseUrl(), null);
+        JsonNode jsonNode = new JsonNode(getBaseUrl());
         jsonNode.setModel(result);
         return jsonNode;
     }

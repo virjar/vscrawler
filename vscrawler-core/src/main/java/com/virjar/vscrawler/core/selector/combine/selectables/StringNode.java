@@ -26,9 +26,9 @@ public class StringNode extends AbstractSelectable<List<String>> {
     }
 
     @Override
-    public List<AbstractSelectable<List<String>>> toMultiSelectable() {
+    public List<AbstractSelectable> toMultiSelectable() {
         List<String> models = createOrGetModel();
-        List<AbstractSelectable<List<String>>> ret = Lists.newLinkedList();
+        List<AbstractSelectable> ret = Lists.newLinkedList();
         for (String string : models) {
             StringNode stringNode = new StringNode(getBaseUrl(), string);
             stringNode.setModel(Lists.newArrayList(string));

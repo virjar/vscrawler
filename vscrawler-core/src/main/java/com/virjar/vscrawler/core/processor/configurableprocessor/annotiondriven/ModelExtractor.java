@@ -11,7 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -121,50 +121,50 @@ public class ModelExtractor {
     }
 
 
+    @SuppressWarnings("unchecked")
     public void process(Seed seed, String content, CrawlResult crawlResult, AbstractAutoProcessModel model) {
-        String url = null;
-        try {
-            new URI(seed.getData());
-            url = seed.getData();
-        } catch (Exception e) {
-            //ignore
+        String url = model.getBaseUrl();
+        if (StringUtils.isBlank(url)) {
+            try {
+                new URI(seed.getData());
+                url = seed.getData();
+                model.setBaseUrl(url);
+            } catch (Exception e) {
+                //ignore
+            }
         }
         AbstractSelectable<String> baseSelectable = AbstractSelectable.createModel(url, content);
-        AbstractSelectable root = rootSelector.select(baseSelectable);
-        Object selectModel = root.createOrGetModel();
-        if (root == baseSelectable || !(selectModel instanceof Collection)) {
-            //证明模型只有一个,不是多行数据的模型
+        Iterator<AbstractSelectable> iterator = rootSelector.select(baseSelectable).toMultiSelectable().iterator();
+        if (!iterator.hasNext()) {
+            return;
+        }
+        boolean hasRetry = false;
+        //支持单一网页抽取多个模型
+        while (true) {
+            AbstractSelectable next = iterator.next();
             model.setRawText(content);
-            model.setOriginSelectable(baseSelectable);
+            model.setOriginSelectable(next);
             model.setSeed(seed);
+            model.setBaseUrl(url);
             if (!model.hasGrabSuccess()) {
-                seed.retry();
-                return;
+                if (!hasRetry) {
+                    seed.retry();
+                    hasRetry = true;
+                }
+                continue;
             }
-            List<Seed> newSeeds = fetchTaskProcessor.injectField(model, root);
+            model.beforeAutoFetch();
+            List<Seed> newSeeds = fetchTaskProcessor.injectField(model, next, crawlResult);
             model.afterAutoFetch();
             newSeeds.addAll(model.newSeeds());
 
             crawlResult.addSeeds(newSeeds);
             crawlResult.addResult(JSON.toJSONString(model));
-            return;
-        }
-        List<AbstractSelectable> list = root.toMultiSelectable();
-        for (AbstractSelectable abstractSelectable : list) {
-            AbstractAutoProcessModel t = ObjectFactory.newInstance(aClass);
-            t.setRawText(abstractSelectable.getRawText());
-            t.setOriginSelectable(abstractSelectable);
-            t.setSeed(seed);
-            if (!t.hasGrabSuccess()) {
-                seed.retry();
-                return;
+            if (iterator.hasNext()) {
+                model = ObjectFactory.newInstance(aClass);
+            } else {
+                break;
             }
-            List<Seed> newSeeds = fetchTaskProcessor.injectField(t, root);
-            t.afterAutoFetch();
-            newSeeds.addAll(t.newSeeds());
-
-            crawlResult.addSeeds(newSeeds);
-            crawlResult.addResult(JSON.toJSONString(t));
         }
     }
 }
