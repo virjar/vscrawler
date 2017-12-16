@@ -82,7 +82,7 @@ class ModelExtractor {
             if (StringUtils.isBlank(jsonPath.value())) {
                 log.warn("jsonPath annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTaskBean(field, ChainRuleParser.create("jsonpath", jsonPath.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("jsonpath", jsonPath.value()), newSeed, jsonPath.elementType());
             }
         }
 
@@ -91,7 +91,7 @@ class ModelExtractor {
             if (StringUtils.isBlank(css.value())) {
                 log.warn("css annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTaskBean(field, ChainRuleParser.create("css", css.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("css", css.value()), newSeed, css.elementType());
             }
         }
 
@@ -100,7 +100,7 @@ class ModelExtractor {
             if (StringUtils.isBlank(xpath.value())) {
                 log.warn("xpath annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTaskBean(field, ChainRuleParser.create("xpath", xpath.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("xpath", xpath.value()), newSeed, xpath.elementType());
             }
         }
         final Regex regex = field.getAnnotation(Regex.class);
@@ -108,7 +108,7 @@ class ModelExtractor {
             if (StringUtils.isBlank(regex.value())) {
                 log.warn("regex annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTaskBean(field, ChainRuleParser.create("regex", regex.value() + "," + regex.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("regex", regex.value() + "," + regex.value()), newSeed, regex.elementType());
             }
         }
 
@@ -117,7 +117,7 @@ class ModelExtractor {
             if (StringUtils.isBlank(stringRule.value())) {
                 log.warn("stringRule annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTaskBean(field, ChainRuleParser.create("stringrule", stringRule.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.create("stringrule", stringRule.value()), newSeed, stringRule.elementType());
             }
         }
 
@@ -126,7 +126,7 @@ class ModelExtractor {
             if (StringUtils.isBlank(fetchChain.value())) {
                 log.warn("fetchChain annotation is empty for class :{} for field:{}", aClass.getName(), field.getName());
             } else {
-                return new FetchTaskBean(field, ChainRuleParser.parse(fetchChain.value()), newSeed);
+                return new FetchTaskBean(field, ChainRuleParser.parse(fetchChain.value()), newSeed, fetchChain.elementType());
             }
         }
         return null;

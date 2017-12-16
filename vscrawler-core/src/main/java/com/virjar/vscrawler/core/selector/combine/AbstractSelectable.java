@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONPath;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.sipsoup.model.SipNodes;
 import com.virjar.sipsoup.model.XpathEvaluator;
@@ -26,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Created by virjar on 17/6/30.
@@ -37,6 +39,8 @@ public abstract class AbstractSelectable<M> {
     private String rawText;
     private boolean hasRawTextLoad = false;
     private RawTextStringFactory rawTextStringFactory;
+
+    private ConcurrentMap<Class, AbstractSelectable> covertCache = Maps.newConcurrentMap();
 
     public String getRawText() {
         if (StringUtils.isBlank(rawText) && !hasRawTextLoad) {
@@ -68,10 +72,22 @@ public abstract class AbstractSelectable<M> {
 
     public abstract M createOrGetModel();
 
+    /**
+     * 抽取器拆箱,所有链式抽取实现都是基于集合的,如果某些时候确定结果集是集合,且需要对集合进行遍历,那么使用此方法进行集合拆箱
+     *
+     * @return 多个子selectAble组成的抽取器集合
+     */
     public abstract List<AbstractSelectable> toMultiSelectable();
 
+    @SuppressWarnings("unchecked")
+    //TODO 这个标记
     protected <T extends AbstractSelectable> T covert(Class<T> mClass) {
-        return Converters.findConvert(getClass(), mClass).convert(this);
+        if (covertCache.containsKey(mClass)) {
+            return (T) covertCache.get(mClass);
+        }
+        T t = Converters.findConvert(getClass(), mClass).convert(this);
+        covertCache.put(mClass, t);
+        return t;
     }
 
     public XpathNode xpath(String xpathStr) {

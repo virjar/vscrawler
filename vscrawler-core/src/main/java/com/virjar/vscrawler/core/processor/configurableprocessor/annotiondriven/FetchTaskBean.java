@@ -21,4 +21,7 @@ class FetchTaskBean {
 
     @Getter
     private boolean newSeed = false;
+
+    @Getter
+    private Class helpClazz;
 }

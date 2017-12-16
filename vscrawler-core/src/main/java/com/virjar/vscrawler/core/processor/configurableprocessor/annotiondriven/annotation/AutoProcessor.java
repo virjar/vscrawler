@@ -15,4 +15,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AutoProcessor {
     String seedPattern() default "";
+
+    int priority() default 0;
 }

@@ -18,4 +18,6 @@ public @interface Regex {
     String value();
 
     int group() default 0;
+    //所有抽取注解都应该有这个元素,用来处理集合元素泛型擦除问题
+    Class elementType() default Object.class;
 }

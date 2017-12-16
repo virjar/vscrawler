@@ -17,4 +17,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FetchChain {
     String value();
+    //所有抽取注解都应该有这个元素,用来处理集合元素泛型擦除问题
+    Class elementType() default Object.class;
 }

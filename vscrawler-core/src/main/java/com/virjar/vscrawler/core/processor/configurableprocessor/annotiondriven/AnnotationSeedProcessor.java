@@ -33,6 +33,9 @@ class AnnotationSeedProcessor implements BindRouteProcessor {
         judgeDownloader(aClass);
     }
 
+    public int priority(){
+        return matchStrategy.priority();
+    }
 
     @Override
     public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
@@ -49,6 +52,7 @@ class AnnotationSeedProcessor implements BindRouteProcessor {
 
     interface MatchStrategy {
         boolean matchSeed(Seed seed);
+        int priority();
     }
 
     private interface Downloader {

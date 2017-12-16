@@ -67,8 +67,10 @@ public class AnnotationProcessorBuilder {
     }
 
     private AnnotationSeedProcessor.MatchStrategy judgeMatchStrategy(Class<? extends AbstractAutoProcessModel> aClass) {
-        AutoProcessor autoProcessor = aClass.getAnnotation(AutoProcessor.class);
-        Preconditions.checkNotNull(autoProcessor);
+        final AutoProcessor autoProcessor = aClass.getAnnotation(AutoProcessor.class);
+        if (autoProcessor == null) {
+            return null;
+        }
         String seedPattern = autoProcessor.seedPattern();
         if (StringUtils.isNotBlank(seedPattern)) {
             try {
@@ -77,6 +79,11 @@ public class AnnotationProcessorBuilder {
                     @Override
                     public boolean matchSeed(Seed seed) {
                         return pattern.matcher(seed.getData()).matches();
+                    }
+
+                    @Override
+                    public int priority() {
+                        return autoProcessor.priority();
                     }
                 };
             } catch (PatternSyntaxException e) {
@@ -101,6 +108,11 @@ public class AnnotationProcessorBuilder {
                         throw new IllegalStateException("can not jude seed match method", e);
                     }
                 }
+
+                @Override
+                public int priority() {
+                    return autoProcessor.priority();
+                }
             };
         }
         return null;
@@ -122,7 +134,7 @@ public class AnnotationProcessorBuilder {
         }
         RouteProcessor routeProcessor = new RouteProcessor();
         for (AnnotationSeedProcessor annotationSeedProcessor : annotationSeedProcessors) {
-            routeProcessor.addRouter(annotationSeedProcessor);
+            routeProcessor.addRouter(annotationSeedProcessor, annotationSeedProcessor.priority());
         }
         return routeProcessor;
     }

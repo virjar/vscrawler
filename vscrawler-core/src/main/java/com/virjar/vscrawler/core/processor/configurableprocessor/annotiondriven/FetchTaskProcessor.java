@@ -94,29 +94,51 @@ class FetchTaskProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    List<Seed> injectField(final AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, CrawlResult crawlResult, boolean save) {
+    private AbstractAutoProcessModel fetchSubModel(Class type, AbstractSelectable subSelectable, AbstractAutoProcessModel parentModel, CrawlResult crawlResult) {
+        AbstractAutoProcessModel subModel = (AbstractAutoProcessModel) ObjectFactory.newInstance(type);
+        subModel.setBaseUrl(parentModel.getBaseUrl());
+        subModel.setSeed(parentModel.seed);
+        subModel.setOriginSelectable(subSelectable);
+        String rawText = subSelectable.getRawText();
+        subModel.setRawText(rawText);
+        subModel.beforeAutoFetch();
+        annotationProcessorBuilder.findExtractor((Class<? extends AbstractAutoProcessModel>) type).process(parentModel.seed, rawText, crawlResult, subModel, subSelectable, false);
+        subModel.afterAutoFetch();
+        return subModel;
+    }
+
+
+    @SuppressWarnings("unchecked")
+    List<Seed> injectField(final AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, final CrawlResult crawlResult, boolean save) {
         List<Seed> newSeeds = Lists.newLinkedList();
-        try {
-            for (FetchTaskBean fetchTaskBean : fetchTaskBeanList) {
+
+        for (final FetchTaskBean fetchTaskBean : fetchTaskBeanList) {
+            try {
                 Field field = fetchTaskBean.getField();
-                Class<?> type = field.getType();
+                final Class<?> type = field.getType();
                 //处理循环的model,支持子结构抽取
                 if (AbstractAutoProcessModel.class.isAssignableFrom(type) && annotationProcessorBuilder.findExtractor((Class<? extends AbstractAutoProcessModel>) type) != null) {
                     AbstractSelectable subSelectable = fetchTaskBean.getModelSelector().select(abstractSelectable);
-                    AbstractAutoProcessModel subModel = (AbstractAutoProcessModel) ObjectFactory.newInstance(type);
-                    subModel.setBaseUrl(model.getBaseUrl());
-                    subModel.setSeed(model.seed);
-                    subModel.setOriginSelectable(subSelectable);
-                    String rawText = subSelectable.getRawText();
-                    subModel.setRawText(rawText);
-                    subModel.beforeAutoFetch();
-                    annotationProcessorBuilder.findExtractor((Class<? extends AbstractAutoProcessModel>) type).process(model.seed, rawText, crawlResult, subModel, subSelectable, save);
-                    subModel.afterAutoFetch();
-                    field.set(model, subModel);
+                    field.set(model, fetchSubModel(type, subSelectable, model, crawlResult));
                     continue;
                 }
+
+                Object data = null;
+
+                if (Collection.class.isAssignableFrom(type) && fetchTaskBean.getHelpClazz() != Object.class && annotationProcessorBuilder.findExtractor(fetchTaskBean.getHelpClazz()) != null) {
+                    List<AbstractSelectable> abstractSelectables = fetchTaskBean.getModelSelector().select(abstractSelectable).toMultiSelectable();
+                    data = Lists.transform(abstractSelectables, new Function<AbstractSelectable, AbstractAutoProcessModel>() {
+                        @Override
+                        public AbstractAutoProcessModel apply(AbstractSelectable input) {
+                            return fetchSubModel(fetchTaskBean.getHelpClazz(), input, model, crawlResult);
+                        }
+                    });
+                }
+
                 //非子model抽取,需要直接抽取到结果,结束抽取链,判断抽取结果类型,进行数据类型转换操作
-                Object data = fetchTaskBean.getModelSelector().select(abstractSelectable).createOrGetModel();
+                if (data == null) {
+                    data = fetchTaskBean.getModelSelector().select(abstractSelectable).createOrGetModel();
+                }
 
                 //特殊逻辑,因为SipNode对象同时持有字符串或者dom对象,所以需要对他进行拆箱
                 data = unPackSipNode(data);
@@ -174,10 +196,11 @@ class FetchTaskProcessor {
                     }
 
                 }
+            } catch (Exception e) {
+                throw new RuntimeException("can not inject data for model:" + model.getClass().getName() + " for field: " + fetchTaskBean.getField().getName(), e);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("can not inject data for model:" + model.getClass().getName(), e);
         }
+
         return newSeeds;
     }
 }
