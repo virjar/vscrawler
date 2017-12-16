@@ -32,8 +32,14 @@ public class MeituCrawler extends AbstractAutoProcessModel {
 
     public static void main(String[] args) {
 
-        VSCrawler vsCrawler = VSCrawlerBuilder.create().setWorkerThreadNumber(10).setCrawlerName("beautyCrawler_Annotation")
-                .setProcessor(AnnotationProcessorBuilder.create().addBeanPackage("com.virjar.vscrawler.samples.processor.meitu").build())
+        VSCrawler vsCrawler = VSCrawlerBuilder
+                .create()
+                .setWorkerThreadNumber(10)
+                .setCrawlerName("beautyCrawler_Annotation")
+                .setProcessor(AnnotationProcessorBuilder
+                        .create()
+                        .addBeanPackage("com.virjar.vscrawler.samples.processor.meitu")
+                        .build())
                 .build();
         vsCrawler.start();
         vsCrawler.clearTask();

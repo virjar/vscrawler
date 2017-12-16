@@ -87,7 +87,10 @@ public class U5ProxyIpCrawler extends AbstractAutoProcessModel {
     public static void main(String[] args) {
         VSCrawlerBuilder
                 .create()
-                .setProcessor(AnnotationProcessorBuilder.create().registryBean(U5ProxyIpCrawler.class).build())
+                .setProcessor(AnnotationProcessorBuilder
+                        .create()
+                        .registryBean(U5ProxyIpCrawler.class)
+                        .build())
                 .setCrawlerName("u5ProxyCrawler")
                 .build()
                 .clearTask()
