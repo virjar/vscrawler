@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Created by virjar on 17/7/24.
  */
-public class SelectTest {
+public class ChainSelector {
     public static void main(String[] args) throws IOException {
         AbstractSelectable selectable = AbstractSelectable.createModel("http://www.virjar.com",
                 IOUtils.toString(HtmlJsonSelectorTest.class.getResourceAsStream("/select.html"), Charsets.UTF_8));

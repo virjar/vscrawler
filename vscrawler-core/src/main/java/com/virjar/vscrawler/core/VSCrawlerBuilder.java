@@ -125,7 +125,7 @@ public class VSCrawlerBuilder {
     /**
      * 爬虫工作线程数
      */
-    private int workerThreadNumber = Runtime.getRuntime().availableProcessors() * 10;
+    private int workerThreadNumber = Runtime.getRuntime().availableProcessors() * 4;
 
     /**
      * 慢启动控制
@@ -239,7 +239,7 @@ public class VSCrawlerBuilder {
     }
 
     public VSCrawlerBuilder setCrawlerName(String crawlerName) {
-        if (crawlerName == null || !crawlerName.matches("[0-9a-zA-Z]+")) {
+        if (crawlerName == null || !crawlerName.matches("[0-9a-zA-Z_]+")) {
             throw new IllegalArgumentException("crawlerName must be identified,for :" + crawlerName);
         }
         this.crawlerName = crawlerName;

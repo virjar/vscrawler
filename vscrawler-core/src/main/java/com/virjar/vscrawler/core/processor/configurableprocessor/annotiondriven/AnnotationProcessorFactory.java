@@ -16,6 +16,7 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Created by virjar on 2017/12/12.<br/>
@@ -32,7 +33,7 @@ public class AnnotationProcessorFactory {
     private AnnotationProcessorFactory() {
     }
 
-    public AnnotationProcessorFactory create() {
+    public static AnnotationProcessorFactory create() {
         return new AnnotationProcessorFactory();
     }
 
@@ -67,13 +68,18 @@ public class AnnotationProcessorFactory {
         Preconditions.checkNotNull(autoProcessor);
         String seedPattern = autoProcessor.seedPattern();
         if (StringUtils.isNotBlank(seedPattern)) {
-            final Pattern pattern = Pattern.compile(seedPattern);
-            return new AnnotationSeedProcessor.MatchStrategy() {
-                @Override
-                public boolean matchSeed(Seed seed) {
-                    return pattern.matcher(seed.getData()).matches();
-                }
-            };
+            try {
+                final Pattern pattern = Pattern.compile(seedPattern);
+                return new AnnotationSeedProcessor.MatchStrategy() {
+                    @Override
+                    public boolean matchSeed(Seed seed) {
+                        return pattern.matcher(seed.getData()).matches();
+                    }
+                };
+            } catch (PatternSyntaxException e) {
+                throw new IllegalStateException("error when register processor for class" + aClass.getName() + " regex error for seedPattern", e);
+            }
+
         }
 
         Method[] methods = aClass.getMethods();
@@ -101,7 +107,7 @@ public class AnnotationProcessorFactory {
         return allExtractors.get(clazz);
     }
 
-    private SeedProcessor build() {
+    public SeedProcessor build() {
         scan();
         for (ModelExtractor modelExtractor : allExtractors.values()) {
             modelExtractor.init();

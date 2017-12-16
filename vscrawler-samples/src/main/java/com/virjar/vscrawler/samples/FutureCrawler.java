@@ -1,7 +1,5 @@
 package com.virjar.vscrawler.samples;
 
-import org.joda.time.DateTime;
-
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerBuilder;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
@@ -9,14 +7,15 @@ import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.seed.SegmentResolver;
+import org.joda.time.DateTime;
 
 /**
  * Created by virjar on 17/6/17.<br/>
- * 这个是增量爬虫的测试
+ * 这个是增量爬虫的测试,每个任务都会重复抓取,时间间隔为1分钟
  */
 public class FutureCrawler {
     public static void main(String[] args) {
-        VSCrawler vsCrawler = VSCrawlerBuilder.create().addPipeline(new EmptyPipeline())
+        VSCrawler vsCrawler = VSCrawlerBuilder.create()
                 .setSegmentResolver(new SegmentResolver() {
                     @Override
                     public long resolveSegmentKey(long activeTime) {
