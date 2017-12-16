@@ -1,6 +1,5 @@
 package com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven;
 
-import com.alibaba.fastjson.parser.ParserConfig;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
@@ -11,10 +10,10 @@ import java.util.List;
 /**
  * Created by virjar on 2017/12/16.<br/>处理fastjson处理不了的类型转换问题
  */
-public class TypeCastUtils {
+class TypeCastUtils {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> T cast(Object obj, Class<T> clazz) {
+    static <T> T cast(Object obj, Class<T> clazz) {
         if (obj == null) {
             return null;
         }

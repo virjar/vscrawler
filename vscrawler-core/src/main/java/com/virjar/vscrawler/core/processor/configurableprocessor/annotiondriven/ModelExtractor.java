@@ -16,17 +16,21 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by virjar on 2017/12/13.
+ * Created by virjar on 2017/12/13.<br/>
+ * 数据抽取器,能够对一个class抽取model下面的各种属性
+ *
+ * @author virjar
+ * @since 0.2.1
  */
 @Slf4j
-public class ModelExtractor {
+class ModelExtractor {
     private Class<? extends AbstractAutoProcessModel> aClass;
     private FetchTaskProcessor fetchTaskProcessor;
     private ModelSelector rootSelector;
     private AnnotationProcessorFactory annotationProcessorFactory;
 
 
-    public ModelExtractor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorFactory annotationProcessorFactory) {
+    ModelExtractor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorFactory annotationProcessorFactory) {
         this.aClass = aClass;
         this.annotationProcessorFactory = annotationProcessorFactory;
     }
@@ -172,7 +176,10 @@ public class ModelExtractor {
 
             crawlResult.addSeeds(newSeeds);
             if (save) {
-                crawlResult.addResult(JSON.toJSONString(model));
+                String resultString = JSON.toJSONString(model);
+                if (!"{}".equals(resultString)) {//fastjson,如果数据为空,可以不序列化
+                    crawlResult.addResult(resultString);
+                }
             }
             if (iterator.hasNext()) {
                 model = ObjectFactory.newInstance(aClass);

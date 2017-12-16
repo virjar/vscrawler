@@ -13,7 +13,7 @@ import java.lang.reflect.Field;
  * @since 0.2.1
  */
 @AllArgsConstructor
-public class FetchTaskBean {
+class FetchTaskBean {
     @Getter
     private Field field;
     @Getter

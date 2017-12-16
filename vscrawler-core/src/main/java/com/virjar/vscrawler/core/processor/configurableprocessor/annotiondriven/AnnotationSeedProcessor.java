@@ -20,13 +20,13 @@ import java.lang.reflect.Method;
  * @since 0.2.1
  */
 @Slf4j
-public class AnnotationSeedProcessor implements BindRouteProcessor {
+class AnnotationSeedProcessor implements BindRouteProcessor {
     private MatchStrategy matchStrategy;
     private ModelExtractor modelExtractor;
     private Downloader downloader;
     private Class<? extends AbstractAutoProcessModel> aClass;
 
-    public AnnotationSeedProcessor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorFactory annotationProcessorFactory, MatchStrategy matchStrategy) {
+    AnnotationSeedProcessor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorFactory annotationProcessorFactory, MatchStrategy matchStrategy) {
         this.matchStrategy = matchStrategy;
         this.modelExtractor = annotationProcessorFactory.findExtractor(aClass);
         this.aClass = aClass;
@@ -39,7 +39,7 @@ public class AnnotationSeedProcessor implements BindRouteProcessor {
         //创建模型对象
         AbstractAutoProcessModel model = ObjectFactory.newInstance(aClass);
         String content = downloader.download(seed, model, crawlerSession);
-        modelExtractor.process(seed, content, crawlResult, model, null,true);
+        modelExtractor.process(seed, content, crawlResult, model, null, true);
     }
 
     @Override

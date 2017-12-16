@@ -28,12 +28,12 @@ import java.util.List;
  * @since 0.2.1
  */
 @RequiredArgsConstructor
-public class FetchTaskProcessor {
+class FetchTaskProcessor {
     private List<FetchTaskBean> fetchTaskBeanList = Lists.newLinkedList();
     @NonNull
     private AnnotationProcessorFactory annotationProcessorFactory;
 
-    public void registerTask(FetchTaskBean fetchTaskBean) {
+    void registerTask(FetchTaskBean fetchTaskBean) {
         fetchTaskBeanList.add(fetchTaskBean);
     }
 
@@ -94,7 +94,7 @@ public class FetchTaskProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    public List<Seed> injectField(final AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, CrawlResult crawlResult, boolean save) {
+    List<Seed> injectField(final AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, CrawlResult crawlResult, boolean save) {
         List<Seed> newSeeds = Lists.newLinkedList();
         try {
             for (FetchTaskBean fetchTaskBean : fetchTaskBeanList) {
@@ -149,7 +149,7 @@ public class FetchTaskProcessor {
                         }
                         Object next = ((Collection) transformedObject).iterator().next();
                         if (next instanceof String) {
-                            crawlResult.addSeeds(Collections2.transform((Collection<? extends Object>) transformedObject, new Function<Object, Seed>() {
+                            crawlResult.addSeeds(Collections2.transform((Collection<Object>) transformedObject, new Function<Object, Seed>() {
                                 @Override
                                 public Seed apply(Object input) {
                                     Seed seed = new Seed(input.toString());

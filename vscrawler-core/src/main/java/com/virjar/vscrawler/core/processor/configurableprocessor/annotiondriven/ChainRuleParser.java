@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  * @author virjar
  * @since 0.2.1
  */
-public class ChainRuleParser {
+class ChainRuleParser {
     public static ModelSelector parse(String rule) {
         final TokenQueue tokenQueue = new TokenQueue(rule);
         tokenQueue.consumeWhitespace();

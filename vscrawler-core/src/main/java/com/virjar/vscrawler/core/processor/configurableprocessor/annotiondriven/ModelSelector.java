@@ -9,6 +9,6 @@ import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
  * @author virjar
  * @since 0.2.1
  */
-public interface ModelSelector {
+interface ModelSelector {
     AbstractSelectable select(AbstractSelectable abstractSelectable);
 }
