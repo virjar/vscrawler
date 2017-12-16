@@ -1,13 +1,5 @@
 package com.virjar.vscrawler.core.selector.combine.convert;
 
-import java.util.List;
-import java.util.Map;
-
-import com.virjar.sipsoup.model.SipNodes;
-import org.apache.commons.lang3.StringUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.google.common.base.Function;
@@ -16,13 +8,19 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.virjar.sipsoup.model.SIPNode;
+import com.virjar.sipsoup.model.SipNodes;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
 import com.virjar.vscrawler.core.selector.combine.selectables.JsonNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.RawNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.StringNode;
 import com.virjar.vscrawler.core.selector.combine.selectables.XpathNode;
-
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by virjar on 17/6/30.
@@ -52,7 +50,7 @@ public class Converters {
         register(StringNode.class, JsonNode.class, new NodeConvert<StringNode, JsonNode>() {
             @Override
             public JsonNode convert(StringNode from) {
-                JsonNode jsonNode = new JsonNode(from.getBaseUrl(), null);
+                JsonNode jsonNode = new JsonNode(from.getBaseUrl(), (String) null);
                 jsonNode.setModel(Lists.transform(from.createOrGetModel(), new Function<String, JSON>() {
                     @Override
                     public JSON apply(String input) {
@@ -66,7 +64,7 @@ public class Converters {
         register(XpathNode.class, JsonNode.class, new NodeConvert<XpathNode, JsonNode>() {
             @Override
             public JsonNode convert(XpathNode from) {
-                JsonNode ret = new JsonNode(from.getBaseUrl(), null);
+                JsonNode ret = new JsonNode(from.getBaseUrl(), (String) null);
                 ret.setModel(Lists.newLinkedList(
                         Iterables.transform(Iterables.filter(from.createOrGetModel(), new Predicate<SIPNode>() {
                             @Override
@@ -222,7 +220,7 @@ public class Converters {
         register(StringNode.class, XpathNode.class, new NodeConvert<StringNode, XpathNode>() {
             @Override
             public XpathNode convert(final StringNode from) {
-                XpathNode ret = new XpathNode(from.getBaseUrl(), null);
+                XpathNode ret = new XpathNode(from.getBaseUrl(), (String) null);
                 ret.setModel(new SipNodes(Lists
                         .newLinkedList(Iterables.transform(from.createOrGetModel(), new Function<String, SIPNode>() {
                             @Override

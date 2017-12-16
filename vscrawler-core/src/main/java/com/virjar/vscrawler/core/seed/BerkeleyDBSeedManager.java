@@ -133,7 +133,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
         } finally {
             IOUtils.closeQuietly(cursor);
-           // IOUtils.closeQuietly(iteratorDatabases);
+            // IOUtils.closeQuietly(iteratorDatabases);
         }
     }
 
@@ -432,7 +432,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
         } finally {
             unlockDBOperate();
-           // IOUtils.closeQuietly(iteratorDatabases);
+            // IOUtils.closeQuietly(iteratorDatabases);
         }
     }
 
@@ -473,13 +473,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         int realAddSeedNumber = 0;
         // 处理各自的段
         for (Map.Entry<String, Collection<Seed>> entry : segmentSeeds.asMap().entrySet()) {
-            Database runningSeedDatabase = null;
-            Database finishedSeedDatabase = null;
             BloomFilter<Seed> bloomFilter = getOrCreate(entry.getKey());
             try {
                 lockDBOperate();
-                runningSeedDatabase = createOrGetDataBase(RUNNING_SEGMENT_PREFIX + entry.getKey());// env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
-                finishedSeedDatabase = createOrGetDataBase(FINISHED_SEGMENT_PREFIX + entry.getKey());// env.openDatabase(null, FINISHED_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
+                Database runningSeedDatabase = createOrGetDataBase(RUNNING_SEGMENT_PREFIX + entry.getKey());// env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
+                Database finishedSeedDatabase = createOrGetDataBase(FINISHED_SEGMENT_PREFIX + entry.getKey());// env.openDatabase(null, FINISHED_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
                 for (Seed seed : entry.getValue()) {
                     if (bloomFilter.mightContain(seed)) {
                         continue;
@@ -522,8 +520,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 log.info("实际导入种子数量:{}", realAddSeedNumber);
             } finally {
                 unlockDBOperate();
-                // IOUtils.closeQuietly(runningSeedDatabase);
-                //IOUtils.closeQuietly(finishedSeedDatabase);
             }
         }
 
