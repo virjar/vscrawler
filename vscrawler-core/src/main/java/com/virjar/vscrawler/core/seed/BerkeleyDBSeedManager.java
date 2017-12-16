@@ -596,7 +596,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 dbLock.unlock();
                 break;
             }
-            dbLock.unlock();
             try {
                 dbRelease.await();
             } catch (InterruptedException e) {
@@ -604,6 +603,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 IOUtils.closeQuietly(env);
                 throw new IllegalStateException("can not close db ,db operate await Interrupted");
             }
+            dbLock.unlock();
         }
         log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
     }
