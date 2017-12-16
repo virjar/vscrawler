@@ -57,7 +57,6 @@ public class LocalFileSeedSource implements InitSeedSource, LoadNextBatchSeedEve
 
 
     private Collection<Seed> readBatch() {
-
         List<Seed> seeds = Lists.newLinkedList();
         try {
             String line;

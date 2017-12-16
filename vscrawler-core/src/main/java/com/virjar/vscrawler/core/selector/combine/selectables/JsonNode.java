@@ -24,7 +24,6 @@ public class JsonNode extends AbstractSelectable<List<JSON>> {
     @Override
     public List<JSON> createOrGetModel() {
         if (model == null) {
-
             model = Lists.newArrayList((JSON) JSON.toJSON(getRawText()));
         }
         return model;

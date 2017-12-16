@@ -170,7 +170,7 @@ class ModelExtractor {
                 continue;
             }
             model.beforeAutoFetch();
-            List<Seed> newSeeds = fetchTaskProcessor.injectField(model, next, crawlResult, false);
+            List<Seed> newSeeds = fetchTaskProcessor.injectField(model, next, crawlResult);
             model.afterAutoFetch();
             newSeeds.addAll(model.newSeeds());
 

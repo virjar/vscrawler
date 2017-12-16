@@ -34,12 +34,9 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Slf4j
 public abstract class AbstractSelectable<M> {
-
-
     private String rawText;
     private boolean hasRawTextLoad = false;
     private RawTextStringFactory rawTextStringFactory;
-
     private ConcurrentMap<Class, AbstractSelectable> covertCache = Maps.newConcurrentMap();
 
     public String getRawText() {

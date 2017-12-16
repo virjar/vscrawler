@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -109,7 +110,7 @@ class FetchTaskProcessor {
 
 
     @SuppressWarnings("unchecked")
-    List<Seed> injectField(final AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, final CrawlResult crawlResult, boolean save) {
+    List<Seed> injectField(final AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, final CrawlResult crawlResult) {
         List<Seed> newSeeds = Lists.newLinkedList();
 
         for (final FetchTaskBean fetchTaskBean : fetchTaskBeanList) {
@@ -124,7 +125,6 @@ class FetchTaskProcessor {
                 }
 
                 Object data = null;
-
                 if (Collection.class.isAssignableFrom(type) && fetchTaskBean.getHelpClazz() != Object.class && annotationProcessorBuilder.findExtractor(fetchTaskBean.getHelpClazz()) != null) {
                     List<AbstractSelectable> abstractSelectables = fetchTaskBean.getModelSelector().select(abstractSelectable).toMultiSelectable();
                     data = Lists.transform(abstractSelectables, new Function<AbstractSelectable, AbstractAutoProcessModel>() {
@@ -153,48 +153,8 @@ class FetchTaskProcessor {
                     transformedObject = TypeUtils.cast(data, type, ParserConfig.getGlobalInstance());
                 }
                 field.set(model, transformedObject);
-
                 if (fetchTaskBean.isNewSeed()) {
-                    //新种子注入处理
-                    if (transformedObject instanceof String) {
-                        Seed seed = new Seed(transformedObject.toString());
-                        seed.getExt().put("fromUrl", model.getBaseUrl());
-                        newSeeds.add(seed);
-                    } else if (transformedObject instanceof Seed) {
-                        Seed seed = (Seed) transformedObject;
-                        seed.getExt().put("fromUrl", model.getBaseUrl());
-                        crawlResult.addSeed(seed);
-                    } else if (transformedObject instanceof Collection) {
-                        int size = ((Collection) transformedObject).size();
-                        if (size <= 0) {
-                            continue;
-                        }
-                        Object next = ((Collection) transformedObject).iterator().next();
-                        if (next instanceof String) {
-                            crawlResult.addSeeds(Collections2.transform((Collection<Object>) transformedObject, new Function<Object, Seed>() {
-                                @Override
-                                public Seed apply(Object input) {
-                                    Seed seed = new Seed(input.toString());
-                                    seed.getExt().put("fromUrl", model.getBaseUrl());
-                                    return seed;
-                                }
-                            }));
-                        } else if (next instanceof Seed) {
-                            crawlResult.addSeeds(Collections2.transform((Collection<Object>) transformedObject, new Function<Object, Seed>() {
-                                @Override
-                                public Seed apply(Object input) {
-                                    Seed seed = (Seed) input;
-                                    seed.getExt().put("fromUrl", model.getBaseUrl());
-                                    return seed;
-                                }
-                            }));
-                        } else {
-                            throw new IllegalStateException("unknown type for " + next.getClass().getName() + " to transfer to new Seed");
-                        }
-                    } else {
-                        throw new IllegalStateException("unknown type for " + transformedObject.getClass().getName() + " to transfer to new Seed");
-                    }
-
+                    newSeeds.addAll(handleNewSeed(transformedObject, model.getBaseUrl()));
                 }
             } catch (Exception e) {
                 throw new RuntimeException("can not inject data for model:" + model.getClass().getName() + " for field: " + fetchTaskBean.getField().getName(), e);
@@ -202,5 +162,47 @@ class FetchTaskProcessor {
         }
 
         return newSeeds;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Seed> handleNewSeed(Object transformedObject, final String baseUrl) {
+        //新种子注入处理
+        if (transformedObject instanceof String) {
+            Seed seed = new Seed(transformedObject.toString());
+            seed.getExt().put("fromUrl", baseUrl);
+            return Lists.newArrayList(seed);
+        } else if (transformedObject instanceof Seed) {
+            Seed seed = (Seed) transformedObject;
+            seed.getExt().put("fromUrl", baseUrl);
+            return Lists.newArrayList(seed);
+        } else if (transformedObject instanceof Collection) {
+            int size = ((Collection) transformedObject).size();
+            if (size <= 0) {
+                return Collections.emptyList();
+            }
+            Object next = ((Collection) transformedObject).iterator().next();
+            if (next instanceof String) {
+                return Lists.newArrayList(Collections2.transform((Collection<Object>) transformedObject, new Function<Object, Seed>() {
+                    @Override
+                    public Seed apply(Object input) {
+                        Seed seed = new Seed(input.toString());
+                        seed.getExt().put("fromUrl", baseUrl);
+                        return seed;
+                    }
+                }));
+            } else if (next instanceof Seed) {
+                return Lists.newArrayList((Collections2.transform((Collection<Object>) transformedObject, new Function<Object, Seed>() {
+                    @Override
+                    public Seed apply(Object input) {
+                        Seed seed = (Seed) input;
+                        seed.getExt().put("fromUrl", baseUrl);
+                        return seed;
+                    }
+                })));
+            }
+            throw new IllegalStateException("unknown type for " + next.getClass().getName() + " to transfer to new Seed");
+
+        }
+        throw new IllegalStateException("unknown type for " + transformedObject.getClass().getName() + " to transfer to new Seed");
     }
 }
