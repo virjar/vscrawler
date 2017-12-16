@@ -122,12 +122,14 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
     }
 
-    public void pushSeed(Seed seed) {
+    public VSCrawler pushSeed(Seed seed) {
         this.berkeleyDBSeedManager.addNewSeeds(Lists.newArrayList(seed));
+        return this;
     }
 
-    public void pushSeed(String seed) {
+    public VSCrawler pushSeed(String seed) {
         berkeleyDBSeedManager.addNewSeeds(Lists.newArrayList(new Seed(seed)));
+        return this;
     }
 
 
@@ -418,8 +420,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         return this;
     }
 
-    public void clearTask() {
+    public VSCrawler clearTask() {
         berkeleyDBSeedManager.clear();
+        return this;
     }
 
     public int activeWorker() {

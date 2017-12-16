@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * Created by virjar on 2017/12/10.<br/>
  * 链式表达式
- * *
+ *   支持链式规则 $css{} $xpath{} $regex{} $jsonpath{} $stringrule{}
  *
  * @author virjar
  * @since 0.2.1

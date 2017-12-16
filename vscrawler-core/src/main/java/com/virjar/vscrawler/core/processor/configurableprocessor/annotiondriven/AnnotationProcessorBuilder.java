@@ -43,6 +43,9 @@ public class AnnotationProcessorBuilder {
     }
 
     public AnnotationProcessorBuilder registryBean(Class<? extends AbstractAutoProcessModel> clazz) {
+        if (allExtractors.containsKey(clazz)) {
+            return this;
+        }
         //所有抽取规则
         allExtractors.put(clazz, new ModelExtractor(clazz, this));
         //存在match seed的bean,可以标记为种子处理器,会被注册为processor
@@ -108,7 +111,12 @@ public class AnnotationProcessorBuilder {
     }
 
     public SeedProcessor build() {
-        scan();
+        if (allExtractors.size() == 0 || scanPackage.size() > 0) {
+            scan();
+        }
+        if (allExtractors.size() == 0) {
+            throw new IllegalStateException("can not find any auto processor model,please check you configuration");
+        }
         for (ModelExtractor modelExtractor : allExtractors.values()) {
             modelExtractor.init();
         }

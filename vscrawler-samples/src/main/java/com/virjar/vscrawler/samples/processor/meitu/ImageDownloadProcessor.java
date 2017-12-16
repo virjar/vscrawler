@@ -21,7 +21,7 @@ import java.io.IOException;
 public class ImageDownloadProcessor extends AbstractAutoProcessModel {
 
     @DownLoadMethod//DownLoadMethod修饰方法,当下载逻辑不是get,或者需要设置下载参数等特殊逻辑的时候,可以通过这个注解替换默认下载逻辑
-    //不过由DownLoadMethod修饰的方法,比如满足DownLoadMethod需要的方法签名格式(返回类型为string,有且仅包含seed,crawlerSession两个参数)
+    //不过由DownLoadMethod修饰的方法,必须满足DownLoadMethod需要的方法签名格式(返回类型为string,有且仅包含seed,crawlerSession两个参数)
     public String downLoadImage(Seed seed, CrawlerSession crawlerSession) {
         Header[] headers = HeaderBuilder.create().withRefer(seed.getExt().get("fromUrl")).defaultCommonHeader().buildArray();
         byte[] entity = crawlerSession.getCrawlerHttpClient().getEntity(seed.getData(), headers);
