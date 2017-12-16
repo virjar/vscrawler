@@ -4,7 +4,7 @@ import com.alibaba.fastjson.annotation.JSONField;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerBuilder;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.AbstractAutoProcessModel;
-import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.AnnotationProcessorFactory;
+import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.AnnotationProcessorBuilder;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.AutoProcessor;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.NewSeed;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.Xpath;
@@ -33,7 +33,7 @@ public class MeituCrawler extends AbstractAutoProcessModel {
     public static void main(String[] args) {
 
         VSCrawler vsCrawler = VSCrawlerBuilder.create().setWorkerThreadNumber(10).setCrawlerName("beautyCrawler_Annotation")
-                .setProcessor(AnnotationProcessorFactory.create().addBeanPackage("com.virjar.vscrawler.samples.processor.meitu").build())
+                .setProcessor(AnnotationProcessorBuilder.create().addBeanPackage("com.virjar.vscrawler.samples.processor.meitu").build())
                 .build();
         vsCrawler.start();
         vsCrawler.clearTask();

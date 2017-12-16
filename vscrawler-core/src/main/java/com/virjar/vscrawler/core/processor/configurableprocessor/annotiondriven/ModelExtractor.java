@@ -27,16 +27,16 @@ class ModelExtractor {
     private Class<? extends AbstractAutoProcessModel> aClass;
     private FetchTaskProcessor fetchTaskProcessor;
     private ModelSelector rootSelector;
-    private AnnotationProcessorFactory annotationProcessorFactory;
+    private AnnotationProcessorBuilder annotationProcessorBuilder;
 
 
-    ModelExtractor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorFactory annotationProcessorFactory) {
+    ModelExtractor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorBuilder annotationProcessorBuilder) {
         this.aClass = aClass;
-        this.annotationProcessorFactory = annotationProcessorFactory;
+        this.annotationProcessorBuilder = annotationProcessorBuilder;
     }
 
     public void init() {
-        judgeRender(annotationProcessorFactory);
+        judgeRender(annotationProcessorBuilder);
         judgeRootSelector();
     }
 
@@ -55,8 +55,8 @@ class ModelExtractor {
         rootSelector = ChainRuleParser.parse(fetchChain.value());
     }
 
-    private void judgeRender(AnnotationProcessorFactory annotationProcessorFactory) {
-        fetchTaskProcessor = new FetchTaskProcessor(annotationProcessorFactory);
+    private void judgeRender(AnnotationProcessorBuilder annotationProcessorBuilder) {
+        fetchTaskProcessor = new FetchTaskProcessor(annotationProcessorBuilder);
 
         Class clazz = aClass;
         do {

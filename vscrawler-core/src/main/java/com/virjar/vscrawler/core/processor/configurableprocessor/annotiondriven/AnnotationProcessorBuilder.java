@@ -25,24 +25,24 @@ import java.util.regex.PatternSyntaxException;
  * @author virjar
  * @since 0.2.1
  */
-public class AnnotationProcessorFactory {
+public class AnnotationProcessorBuilder {
     private List<String> scanPackage = Lists.newLinkedList();
     private List<AnnotationSeedProcessor> annotationSeedProcessors = Lists.newLinkedList();
     private Map<Class<? extends AbstractAutoProcessModel>, ModelExtractor> allExtractors = Maps.newHashMap();
 
-    private AnnotationProcessorFactory() {
+    private AnnotationProcessorBuilder() {
     }
 
-    public static AnnotationProcessorFactory create() {
-        return new AnnotationProcessorFactory();
+    public static AnnotationProcessorBuilder create() {
+        return new AnnotationProcessorBuilder();
     }
 
-    public AnnotationProcessorFactory addBeanPackage(String packageName) {
+    public AnnotationProcessorBuilder addBeanPackage(String packageName) {
         scanPackage.add(packageName);
         return this;
     }
 
-    public AnnotationProcessorFactory registryBean(Class<? extends AbstractAutoProcessModel> clazz) {
+    public AnnotationProcessorBuilder registryBean(Class<? extends AbstractAutoProcessModel> clazz) {
         //所有抽取规则
         allExtractors.put(clazz, new ModelExtractor(clazz, this));
         //存在match seed的bean,可以标记为种子处理器,会被注册为processor

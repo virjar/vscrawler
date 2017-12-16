@@ -31,7 +31,7 @@ import java.util.List;
 class FetchTaskProcessor {
     private List<FetchTaskBean> fetchTaskBeanList = Lists.newLinkedList();
     @NonNull
-    private AnnotationProcessorFactory annotationProcessorFactory;
+    private AnnotationProcessorBuilder annotationProcessorBuilder;
 
     void registerTask(FetchTaskBean fetchTaskBean) {
         fetchTaskBeanList.add(fetchTaskBean);
@@ -101,7 +101,7 @@ class FetchTaskProcessor {
                 Field field = fetchTaskBean.getField();
                 Class<?> type = field.getType();
                 //处理循环的model,支持子结构抽取
-                if (AbstractAutoProcessModel.class.isAssignableFrom(type) && annotationProcessorFactory.findExtractor((Class<? extends AbstractAutoProcessModel>) type) != null) {
+                if (AbstractAutoProcessModel.class.isAssignableFrom(type) && annotationProcessorBuilder.findExtractor((Class<? extends AbstractAutoProcessModel>) type) != null) {
                     AbstractSelectable subSelectable = fetchTaskBean.getModelSelector().select(abstractSelectable);
                     AbstractAutoProcessModel subModel = (AbstractAutoProcessModel) ObjectFactory.newInstance(type);
                     subModel.setBaseUrl(model.getBaseUrl());
@@ -110,7 +110,7 @@ class FetchTaskProcessor {
                     String rawText = subSelectable.getRawText();
                     subModel.setRawText(rawText);
                     subModel.beforeAutoFetch();
-                    annotationProcessorFactory.findExtractor((Class<? extends AbstractAutoProcessModel>) type).process(model.seed, rawText, crawlResult, subModel, subSelectable, save);
+                    annotationProcessorBuilder.findExtractor((Class<? extends AbstractAutoProcessModel>) type).process(model.seed, rawText, crawlResult, subModel, subSelectable, save);
                     subModel.afterAutoFetch();
                     field.set(model, subModel);
                     continue;

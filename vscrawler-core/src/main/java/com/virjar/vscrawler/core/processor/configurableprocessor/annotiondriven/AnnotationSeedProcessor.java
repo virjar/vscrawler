@@ -26,9 +26,9 @@ class AnnotationSeedProcessor implements BindRouteProcessor {
     private Downloader downloader;
     private Class<? extends AbstractAutoProcessModel> aClass;
 
-    AnnotationSeedProcessor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorFactory annotationProcessorFactory, MatchStrategy matchStrategy) {
+    AnnotationSeedProcessor(Class<? extends AbstractAutoProcessModel> aClass, AnnotationProcessorBuilder annotationProcessorBuilder, MatchStrategy matchStrategy) {
         this.matchStrategy = matchStrategy;
-        this.modelExtractor = annotationProcessorFactory.findExtractor(aClass);
+        this.modelExtractor = annotationProcessorBuilder.findExtractor(aClass);
         this.aClass = aClass;
         judgeDownloader(aClass);
     }
