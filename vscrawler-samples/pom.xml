@@ -5,7 +5,7 @@
     <parent>
         <artifactId>vscrawler</artifactId>
         <groupId>com.virjar</groupId>
-        <version>0.2.1</version>
+        <version>0.2.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <version>${project.parent.version}</version>
@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.virjar</groupId>
             <artifactId>vscrawler-core</artifactId>
-            <version>0.2.1-SNAPSHOT</version>
+            <version>0.2.2-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>

@@ -16,7 +16,7 @@ import java.util.List;
  * 抓取无忧代理的代理ip,本demo展示注解,多行抽取功能
  */
 @AutoProcessor(seedPattern = "http://www\\.data5u\\.com/free/index\\.shtml")
-@FetchChain("$css{.l2}")//这里抽取结果如果是多个,则会自动为每个结果建立要给model,也就是会自动判断是单行还是多行数据
+@FetchChain("$css{.l2}")
 //对model本身的抽取,必须使用FetchChain注解,FetchChain是链式抽取标记,可以支持$css{} $xpath{} $regex{} $jsonpath{} $stringrule{}
 //多个规则使用直接按顺序书写即可 如: $css{.class}$xpath{//div[@data='abc']//a/absUrl()}$stringrule{deleteWhiteSpace(self())}
 //如果表达式中存在关键字"{"或者"}",使用反斜线转义即可
@@ -32,7 +32,7 @@ public class U5ProxyIpCrawler extends AbstractAutoProcessModel {
     private Integer port;
 
     @Xpath("/span[3]/li/allText()")
-    //关于allText和text的区别,allText将会抽取子节点文本(对应Jsoup的text),text只会抽取当前节点文本(对应Jsoup的ownText),xpath语法细节请了解SipSoup这个项目
+    //关于allText和text的区别,allText将会抽取子节点文本,,请了解SipSoup这个项目
     @Getter
     private String anonymous;
 
@@ -87,10 +87,7 @@ public class U5ProxyIpCrawler extends AbstractAutoProcessModel {
     public static void main(String[] args) {
         VSCrawlerBuilder
                 .create()
-                .setProcessor(AnnotationProcessorBuilder
-                        .create()
-                        .registryBean(U5ProxyIpCrawler.class)
-                        .build())
+                .setProcessor(AnnotationProcessorBuilder.create().registryBean(U5ProxyIpCrawler.class).build())
                 .setCrawlerName("u5ProxyCrawler")
                 .build()
                 .clearTask()

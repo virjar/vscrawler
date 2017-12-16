@@ -47,8 +47,4 @@ public class Star extends AbstractAutoProcessModel {
             starName = matcher.group(1);
         }
     }
-
-    public static void main(String[] args) {
-
-    }
 }
