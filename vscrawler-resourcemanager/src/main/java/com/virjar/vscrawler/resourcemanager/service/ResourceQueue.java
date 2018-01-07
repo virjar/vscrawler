@@ -124,6 +124,7 @@ public class ResourceQueue {
         double newScore = resourceItem.getScore() * (resourceSetting.getScoreFactory() - 1) + (isOK ? 1 : 0);
         resourceItem.setScore(newScore);
         resourceItem.setValidTimeStamp(0);
+        resourceItem.setKey(key);
 
         if (inLeaveQueue) {
             queue.remove(makeLeaveQueueID(), key);
@@ -131,7 +132,7 @@ public class ResourceQueue {
             return;
         }
         if (isOK) {
-            queue.update(makePollingQueueID(), key, resourceItem);
+            queue.update(makePollingQueueID(), resourceItem);
             return;
         }
 

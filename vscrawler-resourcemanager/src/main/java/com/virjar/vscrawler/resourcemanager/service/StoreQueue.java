@@ -20,15 +20,12 @@ public interface StoreQueue {
 
     ResourceItem poll(String queueID);
 
-    ResourceItem take(String queueID);
-
-    ResourceItem take(String queueID, long timeOut);
 
     ResourceItem get(String queueID, String key);
 
     long index(String queueID, String key);
 
-    boolean update(String queueID, String key, ResourceItem e);
+    boolean update(String queueID, ResourceItem e);
 
     ResourceItem remove(String queueID, String key);
 }

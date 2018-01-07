@@ -173,17 +173,6 @@ public class RamStoreQueue implements StoreQueue {
         return createOrGet(queueID).removeFirst();
     }
 
-    @Override
-    @Deprecated
-    public ResourceItem take(String queueID) {
-        return null;
-    }
-
-    @Override
-    @Deprecated
-    public ResourceItem take(String queueID, long timeOut) {
-        return null;
-    }
 
     @Override
     public ResourceItem get(String queueID, String key) {
@@ -196,8 +185,7 @@ public class RamStoreQueue implements StoreQueue {
     }
 
     @Override
-    public boolean update(String queueID, String key, ResourceItem e) {
-        e.setKey(key);
+    public boolean update(String queueID, ResourceItem e) {
         //对于ram来说,update 无意义
         //createOrGet(queueID).update(e);
         return true;
