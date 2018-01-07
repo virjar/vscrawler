@@ -24,7 +24,7 @@ public class ResourceQueue {
     private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
 
     public ResourceQueue(String tag) {
-        Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
+        Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z0-9_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
         this.tag = tag;
     }
 
