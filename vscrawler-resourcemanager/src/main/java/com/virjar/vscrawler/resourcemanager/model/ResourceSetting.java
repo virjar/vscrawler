@@ -44,7 +44,7 @@ public class ResourceSetting {
     }
 
     public ResourceSetting setScoreFactory(int scoreFactory) {
-        Preconditions.checkArgument(scoreFactory > 0);
+        Preconditions.checkArgument(scoreFactory > 1);
         this.scoreFactory = scoreFactory;
         return this;
     }
