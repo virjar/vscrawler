@@ -18,7 +18,7 @@ public class ResourceQueue {
     private static final String polling = "vscrawler_resourceManager_polling_";
     private static final String leave = "vscrawler_resourceManager_leave_";
     private static final String forbidden = "vscrawler_resourceManager_forbidden_";
-    private ScoreQueue<ResourceItem> queue;
+    private StoreQueue queue;
     private ResourceSetting resourceSetting;
     private static final long nextCheckLeaveQueueDuration = 1000 * 60 * 30;
     private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
