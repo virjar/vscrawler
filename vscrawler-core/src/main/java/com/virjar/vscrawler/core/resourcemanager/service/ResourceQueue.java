@@ -6,7 +6,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
-import com.virjar.vscrawler.core.resourcemanager.util.CatchRegexPattern;
+import com.virjar.vscrawler.core.util.CatchRegexPattern;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
