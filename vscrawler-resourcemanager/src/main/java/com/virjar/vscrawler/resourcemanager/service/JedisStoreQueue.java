@@ -11,6 +11,8 @@ import redis.clients.jedis.BinaryClient;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -284,6 +286,26 @@ public class JedisStoreQueue implements StoreQueue {
                 jedis.hset(dataKey, resourceItem.getKey(), JSONObject.toJSONString(resourceItem));
                 jedis.rpush(poolQueueKey, resourceItem.getKey());
             }
+        } finally {
+            IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
+        }
+    }
+
+    @Override
+    public Set<String> notExisted(String queueID, Set<String> resourceItemKeys) {
+        if (!lockQueue(queueID)) {
+            return Collections.emptySet();
+        }
+        Jedis jedis = jedisPool.getResource();
+        try {
+            final HashSet<String> existedSet = Sets.newHashSet(jedis.lrange(makePoolQueueKey(queueID), 0, -1));
+            return Sets.filter(resourceItemKeys, new Predicate<String>() {
+                @Override
+                public boolean apply(String input) {
+                    return !existedSet.contains(input);
+                }
+            });
         } finally {
             IOUtils.closeQuietly(jedis);
             unLockQueue(queueID);

@@ -32,4 +32,6 @@ public interface StoreQueue {
     ResourceItem remove(String queueID, String key);
 
     void addBatch(String queueID, Set<ResourceItem> resourceItems);
+
+    Set<String> notExisted(String queueID, Set<String> resourceItemKeys);
 }

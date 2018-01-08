@@ -1,11 +1,17 @@
 package com.virjar.vscrawler.resourcemanager.service;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.resourcemanager.model.ResourceSetting;
 import com.virjar.vscrawler.resourcemanager.util.CatchRegexPattern;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.Set;
 
 /**
  * Created by virjar on 2018/1/4.<br/>
@@ -24,12 +30,43 @@ public class ResourceQueue {
     private ResourceSetting resourceSetting;
     private static final long nextCheckLeaveQueueDuration = 1000 * 60 * 30;
     private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
+    private ResourceLoader resourceLoader;
 
     public ResourceQueue(String tag, StoreQueue queue, ResourceSetting resourceSetting) {
         Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z0-9_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
         this.tag = tag;
         this.queue = queue;
         this.resourceSetting = resourceSetting;
+    }
+
+    private void importNewData(Set<ResourceItem> resourceItems) {
+        Set<String> resourceKeys = Sets.newHashSet(Iterables.transform(resourceItems, new Function<ResourceItem, String>() {
+            @Override
+            public String apply(ResourceItem input) {
+                return input.getKey();
+            }
+        }));
+        resourceKeys = queue.notExisted(makePollingQueueID(), resourceKeys);
+        resourceKeys = queue.notExisted(makeLeaveQueueID(), resourceKeys);
+        resourceKeys = queue.notExisted(makeForbiddenQueueID(), resourceKeys);
+        final Set<String> canImportKey = resourceKeys;
+        queue.addBatch(makePollingQueueID(), Sets.filter(resourceItems, new Predicate<ResourceItem>() {
+            @Override
+            public boolean apply(ResourceItem input) {
+                return canImportKey.contains(input.getKey());
+            }
+        }));
+    }
+
+    private void loadResource() {
+        Set<ResourceItem> collection = Sets.newHashSet();
+        boolean hasNext = resourceLoader.loadResource(collection);
+        importNewData(collection);
+        while (hasNext) {
+            collection.clear();
+            hasNext = resourceLoader.loadResource(collection);
+            importNewData(collection);
+        }
     }
 
     private String makeForbiddenQueueID() {
@@ -77,6 +114,11 @@ public class ResourceQueue {
                 if (recoverySize > 0 && resourceItem == null) {
                     resourceItem = queue.poll(makePollingQueueID());
                 }
+            }
+
+            if (resourceItem == null && queue.size(makePollingQueueID()) == 0 && queue.size(makeLeaveQueueID()) == 0 && queue.size(makeForbiddenQueueID()) == 0) {
+                loadResource();
+                resourceItem = queue.poll(makePollingQueueID());
             }
 
             if (resourceItem == null) {

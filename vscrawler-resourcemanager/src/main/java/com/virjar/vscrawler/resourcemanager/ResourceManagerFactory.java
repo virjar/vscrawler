@@ -29,6 +29,4 @@ public class ResourceManagerFactory {
         resourceQueueMap.put(resourceQueue.getTag(), resourceQueue);
     }
 
-
-
 }

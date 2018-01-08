@@ -3,6 +3,7 @@ package com.virjar.vscrawler.resourcemanager.service;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
 
 import java.util.*;
@@ -214,5 +215,16 @@ public class RamStoreQueue implements StoreQueue {
     @Override
     public void addBatch(String queueID, Set<ResourceItem> resourceItems) {
         createOrGet(queueID).addAll(resourceItems);
+    }
+
+    @Override
+    public Set<String> notExisted(String queueID, Set<String> resourceItemKeys) {
+        final Map<String, ResourceItem> maps = createOrGet(queueID).maps;
+        return Sets.filter(resourceItemKeys, new Predicate<String>() {
+            @Override
+            public boolean apply(String input) {
+                return !maps.containsKey(input);
+            }
+        });
     }
 }
