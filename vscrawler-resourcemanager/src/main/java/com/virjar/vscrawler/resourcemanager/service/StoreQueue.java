@@ -2,6 +2,8 @@ package com.virjar.vscrawler.resourcemanager.service;
 
 import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
 
+import java.util.Set;
+
 /**
  * Created by virjar on 2018/1/4.<br/>
  *
@@ -28,4 +30,6 @@ public interface StoreQueue {
     boolean update(String queueID, ResourceItem e);
 
     ResourceItem remove(String queueID, String key);
+
+    void addBatch(String queueID, Set<ResourceItem> resourceItems);
 }

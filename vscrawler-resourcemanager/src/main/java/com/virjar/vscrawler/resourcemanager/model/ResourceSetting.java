@@ -26,7 +26,7 @@ public class ResourceSetting {
     /**
      * smartProxyQueue另一个参数,用来确定队列轮询区和备用区的容量比例
      */
-    private double scoreRatio = 0.3;
+    private double scoreRatio = 0.7;
 
     /**
      * 锁强制释放时间,如果客户端得到了资源,但是并没有feedback,则该资源可能一直加锁,可能导致锁泄露问题。所以任何锁都设置超时时间,如果达到了超时时间,仍然没有释放锁,则将其强制释放,避免客户端本身问题拉跨资源分发服务,

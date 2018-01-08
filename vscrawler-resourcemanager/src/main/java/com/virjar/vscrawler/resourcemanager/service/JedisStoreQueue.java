@@ -2,6 +2,8 @@ package com.virjar.vscrawler.resourcemanager.service;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Sets;
 import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -10,6 +12,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by virjar on 2018/1/7.<br/>
@@ -156,11 +159,8 @@ public class JedisStoreQueue implements StoreQueue {
         Jedis jedis = jedisPool.getResource();
         try {
             String dataJson = jedis.hget(makeDataKey(queueID), e.getKey());
-            if (isNil(dataJson)) {
-                return false;
-            }
             jedis.hset(makeDataKey(queueID), e.getKey(), JSONObject.toJSONString(e));
-            return true;
+            return !isNil(dataJson);
         } finally {
             IOUtils.closeQuietly(jedis);
         }
@@ -177,6 +177,27 @@ public class JedisStoreQueue implements StoreQueue {
                 return null;
             }
             return JSONObject.toJavaObject(JSON.parseObject(dataJson), ResourceItem.class);
+        } finally {
+            IOUtils.closeQuietly(jedis);
+        }
+    }
+
+    @Override
+    public void addBatch(String queueID, Set<ResourceItem> resourceItems) {
+        final Jedis jedis = jedisPool.getResource();
+        final String dataKey = makeDataKey(queueID);
+        String poolQueueKey = makePoolQueueKey(queueID);
+        try {
+            Set<ResourceItem> filterSet = Sets.filter(resourceItems, new Predicate<ResourceItem>() {
+                @Override
+                public boolean apply(ResourceItem input) {
+                    return isNil(jedis.hget(dataKey, input.getKey()));
+                }
+            });
+            for (ResourceItem resourceItem : filterSet) {
+                jedis.hset(dataKey, resourceItem.getKey(), JSONObject.toJSONString(resourceItem));
+                jedis.rpush(poolQueueKey, resourceItem.getKey());
+            }
         } finally {
             IOUtils.closeQuietly(jedis);
         }

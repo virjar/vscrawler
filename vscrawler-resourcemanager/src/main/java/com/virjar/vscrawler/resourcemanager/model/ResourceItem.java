@@ -15,4 +15,20 @@ public class ResourceItem {
     private double score;
     private int status;
     private long validTimeStamp;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ResourceItem)) return false;
+
+        ResourceItem that = (ResourceItem) o;
+
+        return key.equals(that.key);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return key.hashCode();
+    }
 }

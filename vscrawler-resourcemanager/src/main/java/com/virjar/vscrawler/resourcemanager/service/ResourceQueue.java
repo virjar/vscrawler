@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.resourcemanager.model.ResourceSetting;
 import com.virjar.vscrawler.resourcemanager.util.CatchRegexPattern;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
  * @since 0.2.2
  */
 public class ResourceQueue {
+    @Getter
     private String tag;
     private static final String polling = "vscrawler_resourceManager_polling_";
     private static final String leave = "vscrawler_resourceManager_leave_";
@@ -23,9 +25,11 @@ public class ResourceQueue {
     private static final long nextCheckLeaveQueueDuration = 1000 * 60 * 30;
     private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
 
-    public ResourceQueue(String tag) {
+    public ResourceQueue(String tag, StoreQueue queue, ResourceSetting resourceSetting) {
         Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z0-9_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
         this.tag = tag;
+        this.queue = queue;
+        this.resourceSetting = resourceSetting;
     }
 
     private String makeForbiddenQueueID() {

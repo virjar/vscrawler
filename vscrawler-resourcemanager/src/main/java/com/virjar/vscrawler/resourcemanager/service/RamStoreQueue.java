@@ -1,11 +1,11 @@
 package com.virjar.vscrawler.resourcemanager.service;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
 import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -128,6 +128,21 @@ public class RamStoreQueue implements StoreQueue {
                 lock.unlock();
             }
         }
+
+        @Override
+        public boolean addAll(Collection<? extends ResourceItem> c) {
+            lock.lock();
+            try {
+                return super.addAll(Collections2.filter(c, new Predicate<ResourceItem>() {
+                    @Override
+                    public boolean apply(ResourceItem input) {
+                        return maps.put(input.getKey(), input) == null;
+                    }
+                }));
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 
     private InnerList createOrGet(String queueID) {
@@ -194,5 +209,10 @@ public class RamStoreQueue implements StoreQueue {
     @Override
     public ResourceItem remove(String queueID, String key) {
         return createOrGet(queueID).removeByKey(key);
+    }
+
+    @Override
+    public void addBatch(String queueID, Set<ResourceItem> resourceItems) {
+        createOrGet(queueID).addAll(resourceItems);
     }
 }

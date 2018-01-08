@@ -3,6 +3,8 @@ package com.virjar.vscrawler.resourcemanager;
 import com.google.common.collect.Maps;
 import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.resourcemanager.service.ResourceQueue;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ConcurrentMap;
@@ -14,9 +16,16 @@ import java.util.concurrent.ConcurrentMap;
  * @since 0.2.2
  */
 @Slf4j
+@NoArgsConstructor
+@AllArgsConstructor
 public class ResourceManager {
 
     private ConcurrentMap<String, ResourceQueue> resourceQueueConcurrentMap = Maps.newConcurrentMap();
+
+
+    public void registryTag(String tag, ResourceQueue resourceQueue) {
+        resourceQueueConcurrentMap.put(tag, resourceQueue);
+    }
 
     /**
      * 得到一个资源
