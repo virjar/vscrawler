@@ -21,6 +21,7 @@ import java.util.Set;
  * @since 0.0.1
  */
 @Slf4j
+@Deprecated
 public class UserManager implements UserStateChangeEvent {
     private UserResourceFacade userResourceFacade;
 
