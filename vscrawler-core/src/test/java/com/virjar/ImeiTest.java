@@ -1,12 +1,12 @@
-package com.virjar.vscrawler.resourcemanager.test;
+package com.virjar;
 
-import com.virjar.vscrawler.resourcemanager.ResourceManager;
-import com.virjar.vscrawler.resourcemanager.ResourceManagerFactory;
-import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
-import com.virjar.vscrawler.resourcemanager.model.ResourceSetting;
-import com.virjar.vscrawler.resourcemanager.service.RamQueueStore;
-import com.virjar.vscrawler.resourcemanager.service.ResourceLoader;
-import com.virjar.vscrawler.resourcemanager.service.ResourceQueue;
+import com.virjar.vscrawler.core.resourcemanager.ResourceManager;
+import com.virjar.vscrawler.core.resourcemanager.ResourceManagerFactory;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
+import com.virjar.vscrawler.core.resourcemanager.service.RamQueueStore;
+import com.virjar.vscrawler.core.resourcemanager.service.ResourceLoader;
+import com.virjar.vscrawler.core.resourcemanager.service.ResourceQueue;
 import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;

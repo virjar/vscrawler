@@ -1,10 +1,10 @@
-package com.virjar.vscrawler.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager.service;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Sets;
-import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.BinaryClient;

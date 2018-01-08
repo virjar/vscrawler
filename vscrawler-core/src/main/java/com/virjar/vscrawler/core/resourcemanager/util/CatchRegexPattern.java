@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.resourcemanager.util;
+package com.virjar.vscrawler.core.resourcemanager.util;
 
 import com.google.common.collect.Maps;
 

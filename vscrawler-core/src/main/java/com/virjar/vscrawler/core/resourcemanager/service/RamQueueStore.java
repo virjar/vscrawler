@@ -1,10 +1,10 @@
-package com.virjar.vscrawler.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager.service;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;

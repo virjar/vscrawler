@@ -1,13 +1,13 @@
-package com.virjar.vscrawler.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager.service;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
-import com.virjar.vscrawler.resourcemanager.model.ResourceSetting;
-import com.virjar.vscrawler.resourcemanager.util.CatchRegexPattern;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.util.CatchRegexPattern;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 

@@ -16,7 +16,7 @@ import java.util.List;
  * 抓取无忧代理的代理ip,本demo展示注解,多行抽取功能
  */
 @AutoProcessor(seedPattern = "http://www\\.data5u\\.com/free/index\\.shtml")
-@FetchChain("$css{.l2}")
+@FetchChain("$css{.l2} ")
 //对model本身的抽取,必须使用FetchChain注解,FetchChain是链式抽取标记,可以支持$css{} $xpath{} $regex{} $jsonpath{} $stringrule{}
 //多个规则使用直接按顺序书写即可 如: $css{.class}$xpath{//div[@data='abc']//a/absUrl()}$stringrule{deleteWhiteSpace(self())}
 //如果表达式中存在关键字"{"或者"}",使用反斜线转义即可

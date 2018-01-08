@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.resourcemanager.model;
+package com.virjar.vscrawler.core.resourcemanager.model;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;

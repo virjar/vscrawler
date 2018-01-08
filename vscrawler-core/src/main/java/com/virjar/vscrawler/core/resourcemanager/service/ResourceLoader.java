@@ -1,6 +1,6 @@
-package com.virjar.vscrawler.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager.service;
 
-import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 
 import java.util.Collection;
 

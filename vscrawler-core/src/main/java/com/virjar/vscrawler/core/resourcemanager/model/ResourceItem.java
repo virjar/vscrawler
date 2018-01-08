@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.resourcemanager.model;
+package com.virjar.vscrawler.core.resourcemanager.model;
 
 import lombok.Getter;
 import lombok.Setter;

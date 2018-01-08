@@ -1,8 +1,8 @@
-package com.virjar.vscrawler.resourcemanager;
+package com.virjar.vscrawler.core.resourcemanager;
 
 import com.google.common.collect.Maps;
-import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
-import com.virjar.vscrawler.resourcemanager.service.ResourceQueue;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.service.ResourceQueue;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
