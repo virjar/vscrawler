@@ -14,7 +14,7 @@ import lombok.Getter;
  * @author virjar
  * @since 0.2.2
  */
-public class UserManager2 {
+public class UserManager2 implements IUserManager {
     @Getter
     private VSCrawlerContext vsCrawlerContext;
 
@@ -26,27 +26,25 @@ public class UserManager2 {
         vsCrawlerContext.getAutoEventRegistry().registerObserver(this);
     }
 
-    private String makeUserResourceTag() {
-        return vsCrawlerContext.getCrawlerName() + "_userManagerAccountKey";
-    }
-
     /**
      * recycle user resource to user resources pool, must make user instance detach from session
      *
      * @param user user instance
      */
+    @Override
     public void returnUser(User user) {
         UserStatus userStatus = user.getUserStatus();
         if (userStatus == UserStatus.PASSWORDERROR || userStatus == UserStatus.NOTEXIST) {
-            resourceManager.forbidden(makeUserResourceTag(), user.getUserID());
+            resourceManager.forbidden(vsCrawlerContext.makeUserResourceTag(), user.getUserID());
         } else {
-            resourceManager.feedBack(makeUserResourceTag(), user.getUserID(), userStatus == UserStatus.OK);
+            resourceManager.feedBack(vsCrawlerContext.makeUserResourceTag(), user.getUserID(), userStatus == UserStatus.OK);
         }
 
     }
 
+    @Override
     public User allocateUser() {
-        ResourceItem resourceItem = resourceManager.allocate(makeUserResourceTag());
+        ResourceItem resourceItem = resourceManager.allocate(vsCrawlerContext.makeUserResourceTag());
         if (resourceItem == null) {
             return null;
         }

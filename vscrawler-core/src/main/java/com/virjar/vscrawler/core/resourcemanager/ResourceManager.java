@@ -22,9 +22,12 @@ public class ResourceManager {
 
     private ConcurrentMap<String, ResourceQueue> resourceQueueConcurrentMap = Maps.newConcurrentMap();
 
+    public void registry(ResourceQueue resourceQueue) {
+        resourceQueueConcurrentMap.put(resourceQueue.getTag(), resourceQueue);
+    }
 
-    public void registryTag(String tag, ResourceQueue resourceQueue) {
-        resourceQueueConcurrentMap.put(tag, resourceQueue);
+    public ResourceQueue getResourceQueue(String tag) {
+        return resourceQueueConcurrentMap.get(tag);
     }
 
     /**

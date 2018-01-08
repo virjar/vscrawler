@@ -3,12 +3,10 @@ package com.virjar.vscrawler.core.net.user;
 import com.alibaba.fastjson.JSONObject;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerContext;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.LoginHandler;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,10 +17,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionCreateEvent, SessionDestroyEvent {
-    private UserManager userManager;
+    private IUserManager userManager;
     private LoginHandler loginHandler;
 
-    public AutoLoginPlugin(LoginHandler loginHandler, UserManager userManager) {
+    public AutoLoginPlugin(LoginHandler loginHandler, IUserManager userManager) {
         this.loginHandler = loginHandler;
         this.userManager = userManager;
     }

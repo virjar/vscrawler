@@ -15,14 +15,15 @@ import java.util.Set;
 
 /**
  * Created by virjar on 17/5/4. <br/>
- * 管理多个用户
+ * 管理多个用户,该类已过期,本类对用户的管理方式,无法实现较好的账号的封禁解禁问题,同时无法提供分布式环境下的资源排他性
  *
  * @author virjar
+ * @see com.virjar.vscrawler.core.net.user.UserManager2
  * @since 0.0.1
  */
 @Slf4j
 @Deprecated
-public class UserManager implements UserStateChangeEvent {
+public class UserManager implements UserStateChangeEvent, IUserManager {
     private UserResourceFacade userResourceFacade;
 
     private Set<User> allUser = Sets.newHashSet();
@@ -34,6 +35,13 @@ public class UserManager implements UserStateChangeEvent {
     @Getter
     private VSCrawlerContext vsCrawlerContext;
 
+    /**
+     * @param userResourceFacade 账号导入器
+     * @param vsCrawlerContext   爬虫上下文
+     *                           改类已过期,非常不建议使用该类
+     * @see com.virjar.vscrawler.core.net.user.UserManager2
+     */
+    @Deprecated
     public UserManager(UserResourceFacade userResourceFacade, VSCrawlerContext vsCrawlerContext) {
         if (userResourceFacade == null) {
             userResourceFacade = new DefaultUserResource();
@@ -58,6 +66,7 @@ public class UserManager implements UserStateChangeEvent {
      *
      * @param user user instance
      */
+    @Override
     public void returnUser(User user) {
         UserStatus userStatus = user.getUserStatus();
         if (userStatus != UserStatus.OK) {
@@ -67,6 +76,7 @@ public class UserManager implements UserStateChangeEvent {
         }
     }
 
+    @Override
     public User allocateUser() {
         User poll = idleUsers.poll();
         if (poll == null) {

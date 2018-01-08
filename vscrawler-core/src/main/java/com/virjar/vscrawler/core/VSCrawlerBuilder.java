@@ -10,14 +10,16 @@ import com.virjar.vscrawler.core.net.proxy.strategy.ProxyPlanner;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyStrategy;
 import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.core.net.session.LoginHandler;
-import com.virjar.vscrawler.core.net.user.AutoLoginPlugin;
-import com.virjar.vscrawler.core.net.user.DefaultUserResource;
-import com.virjar.vscrawler.core.net.user.UserManager;
-import com.virjar.vscrawler.core.net.user.UserResourceFacade;
+import com.virjar.vscrawler.core.net.user.*;
 import com.virjar.vscrawler.core.processor.BindRouteProcessor;
 import com.virjar.vscrawler.core.processor.PageDownLoadProcessor;
 import com.virjar.vscrawler.core.processor.RouteProcessor;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
+import com.virjar.vscrawler.core.resourcemanager.ResourceManager;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
+import com.virjar.vscrawler.core.resourcemanager.service.QueueStore;
+import com.virjar.vscrawler.core.resourcemanager.service.RamQueueStore;
+import com.virjar.vscrawler.core.resourcemanager.service.ResourceQueue;
 import com.virjar.vscrawler.core.seed.*;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
@@ -143,6 +145,12 @@ public class VSCrawlerBuilder {
     private long stopWhileTaskEmptyDuration = 60 * 1000;
 
     private String crawlerName = VSCrawlerConstant.DEFAULT_CRAWLER_NAME;
+
+    private ResourceManager resourceManager;
+
+    private QueueStore defaultQueueStore;
+
+    private ResourceSetting defaultResourceSetting;
 
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
@@ -297,6 +305,21 @@ public class VSCrawlerBuilder {
         return this;
     }
 
+    public VSCrawlerBuilder setResourceManager(ResourceManager resourceManager) {
+        this.resourceManager = resourceManager;
+        return this;
+    }
+
+    public VSCrawlerBuilder setDefaultQueueStore(QueueStore defaultQueueStore) {
+        this.defaultQueueStore = defaultQueueStore;
+        return this;
+    }
+
+    public VSCrawlerBuilder setDefaultResourceSetting(ResourceSetting defaultResourceSetting) {
+        this.defaultResourceSetting = defaultResourceSetting;
+        return this;
+    }
+
     public VSCrawler build() {
 
         final VSCrawlerContext vsCrawlerContext = VSCrawlerContext.create(crawlerName);
@@ -361,7 +384,24 @@ public class VSCrawlerBuilder {
             if (loginHandler == null) {
                 throw new IllegalStateException("login handler is null ,but open login switch");
             }
-            UserManager userManager = new UserManager(userResourceFacade, vsCrawlerContext);
+            IUserManager userManager;
+            if (resourceManager == null) {
+                userManager = new UserManager(userResourceFacade, vsCrawlerContext);
+            } else {
+                if (defaultQueueStore == null) {
+                    defaultQueueStore = new RamQueueStore();
+                }
+                if (defaultResourceSetting == null) {
+                    defaultResourceSetting = ResourceSetting.create().setLock(true);
+                }
+                ResourceQueue resourceQueue = resourceManager.getResourceQueue(vsCrawlerContext.makeUserResourceTag());
+                if (resourceQueue != null) {
+                    resourceQueue.addResourceLoader(new UserManager2ResourceLoader(userResourceFacade));
+                } else {
+                    resourceManager.registry(new ResourceQueue(vsCrawlerContext.makeUserResourceTag(), defaultQueueStore, defaultResourceSetting, new UserManager2ResourceLoader(userResourceFacade)));
+                }
+                userManager = new UserManager2(resourceManager, vsCrawlerContext);
+            }
             vsCrawler.addCrawlerStartCallBack(new AutoLoginPlugin(loginHandler, userManager));
         }
 

@@ -4,13 +4,15 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
-import com.virjar.vscrawler.core.util.CatchRegexPattern;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
+import com.virjar.vscrawler.core.util.CatchRegexPattern;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -38,6 +40,17 @@ public class ResourceQueue {
         this.queue = queue;
         this.resourceSetting = resourceSetting;
         this.resourceLoader = resourceLoader;
+    }
+
+    public void addResourceLoader(ResourceLoader resourceLoader) {
+        ResourceLoader oldResourceLoader = this.resourceLoader;
+        if (!(this.resourceLoader instanceof CombineResourceLoader)) {
+            List<ResourceLoader> resourceLoaderList = Lists.newArrayList(oldResourceLoader, resourceLoader);
+            this.resourceLoader = new CombineResourceLoader(resourceLoaderList);
+        } else {
+            CombineResourceLoader combineResourceLoader = (CombineResourceLoader) this.resourceLoader;
+            combineResourceLoader.addNewResourceLoader(resourceLoader);
+        }
     }
 
     private void importNewData(Set<ResourceItem> resourceItems) {

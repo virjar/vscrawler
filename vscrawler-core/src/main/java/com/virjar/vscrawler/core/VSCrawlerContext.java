@@ -96,4 +96,9 @@ public class VSCrawlerContext {
         }
     }
 
+    public String makeUserResourceTag() {
+        return getCrawlerName() + "_userManagerAccountKey";
+    }
+
+
 }
