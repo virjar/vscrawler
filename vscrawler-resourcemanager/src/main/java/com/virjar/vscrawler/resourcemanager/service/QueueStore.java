@@ -11,7 +11,7 @@ import java.util.Set;
  * @since 0.2.2
  * 支持评分的队列,负责存储层
  */
-public interface StoreQueue {
+public interface QueueStore {
     long size(String queueID);
 
     boolean addFirst(String queueID, ResourceItem e);

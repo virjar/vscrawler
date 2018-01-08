@@ -4,7 +4,7 @@ import com.virjar.vscrawler.resourcemanager.ResourceManager;
 import com.virjar.vscrawler.resourcemanager.ResourceManagerFactory;
 import com.virjar.vscrawler.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.resourcemanager.model.ResourceSetting;
-import com.virjar.vscrawler.resourcemanager.service.RamStoreQueue;
+import com.virjar.vscrawler.resourcemanager.service.RamQueueStore;
 import com.virjar.vscrawler.resourcemanager.service.ResourceLoader;
 import com.virjar.vscrawler.resourcemanager.service.ResourceQueue;
 import org.apache.commons.io.IOUtils;
@@ -19,7 +19,7 @@ import java.util.Collection;
  */
 public class ImeiTest {
     public static void main(String[] args) {
-        ResourceQueue resourceQueue = new ResourceQueue("android_imei", new RamStoreQueue(), ResourceSetting.create().setLock(true), new ResourceLoader() {
+        ResourceQueue resourceQueue = new ResourceQueue("android_imei", new RamQueueStore(), ResourceSetting.create().setLock(true), new ResourceLoader() {
             private BufferedReader reader = new BufferedReader(new InputStreamReader(ImeiTest.class.getResourceAsStream("/imei.txt")));
             private static final int batchSize = 100;
             private boolean closed = false;

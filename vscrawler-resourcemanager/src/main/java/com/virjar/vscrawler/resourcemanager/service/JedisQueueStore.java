@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author virjar
  * @since 0.2.2
  */
-public class JedisStoreQueue implements StoreQueue {
+public class JedisQueueStore implements QueueStore {
     //存放key的轮询数据
     private static final String jedisPoolSuffix = "_jedis_polling";
     //存放数据
@@ -32,7 +32,7 @@ public class JedisStoreQueue implements StoreQueue {
     private static final String jedisLockKeySuffix = "_vscrawler_resourceManager_queue_lock";
     private JedisPool jedisPool;
 
-    public JedisStoreQueue(JedisPool jedisPool) {
+    public JedisQueueStore(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
     }
 

@@ -26,13 +26,13 @@ public class ResourceQueue {
     private static final String polling = "vscrawler_resourceManager_polling_";
     private static final String leave = "vscrawler_resourceManager_leave_";
     private static final String forbidden = "vscrawler_resourceManager_forbidden_";
-    private StoreQueue queue;
+    private QueueStore queue;
     private ResourceSetting resourceSetting;
     private static final long nextCheckLeaveQueueDuration = 1000 * 60 * 30;
     private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
     private ResourceLoader resourceLoader;
 
-    public ResourceQueue(String tag, StoreQueue queue, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
+    public ResourceQueue(String tag, QueueStore queue, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
         Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z0-9_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
         this.tag = tag;
         this.queue = queue;

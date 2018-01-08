@@ -4,7 +4,7 @@ import com.google.common.collect.Maps;
 import com.virjar.vscrawler.resourcemanager.model.ResourceSetting;
 import com.virjar.vscrawler.resourcemanager.service.ResourceLoader;
 import com.virjar.vscrawler.resourcemanager.service.ResourceQueue;
-import com.virjar.vscrawler.resourcemanager.service.StoreQueue;
+import com.virjar.vscrawler.resourcemanager.service.QueueStore;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -22,8 +22,8 @@ public class ResourceManagerFactory {
         return new ResourceManager(resourceQueueMap);
     }
 
-    public ResourceManagerFactory registryResourceQueue(String tag, ResourceSetting resourceSetting, StoreQueue storeQueue, ResourceLoader resourceLoader) {
-        resourceQueueMap.put(tag, new ResourceQueue(tag, storeQueue, resourceSetting, resourceLoader));
+    public ResourceManagerFactory registryResourceQueue(String tag, ResourceSetting resourceSetting, QueueStore queueStore, ResourceLoader resourceLoader) {
+        resourceQueueMap.put(tag, new ResourceQueue(tag, queueStore, resourceSetting, resourceLoader));
         return this;
     }
 

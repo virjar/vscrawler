@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Created by virjar on 2018/1/7.<br/>基于内存的队列存储,满足各自队列并发加锁隔离,单个队列操作全程加锁
  */
-public class RamStoreQueue implements StoreQueue {
+public class RamQueueStore implements QueueStore {
     private Map<String, InnerList> queueMaps = Maps.newConcurrentMap();
 
     private static class InnerList extends LinkedList<ResourceItem> {
