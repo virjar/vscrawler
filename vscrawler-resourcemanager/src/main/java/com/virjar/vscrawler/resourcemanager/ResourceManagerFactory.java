@@ -2,6 +2,7 @@ package com.virjar.vscrawler.resourcemanager;
 
 import com.google.common.collect.Maps;
 import com.virjar.vscrawler.resourcemanager.model.ResourceSetting;
+import com.virjar.vscrawler.resourcemanager.service.ResourceLoader;
 import com.virjar.vscrawler.resourcemanager.service.ResourceQueue;
 import com.virjar.vscrawler.resourcemanager.service.StoreQueue;
 
@@ -21,12 +22,13 @@ public class ResourceManagerFactory {
         return new ResourceManager(resourceQueueMap);
     }
 
-    public void registryResourceQueue(String tag, ResourceSetting resourceSetting, StoreQueue storeQueue) {
-        resourceQueueMap.put(tag, new ResourceQueue(tag, storeQueue, resourceSetting));
+    public ResourceManagerFactory registryResourceQueue(String tag, ResourceSetting resourceSetting, StoreQueue storeQueue, ResourceLoader resourceLoader) {
+        resourceQueueMap.put(tag, new ResourceQueue(tag, storeQueue, resourceSetting, resourceLoader));
+        return this;
     }
 
-    public void registryResourceQueue(ResourceQueue resourceQueue) {
+    public ResourceManagerFactory registryResourceQueue(ResourceQueue resourceQueue) {
         resourceQueueMap.put(resourceQueue.getTag(), resourceQueue);
+        return this;
     }
-
 }

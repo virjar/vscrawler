@@ -87,4 +87,13 @@ public class ResourceManager {
         }
         queue.unForbidden(key);
     }
+
+    public void loadResource(String tag) {
+        ResourceQueue queue = resourceQueueConcurrentMap.get(tag);
+        if (queue == null) {
+            log.error("no resource for tag:{}", tag);
+            return;
+        }
+        queue.loadResource();
+    }
 }

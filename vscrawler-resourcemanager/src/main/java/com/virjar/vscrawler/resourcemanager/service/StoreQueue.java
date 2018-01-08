@@ -22,7 +22,6 @@ public interface StoreQueue {
 
     ResourceItem poll(String queueID);
 
-
     ResourceItem get(String queueID, String key);
 
     long index(String queueID, String key);

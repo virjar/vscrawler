@@ -4,7 +4,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Created by virjar on 2018/1/4.
+ * Created by virjar on 2018/1/4.<br/>
+ *
+ * @author virjar
+ * @since 0.2.2
+ * 资源单元,包含资源本身数据和资源元数据
  */
 @Getter
 @Setter

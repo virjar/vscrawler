@@ -32,17 +32,23 @@ public class ResourceQueue {
     private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
     private ResourceLoader resourceLoader;
 
-    public ResourceQueue(String tag, StoreQueue queue, ResourceSetting resourceSetting) {
+    public ResourceQueue(String tag, StoreQueue queue, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
         Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z0-9_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
         this.tag = tag;
         this.queue = queue;
         this.resourceSetting = resourceSetting;
+        this.resourceLoader = resourceLoader;
     }
 
     private void importNewData(Set<ResourceItem> resourceItems) {
         Set<String> resourceKeys = Sets.newHashSet(Iterables.transform(resourceItems, new Function<ResourceItem, String>() {
             @Override
             public String apply(ResourceItem input) {
+                input.setTag(tag);
+                if (StringUtils.isBlank(input.getKey())) {
+                    input.setKey(input.getData());
+                }
+                input.setScore(0.5);
                 return input.getKey();
             }
         }));
@@ -58,7 +64,7 @@ public class ResourceQueue {
         }));
     }
 
-    private void loadResource() {
+    public void loadResource() {
         Set<ResourceItem> collection = Sets.newHashSet();
         boolean hasNext = resourceLoader.loadResource(collection);
         importNewData(collection);

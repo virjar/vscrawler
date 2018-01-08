@@ -98,10 +98,10 @@ public class RamStoreQueue implements StoreQueue {
         public ResourceItem removeFirst() {
             lock.lock();
             try {
-                ResourceItem resourceItem = super.removeFirst();
-                if (resourceItem == null) {
+                if (size() == 0) {
                     return null;
                 }
+                ResourceItem resourceItem = super.removeFirst();
                 afterRemove(resourceItem);
                 return resourceItem;
             } finally {
