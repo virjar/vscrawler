@@ -13,6 +13,7 @@ import redis.clients.jedis.JedisPool;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by virjar on 2018/1/7.<br/>
@@ -25,6 +26,8 @@ public class JedisStoreQueue implements StoreQueue {
     private static final String jedisPoolSuffix = "_jedis_polling";
     //存放数据
     private static final String jedisDataSuffix = "_jedis_data";
+
+    private static final String jedisLockKeySuffix = "_vscrawler_resourceManager_queue_lock";
     private JedisPool jedisPool;
 
     public JedisStoreQueue(JedisPool jedisPool) {
@@ -39,6 +42,54 @@ public class JedisStoreQueue implements StoreQueue {
         return queueID + jedisDataSuffix;
     }
 
+    private InheritableThreadLocal<AtomicInteger> locked = new InheritableThreadLocal<>();
+
+    private String makeRedisLockKey(String queueID) {
+        return queueID + jedisLockKeySuffix;
+    }
+
+    private boolean lockQueue(String queueID) {
+        if (locked.get() == null) {
+            synchronized (this) {
+                if (locked.get() == null) {
+                    locked.set(new AtomicInteger(0));
+                }
+            }
+        }
+
+        if (locked.get().incrementAndGet() > 1) {
+            return true;
+        }
+        Jedis jedis = jedisPool.getResource();
+        try {
+            String result = jedis.set(makeRedisLockKey(queueID), "lockTheQueue", "NX", "EX", 120);
+            if (StringUtils.isNotEmpty(result) && result.equalsIgnoreCase("OK")) {
+                return true;
+            } else {
+                locked.get().decrementAndGet();
+                return false;
+            }
+        } finally {
+            IOUtils.closeQuietly(jedis);
+        }
+    }
+
+    private void unLockQueue(String queueID) {
+        if (locked.get() == null) {
+            return;
+        }
+        if (locked.get().decrementAndGet() > 0) {
+            return;
+        }
+        Jedis jedis = jedisPool.getResource();
+        try {
+            jedis.del(makeRedisLockKey(queueID));
+            locked.remove();
+        } finally {
+            IOUtils.closeQuietly(jedis);
+        }
+    }
+
     @Override
     public long size(String queueID) {
         Jedis jedis = jedisPool.getResource();
@@ -51,19 +102,27 @@ public class JedisStoreQueue implements StoreQueue {
 
     @Override
     public boolean addFirst(String queueID, ResourceItem e) {
-        remove(queueID, e.getKey());
-        Jedis jedis = jedisPool.getResource();
+        Jedis jedis = null;
+        if (!lockQueue(queueID)) {
+            return false;
+        }
         try {
+            remove(queueID, e.getKey());
+            jedis = jedisPool.getResource();
             jedis.lpush(makePoolQueueKey(queueID), e.getKey());
             jedis.hset(makeDataKey(queueID), e.getKey(), JSONObject.toJSONString(e));
         } finally {
             IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
         }
         return true;
     }
 
     @Override
     public boolean addLast(String queueID, ResourceItem e) {
+        if (!lockQueue(queueID)) {
+            return false;
+        }
         remove(queueID, e.getKey());
         Jedis jedis = jedisPool.getResource();
         try {
@@ -71,12 +130,16 @@ public class JedisStoreQueue implements StoreQueue {
             jedis.hset(makeDataKey(queueID), e.getKey(), JSONObject.toJSONString(e));
         } finally {
             IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
         }
         return true;
     }
 
     @Override
     public boolean addIndex(String queueID, long index, ResourceItem e) {
+        if (!lockQueue(queueID)) {
+            return false;
+        }
         remove(queueID, e.getKey());
         Jedis jedis = jedisPool.getResource();
         try {
@@ -94,7 +157,7 @@ public class JedisStoreQueue implements StoreQueue {
             jedis.hset(makeDataKey(queueID), e.getKey(), JSONObject.toJSONString(e));
         } finally {
             IOUtils.closeQuietly(jedis);
-
+            unLockQueue(queueID);
         }
         return true;
     }
@@ -105,6 +168,9 @@ public class JedisStoreQueue implements StoreQueue {
 
     @Override
     public ResourceItem poll(String queueID) {
+        if (!lockQueue(queueID)) {
+            return null;
+        }
         Jedis jedis = jedisPool.getResource();
         try {
             String firstResourceKey = jedis.lpop(makePoolQueueKey(queueID));
@@ -118,12 +184,16 @@ public class JedisStoreQueue implements StoreQueue {
             return JSONObject.toJavaObject(JSON.parseObject(dataJson), ResourceItem.class);
         } finally {
             IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
         }
     }
 
 
     @Override
     public ResourceItem get(String queueID, String key) {
+        if (!lockQueue(queueID)) {
+            return null;
+        }
         Jedis jedis = jedisPool.getResource();
         try {
             String dataJson = jedis.hget(makeDataKey(queueID), key);
@@ -133,6 +203,7 @@ public class JedisStoreQueue implements StoreQueue {
             return JSONObject.toJavaObject(JSON.parseObject(dataJson), ResourceItem.class);
         } finally {
             IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
         }
     }
 
@@ -145,17 +216,24 @@ public class JedisStoreQueue implements StoreQueue {
      */
     @Override
     public long index(String queueID, String key) {
+        if (!lockQueue(queueID)) {
+            return -1;
+        }
         Jedis jedis = jedisPool.getResource();
         try {
             List<String> queue = jedis.lrange(makePoolQueueKey(queueID), 0, -1);
             return queue.indexOf(key);
         } finally {
             IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
         }
     }
 
     @Override
     public boolean update(String queueID, ResourceItem e) {
+        if (!lockQueue(queueID)) {
+            return false;
+        }
         Jedis jedis = jedisPool.getResource();
         try {
             String dataJson = jedis.hget(makeDataKey(queueID), e.getKey());
@@ -163,11 +241,15 @@ public class JedisStoreQueue implements StoreQueue {
             return !isNil(dataJson);
         } finally {
             IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
         }
     }
 
     @Override
     public ResourceItem remove(String queueID, String key) {
+        if (!lockQueue(queueID)) {
+            return null;
+        }
         Jedis jedis = jedisPool.getResource();
         try {
             String dataJson = jedis.hget(makeDataKey(queueID), key);
@@ -179,11 +261,15 @@ public class JedisStoreQueue implements StoreQueue {
             return JSONObject.toJavaObject(JSON.parseObject(dataJson), ResourceItem.class);
         } finally {
             IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
         }
     }
 
     @Override
     public void addBatch(String queueID, Set<ResourceItem> resourceItems) {
+        if (!lockQueue(queueID)) {
+            return;
+        }
         final Jedis jedis = jedisPool.getResource();
         final String dataKey = makeDataKey(queueID);
         String poolQueueKey = makePoolQueueKey(queueID);
@@ -200,6 +286,7 @@ public class JedisStoreQueue implements StoreQueue {
             }
         } finally {
             IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
         }
     }
 }
