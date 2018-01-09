@@ -5,6 +5,9 @@ import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.config.VSCrawlerConfigFileWatcher;
 import com.virjar.vscrawler.core.event.EventLoop;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
+import com.virjar.vscrawler.core.resourcemanager.ResourceManager;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
+import com.virjar.vscrawler.core.resourcemanager.service.QueueStore;
 import com.virjar.vscrawler.core.util.PathResolver;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import lombok.Getter;
@@ -43,6 +46,18 @@ public class VSCrawlerContext {
     @Getter
     @Setter
     private AutoEventRegistry autoEventRegistry;
+
+    @Getter
+    @Setter
+    private ResourceManager resourceManager;
+
+    @Getter
+    @Setter
+    private QueueStore queueStore;
+
+    @Getter
+    @Setter
+    private ResourceSetting resourceSetting;
 
     // 爬虫主控文件监听器
     public static VSCrawlerConfigFileWatcher vsCrawlerConfigFileWatcher = new VSCrawlerConfigFileWatcher();

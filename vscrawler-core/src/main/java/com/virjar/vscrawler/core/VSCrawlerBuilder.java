@@ -16,6 +16,7 @@ import com.virjar.vscrawler.core.processor.PageDownLoadProcessor;
 import com.virjar.vscrawler.core.processor.RouteProcessor;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.resourcemanager.ResourceManager;
+import com.virjar.vscrawler.core.resourcemanager.ResourceManagerFactory;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
 import com.virjar.vscrawler.core.resourcemanager.service.QueueStore;
 import com.virjar.vscrawler.core.resourcemanager.service.RamQueueStore;
@@ -380,29 +381,31 @@ public class VSCrawlerBuilder {
                 userResourceFacade = new DefaultUserResource();
             }
         }
+
+        if (resourceManager == null) {
+            resourceManager = ResourceManagerFactory.create().build();
+        }
+        vsCrawlerContext.setResourceManager(resourceManager);
+        if (defaultQueueStore == null) {
+            defaultQueueStore = new RamQueueStore();
+        }
+        vsCrawlerContext.setQueueStore(defaultQueueStore);
+        if (defaultResourceSetting == null) {
+            defaultResourceSetting = ResourceSetting.create().setLock(true);
+        }
+        vsCrawlerContext.setResourceSetting(defaultResourceSetting);
+
         if (userResourceFacade != null) {
             if (loginHandler == null) {
                 throw new IllegalStateException("login handler is null ,but open login switch");
             }
-            IUserManager userManager;
-            if (resourceManager == null) {
-                userManager = new UserManager(userResourceFacade, vsCrawlerContext);
+            ResourceQueue resourceQueue = resourceManager.getResourceQueue(vsCrawlerContext.makeUserResourceTag());
+            if (resourceQueue != null) {
+                resourceQueue.addResourceLoader(new UserManager2ResourceLoader(userResourceFacade));
             } else {
-                if (defaultQueueStore == null) {
-                    defaultQueueStore = new RamQueueStore();
-                }
-                if (defaultResourceSetting == null) {
-                    defaultResourceSetting = ResourceSetting.create().setLock(true);
-                }
-                ResourceQueue resourceQueue = resourceManager.getResourceQueue(vsCrawlerContext.makeUserResourceTag());
-                if (resourceQueue != null) {
-                    resourceQueue.addResourceLoader(new UserManager2ResourceLoader(userResourceFacade));
-                } else {
-                    resourceManager.registry(new ResourceQueue(vsCrawlerContext.makeUserResourceTag(), defaultQueueStore, defaultResourceSetting, new UserManager2ResourceLoader(userResourceFacade)));
-                }
-                userManager = new UserManager2(resourceManager, vsCrawlerContext);
+                resourceManager.registry(new ResourceQueue(vsCrawlerContext.makeUserResourceTag(), defaultQueueStore, defaultResourceSetting, new UserManager2ResourceLoader(userResourceFacade)));
             }
-            vsCrawler.addCrawlerStartCallBack(new AutoLoginPlugin(loginHandler, userManager));
+            vsCrawler.addCrawlerStartCallBack(new AutoLoginPlugin(loginHandler, new UserManager2(resourceManager, vsCrawlerContext)));
         }
 
         if (stopWhileTaskEmptyDuration > 0) {
