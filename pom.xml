@@ -4,12 +4,11 @@
     <groupId>com.virjar</groupId>
     <artifactId>vscrawler</artifactId>
     <packaging>pom</packaging>
-    <version>0.2.2-SNAPSHOT</version>
+    <version>0.2.2</version>
     <modules>
         <module>vscrawler-core</module>
         <!-- <module>vscrawler-samples</module>
          <module>vscrawler-over-webmagic7</module>-->
-        <module>vscrawler-samples</module>
     </modules>
     <name>vscrawler</name>
     <url>http://maven.apache.org</url>
