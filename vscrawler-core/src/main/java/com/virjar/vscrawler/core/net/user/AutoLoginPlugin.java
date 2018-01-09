@@ -43,7 +43,7 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
             crawlerSession.setValid(false);
             return;
         }
-
+        UserStatus userStatus = user.getUserStatus();
         boolean loginSuccess = false;
         try {
             loginSuccess = loginHandler.onLogin(user, crawlerSession.getCookieStore(),
@@ -53,11 +53,13 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
         }
         if (loginSuccess) {
             UserUtil.setUser(crawlerSession, user);
-        } else {
-            user.setUserStatus(UserStatus.PASSWORDERROR);
-            userManager.returnUser(user);
-            log.warn("用户:{} 登录失败", JSONObject.toJSONString(user));
+            return;
         }
+        if (user.getUserStatus() == userStatus) {
+            user.setUserStatus(UserStatus.BLOCK);
+        }
+        userManager.returnUser(user);
+        log.warn("用户:{} 登录失败", JSONObject.toJSONString(user));
     }
 
     @Override

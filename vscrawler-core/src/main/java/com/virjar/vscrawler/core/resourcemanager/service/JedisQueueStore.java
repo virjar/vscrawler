@@ -311,4 +311,19 @@ public class JedisQueueStore implements QueueStore {
             unLockQueue(queueID);
         }
     }
+
+    @Override
+    public void clear(String queueID) {
+        lockQueue(queueID);
+        Jedis jedis = jedisPool.getResource();
+        try {
+            String poolQueueKey = makePoolQueueKey(queueID);
+            String dataKey = makeDataKey(queueID);
+            jedis.del(poolQueueKey);
+            jedis.del(dataKey);
+        } finally {
+            IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
+        }
+    }
 }

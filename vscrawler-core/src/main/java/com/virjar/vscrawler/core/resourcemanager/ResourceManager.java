@@ -99,4 +99,13 @@ public class ResourceManager {
         }
         queue.loadResource();
     }
+
+    public void reloadResource(String tag) {
+        ResourceQueue queue = resourceQueueConcurrentMap.get(tag);
+        if (queue == null) {
+            log.error("no resource for tag:{}", tag);
+            return;
+        }
+        queue.reloadeResource();
+    }
 }

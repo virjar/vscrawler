@@ -56,6 +56,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     private final static int STAT_STOPPED = 2;
 
+    private final static int STAT_STARING = 3;
+
     private ReentrantLock taskDispatchLock = new ReentrantLock();
 
     private Condition taskDispatchCondition = taskDispatchLock.newCondition();
@@ -79,6 +81,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     @Getter
     private VSCrawlerContext vsCrawlerContext;
+
+    private Object componentInitSingnal = new Object();
 
     VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
               SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
@@ -222,6 +226,15 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
      * @return 抓取结果
      */
     public CrawlResult grabSync(Seed seed) {
+        //start component
+        if (stat.get() == STAT_INIT) {
+            initComponentWithOutMainThread();
+        }
+
+        if (stat.get() != STAT_RUNNING) {
+            throw new IllegalStateException("crawler is not running");
+        }
+
         //set vsCrawlerContext into ThreadLocal ,for support event loop
         VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
         CrawlerSession session = crawlerSessionPool.borrowOne(-1, true);
@@ -231,6 +244,9 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             VSCrawlerCommonUtil.setCrawlerSession(session);
             seedProcessor.process(seed, session, crawlResult);
             return crawlResult;
+        } catch (Exception e) {
+            log.error("error when grab seed:{}", JSONObject.toJSONString(seed), e);
+            throw e;
         } finally {
             // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
             VSCrawlerCommonUtil.clearCrawlerSession();
@@ -311,7 +327,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     private void checkRunningStat() {
-        if (!stat.compareAndSet(STAT_INIT, STAT_RUNNING)) {
+        if (!stat.compareAndSet(STAT_INIT, STAT_STARING)) {
             throw new IllegalStateException("Spider is already running!");
         }
     }
@@ -335,9 +351,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
     }
 
-    private void initComponent() {
-
-        crawlerMainThread = Thread.currentThread();
+    private void initComponentWithOutMainThread() {
 
         // 开启事件循环
         vsCrawlerContext.getEventLoop().loop();
@@ -346,12 +360,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         // 开启文件监听,并发送初始化配置事件
         VSCrawlerContext.vsCrawlerConfigFileWatcher.watchAndBindEvent();
 
-        // config 会设置 threadPool
-        if (threadPool == null || threadPool.isShutdown()) {
-            threadPool = new ThreadPoolExecutor(threadNumber, threadNumber, 0L, TimeUnit.MILLISECONDS,
-                    new LinkedBlockingQueue<Runnable>(), new NamedThreadFactory("VSCrawlerWorker", false));
-
-        }
 
         // 加载初始化配置
         config(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties());
@@ -365,7 +373,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
         startTime = new Date();
 
-        berkeleyDBSeedManager.init();
 
         for (CrawlerStartCallBack crawlerStartCallBack : allStartCallBacks) {
             crawlerStartCallBack.onCrawlerStart(this);
@@ -386,6 +393,18 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             System.err.println("################################################");
         }
 
+        stat.set(STAT_RUNNING);
+    }
+
+    private void initComponent() {
+        initComponentWithOutMainThread();
+        crawlerMainThread = Thread.currentThread();
+        // config 会设置 threadPool
+        if (threadNumber > 0 && threadPool == null || threadPool.isShutdown()) {
+            threadPool = new ThreadPoolExecutor(threadNumber, threadNumber, 0L, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<Runnable>(), new NamedThreadFactory("VSCrawlerWorker", false));
+        }
+        berkeleyDBSeedManager.init();
     }
 
     private class ResourceCleanHookThread extends Thread {

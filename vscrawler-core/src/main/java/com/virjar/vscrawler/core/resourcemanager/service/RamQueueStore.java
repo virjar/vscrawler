@@ -227,4 +227,11 @@ public class RamQueueStore implements QueueStore {
             }
         });
     }
+
+    @Override
+    public synchronized void clear(String queueID) {
+        InnerList innerList = createOrGet(queueID);
+        innerList.maps.clear();
+        innerList.clear();
+    }
 }

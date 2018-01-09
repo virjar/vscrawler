@@ -77,6 +77,13 @@ public class ResourceQueue {
         }));
     }
 
+    public void reloadeResource() {
+        queue.clear(makeForbiddenQueueID());
+        queue.clear(makePollingQueueID());
+        queue.clear(makeLeaveQueueID());
+        loadResource();
+    }
+
     public void loadResource() {
         Set<ResourceItem> collection = Sets.newHashSet();
         boolean hasNext = resourceLoader.loadResource(collection);
