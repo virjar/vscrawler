@@ -237,7 +237,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
         //set vsCrawlerContext into ThreadLocal ,for support event loop
         VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
-        CrawlerSession session = crawlerSessionPool.borrowOne(-1, true);
+        //30秒资源请求超时,防止线程阻塞
+        CrawlerSession session = crawlerSessionPool.borrowOne(30000, true);
         CrawlResult crawlResult = new CrawlResult();
         try {
             seed.setStatus(Seed.STATUS_RUNNING);
