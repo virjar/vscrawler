@@ -239,6 +239,11 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
         //30秒资源请求超时,防止线程阻塞
         CrawlerSession session = crawlerSessionPool.borrowOne(30000, true);
+        if (session == null) {
+            //TODO store in crawlResult
+            throw new IllegalStateException("can not allocate session resource from session pool");
+        }
+
         CrawlResult crawlResult = new CrawlResult();
         try {
             seed.setStatus(Seed.STATUS_RUNNING);

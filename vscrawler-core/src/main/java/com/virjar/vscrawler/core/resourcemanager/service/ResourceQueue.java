@@ -254,4 +254,27 @@ public class ResourceQueue {
         resourceItem.setScore(0.5);
         queue.addFirst(makePollingQueueID(), resourceItem);
     }
+
+    public void updateResource(ResourceItem resourceItem) {
+        String key = resourceItem.getKey();
+        ResourceItem resourceItem1 = queue.get(makePollingQueueID(), key);
+        if (resourceItem1 != null) {
+            resourceItem1.setData(resourceItem.getData());
+            queue.update(makePollingQueueID(), resourceItem1);
+            return;
+        }
+
+        resourceItem1 = queue.get(makeLeaveQueueID(), key);
+        if (resourceItem1 != null) {
+            resourceItem1.setData(resourceItem.getData());
+            queue.update(makePollingQueueID(), resourceItem1);
+            return;
+        }
+
+        resourceItem1 = queue.get(makeForbiddenQueueID(), key);
+        if (resourceItem1 != null) {
+            resourceItem1.setData(resourceItem.getData());
+            queue.update(makeForbiddenQueueID(), resourceItem1);
+        }
+    }
 }
