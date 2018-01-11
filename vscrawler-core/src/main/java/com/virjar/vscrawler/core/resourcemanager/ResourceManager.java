@@ -1,6 +1,7 @@
 package com.virjar.vscrawler.core.resourcemanager;
 
 import com.google.common.collect.Maps;
+import com.virjar.vscrawler.core.resourcemanager.model.AllResourceItems;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.service.ResourceQueue;
 import lombok.AllArgsConstructor;
@@ -106,6 +107,24 @@ public class ResourceManager {
             log.error("no resource for tag:{}", tag);
             return;
         }
-        queue.reloadeResource();
+        queue.reloadResource();
+    }
+
+    public void updateResource(String tag, ResourceItem resourceItem) {
+        ResourceQueue queue = resourceQueueConcurrentMap.get(tag);
+        if (queue == null) {
+            log.error("no resource for tag:{}", tag);
+            return;
+        }
+        queue.updateResource(resourceItem);
+    }
+
+    public AllResourceItems queueStatus(String tag) {
+        ResourceQueue queue = resourceQueueConcurrentMap.get(tag);
+        if (queue == null) {
+            log.error("no resource for tag:{}", tag);
+            return null;
+        }
+        return queue.allResource();
     }
 }

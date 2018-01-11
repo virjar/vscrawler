@@ -2,6 +2,7 @@ package com.virjar.vscrawler.core.resourcemanager.service;
 
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -35,4 +36,6 @@ public interface QueueStore {
     Set<String> notExisted(String queueID, Set<String> resourceItemKeys);
 
     void clear(String queueID);
+
+    List<ResourceItem> queryAll(String queueID);
 }

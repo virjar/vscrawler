@@ -6,6 +6,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.resourcemanager.model.AllResourceItems;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
 import com.virjar.vscrawler.core.util.CatchRegexPattern;
@@ -77,7 +78,7 @@ public class ResourceQueue {
         }));
     }
 
-    public void reloadeResource() {
+    public void reloadResource() {
         queue.clear(makeForbiddenQueueID());
         queue.clear(makePollingQueueID());
         queue.clear(makeLeaveQueueID());
@@ -276,5 +277,9 @@ public class ResourceQueue {
             resourceItem1.setData(resourceItem.getData());
             queue.update(makeForbiddenQueueID(), resourceItem1);
         }
+    }
+
+    public AllResourceItems allResource() {
+        return new AllResourceItems(queue.queryAll(makePollingQueueID()), queue.queryAll(makeLeaveQueueID()), queue.queryAll(makeForbiddenQueueID()));
     }
 }

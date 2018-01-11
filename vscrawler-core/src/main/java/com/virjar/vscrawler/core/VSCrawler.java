@@ -82,8 +82,6 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     @Getter
     private VSCrawlerContext vsCrawlerContext;
 
-    private Object componentInitSingnal = new Object();
-
     VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
               SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
               long slowStartDuration) {

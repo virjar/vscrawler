@@ -2,7 +2,9 @@ package com.virjar.vscrawler.core.resourcemanager.service;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import org.apache.commons.io.IOUtils;
@@ -11,10 +13,7 @@ import redis.clients.jedis.BinaryClient;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -321,6 +320,24 @@ public class JedisQueueStore implements QueueStore {
             String dataKey = makeDataKey(queueID);
             jedis.del(poolQueueKey);
             jedis.del(dataKey);
+        } finally {
+            IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
+        }
+    }
+
+    @Override
+    public List<ResourceItem> queryAll(String queueID) {
+        lockQueue(queueID);
+        Jedis jedis = jedisPool.getResource();
+        try {
+            final Map<String, String> map = jedis.hgetAll(makeDataKey(queueID));
+            return Lists.transform(jedis.lrange(makePoolQueueKey(queueID), 0, -1), new Function<String, ResourceItem>() {
+                @Override
+                public ResourceItem apply(String input) {
+                    return JSONObject.toJavaObject(JSONObject.parseObject(map.get(input)), ResourceItem.class);
+                }
+            });
         } finally {
             IOUtils.closeQuietly(jedis);
             unLockQueue(queueID);

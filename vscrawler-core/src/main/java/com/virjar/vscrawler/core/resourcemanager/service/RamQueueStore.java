@@ -234,4 +234,9 @@ public class RamQueueStore implements QueueStore {
         innerList.maps.clear();
         innerList.clear();
     }
+
+    @Override
+    public List<ResourceItem> queryAll(String queueID) {
+        return createOrGet(queueID);
+    }
 }
