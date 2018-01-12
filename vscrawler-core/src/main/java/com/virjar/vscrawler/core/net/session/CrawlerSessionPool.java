@@ -282,6 +282,12 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     @Override
     public void crawlerEnd(VSCrawlerContext vsCrawlerContext) {
         sessionDaemonThread.interrupt();
+        for (SessionHolder crawlerSession : sessionQueue) {
+            crawlerSession.crawlerSession.destroy();
+        }
+        for (CrawlerSession crawlerSession : runningSessions) {
+            crawlerSession.destroy();
+        }
     }
 
     private volatile boolean createNewSessionStatus = true;

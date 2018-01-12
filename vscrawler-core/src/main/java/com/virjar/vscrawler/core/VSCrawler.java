@@ -100,7 +100,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
     public void stopCrawler() {
         if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
-            log.info("爬虫停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent");
+            log.info("爬虫<{}>停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent", vsCrawlerContext.getCrawlerName());
             System.out.flush();// 刷新系统buffer,避免影响队形
             synchronized (System.out) {
                 System.err.println("                      江城子 . 程序员之歌");

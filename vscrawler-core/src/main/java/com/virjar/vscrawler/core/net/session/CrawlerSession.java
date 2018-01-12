@@ -59,6 +59,8 @@ public class CrawlerSession {
     @Setter
     private boolean valid = true;
 
+    private boolean isDestroy = false;
+
     private Map<String, Object> ext = Maps.newHashMap();
 
     public CrawlerSession(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
@@ -128,6 +130,10 @@ public class CrawlerSession {
      * 清空session
      */
     public void destroy() {
+        if (isDestroy) {
+            return;
+        }
+        isDestroy = true;
         log.debug("session销毁");
         crawlerSessionPool.getVsCrawlerContext().getAutoEventRegistry().findEventDeclaring(SessionDestroyEvent.class).onSessionDestroy(crawlerSessionPool.getVsCrawlerContext(), this);
         cookieStore.clear();

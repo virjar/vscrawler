@@ -63,7 +63,6 @@ public class JedisQueueStore implements QueueStore {
                 }
             }
         }
-
         if (locked.get().incrementAndGet() > 1) {
             return true;
         }
@@ -80,7 +79,10 @@ public class JedisQueueStore implements QueueStore {
                     locked.get().decrementAndGet();
                     return false;
                 }
-                long sleepTime = jedis.ttl(redisLockKey) - 10;
+                long sleepTime = jedis.ttl(redisLockKey) * 1000 - 10;
+                if (sleepTime > lockRequestTime) {
+                    return false;
+                }
                 if (sleepTime > 0) {
                     CommonUtil.sleep(sleepTime);
                 }
