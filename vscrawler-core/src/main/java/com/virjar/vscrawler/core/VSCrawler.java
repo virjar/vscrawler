@@ -224,37 +224,42 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
      * @return 抓取结果
      */
     public CrawlResult grabSync(Seed seed) {
-        //start component
-        if (stat.get() == STAT_INIT) {
-            initComponentWithOutMainThread();
-        }
-
-        if (stat.get() != STAT_RUNNING) {
-            throw new IllegalStateException("crawler is not running");
-        }
-
-        //set vsCrawlerContext into ThreadLocal ,for support event loop
-        VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
-        //30秒资源请求超时,防止线程阻塞
-        CrawlerSession session = crawlerSessionPool.borrowOne(30000, true);
-        if (session == null) {
-            //TODO store in crawlResult
-            throw new IllegalStateException("can not allocate session resource from session pool");
-        }
-
-        CrawlResult crawlResult = new CrawlResult();
         try {
-            seed.setStatus(Seed.STATUS_RUNNING);
-            VSCrawlerCommonUtil.setCrawlerSession(session);
-            seedProcessor.process(seed, session, crawlResult);
-            return crawlResult;
-        } catch (Exception e) {
-            log.error("error when grab seed:{}", JSONObject.toJSONString(seed), e);
-            throw e;
+            VSCrawlerCommonUtil.setGrabStartTimeStampThreadLocal(System.currentTimeMillis());
+            //start component
+            if (stat.get() == STAT_INIT) {
+                initComponentWithOutMainThread();
+            }
+
+            if (stat.get() != STAT_RUNNING) {
+                throw new IllegalStateException("crawler is not running");
+            }
+
+            //set vsCrawlerContext into ThreadLocal ,for support event loop
+            VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
+            //30秒资源请求超时,防止线程阻塞
+            CrawlerSession session = crawlerSessionPool.borrowOne(VSCrawlerCommonUtil.grabTaskLessTime(), true);
+            if (session == null) {
+                //TODO store in crawlResult
+                throw new IllegalStateException("can not allocate session resource from session pool");
+            }
+
+            CrawlResult crawlResult = new CrawlResult();
+            try {
+                seed.setStatus(Seed.STATUS_RUNNING);
+                VSCrawlerCommonUtil.setCrawlerSession(session);
+                seedProcessor.process(seed, session, crawlResult);
+                return crawlResult;
+            } catch (Exception e) {
+                log.error("error when grab seed:{}", JSONObject.toJSONString(seed), e);
+                throw e;
+            } finally {
+                // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
+                VSCrawlerCommonUtil.clearCrawlerSession();
+                crawlerSessionPool.recycle(session);
+            }
         } finally {
-            // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
-            VSCrawlerCommonUtil.clearCrawlerSession();
-            crawlerSessionPool.recycle(session);
+            VSCrawlerCommonUtil.clearGrabTimeOutControl();
         }
     }
 

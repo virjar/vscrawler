@@ -298,7 +298,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
             long maxSleepTimeStamp = initSleepTimeStamp * 30;
             long sleepTimeStamp = initSleepTimeStamp;
             while (!Thread.currentThread().isInterrupted()) {
-                if (runningSessions.size() + sessionQueue.size() > maxSize) {
+                if (runningSessions.size() + sessionQueue.size() > coreSize) {
                     lock.lock();
                     try {
                         empty.await();

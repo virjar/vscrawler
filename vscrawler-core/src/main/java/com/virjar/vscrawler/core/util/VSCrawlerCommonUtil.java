@@ -16,6 +16,8 @@ public class VSCrawlerCommonUtil {
 
     private static InheritableThreadLocal<CrawlerSession> crawlerSessionThreadLocal = new InheritableThreadLocal<>();
     private static InheritableThreadLocal<VSCrawlerContext> crawlerContextThreadLocal = new InheritableThreadLocal<>();
+    private static InheritableThreadLocal<Long> grabStartTimeStampThreadLocal = new InheritableThreadLocal<>();
+    private static InheritableThreadLocal<Long> grabTimeOut = new InheritableThreadLocal<>();
 
     public static String transferSeedToString(Seed seed) {
         return JSONObject.toJSONString(seed);
@@ -43,6 +45,41 @@ public class VSCrawlerCommonUtil {
 
     public static VSCrawlerContext getVSCrawlerContext() {
         return crawlerContextThreadLocal.get();
+    }
+
+    public static Long getGrabStartTimeStampThreadLocal() {
+        return grabStartTimeStampThreadLocal.get();
+    }
+
+    public static void setGrabStartTimeStampThreadLocal(Long grabStartTimeStampThreadLocal) {
+        VSCrawlerCommonUtil.grabStartTimeStampThreadLocal.set(grabStartTimeStampThreadLocal);
+    }
+
+    public static void setGrabTimeOut(Long grabTimeOut) {
+        VSCrawlerCommonUtil.grabTimeOut.set(grabTimeOut);
+    }
+
+    public static void clearGrabTimeOutControl() {
+        grabStartTimeStampThreadLocal.remove();
+        grabTimeOut.remove();
+    }
+
+    public static boolean hasTimeOut() {
+        return grabTimeOut.get() != null && (grabStartTimeStampThreadLocal.get() == null || System.currentTimeMillis() > grabStartTimeStampThreadLocal.get() + grabTimeOut.get());
+    }
+
+    public static long grabTaskLessTime() {
+        if (grabStartTimeStampThreadLocal.get() == null) {
+            return 0;
+        }
+        if (grabTimeOut.get() == null) {
+            return VSCrawlerConstant.defaultSessionRequestTimeOut;
+        }
+        long ret = grabStartTimeStampThreadLocal.get() + grabTimeOut.get() - System.currentTimeMillis();
+        if (ret < 0) {
+            ret = 0;
+        }
+        return ret;
     }
 
     /**

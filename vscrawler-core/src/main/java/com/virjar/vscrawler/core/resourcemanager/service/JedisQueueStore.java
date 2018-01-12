@@ -6,6 +6,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -13,7 +14,10 @@ import redis.clients.jedis.BinaryClient;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -30,6 +34,8 @@ public class JedisQueueStore implements QueueStore {
 
     private static final String jedisLockKeySuffix = "_vscrawler_resourceManager_queue_lock";
     private JedisPool jedisPool;
+
+    private static final long lockWaitTimeStamp = 1000 * 60 * 2;
 
     public JedisQueueStore(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
@@ -63,12 +69,21 @@ public class JedisQueueStore implements QueueStore {
         }
         Jedis jedis = jedisPool.getResource();
         try {
-            String result = jedis.set(makeRedisLockKey(queueID), "lockTheQueue", "NX", "EX", 120);
-            if (StringUtils.isNotEmpty(result) && result.equalsIgnoreCase("OK")) {
-                return true;
-            } else {
-                locked.get().decrementAndGet();
-                return false;
+            String redisLockKey = makeRedisLockKey(queueID);
+            long lockRequestTime = System.currentTimeMillis();
+            while (true) {
+                String result = jedis.set(redisLockKey, "lockTheQueue", "NX", "EX", 120);
+                if (StringUtils.isNotEmpty(result) && result.equalsIgnoreCase("OK")) {
+                    return true;
+                }
+                if (lockRequestTime + lockWaitTimeStamp > System.currentTimeMillis()) {
+                    locked.get().decrementAndGet();
+                    return false;
+                }
+                long sleepTime = jedis.ttl(redisLockKey) - 10;
+                if (sleepTime > 0) {
+                    CommonUtil.sleep(sleepTime);
+                }
             }
         } finally {
             IOUtils.closeQuietly(jedis);
@@ -95,7 +110,7 @@ public class JedisQueueStore implements QueueStore {
     public long size(String queueID) {
         Jedis jedis = jedisPool.getResource();
         try {
-            return jedis.llen(makePoolQueueKey(queueID));
+            return jedis.hlen(makeDataKey(queueID));
         } finally {
             IOUtils.closeQuietly(jedis);
         }
@@ -164,7 +179,7 @@ public class JedisQueueStore implements QueueStore {
     }
 
     private boolean isNil(String input) {
-        return StringUtils.equalsIgnoreCase(input, "nil") || StringUtils.isBlank(input);
+        return StringUtils.isBlank(input) || StringUtils.equalsIgnoreCase(input, "nil");
     }
 
     @Override
@@ -182,6 +197,7 @@ public class JedisQueueStore implements QueueStore {
             if (isNil(dataJson)) {
                 throw new IllegalStateException("this is no meta data for key queue :" + queueID + " ,for resourceKey :" + firstResourceKey);
             }
+            jedis.hdel(makeDataKey(queueID), firstResourceKey);
             return JSONObject.toJavaObject(JSON.parseObject(dataJson), ResourceItem.class);
         } finally {
             IOUtils.closeQuietly(jedis);
@@ -275,14 +291,16 @@ public class JedisQueueStore implements QueueStore {
         }
         final Jedis jedis = jedisPool.getResource();
         final String dataKey = makeDataKey(queueID);
-        String poolQueueKey = makePoolQueueKey(queueID);
         try {
+            final Set<String> hkeys = jedis.hkeys(dataKey);
             Set<ResourceItem> filterSet = Sets.filter(resourceItems, new Predicate<ResourceItem>() {
                 @Override
                 public boolean apply(ResourceItem input) {
-                    return isNil(jedis.hget(dataKey, input.getKey()));
+                    return !hkeys.contains(input.getKey());
                 }
             });
+
+            String poolQueueKey = makePoolQueueKey(queueID);
             for (ResourceItem resourceItem : filterSet) {
                 jedis.hset(dataKey, resourceItem.getKey(), JSONObject.toJSONString(resourceItem));
                 jedis.rpush(poolQueueKey, resourceItem.getKey());
@@ -300,11 +318,11 @@ public class JedisQueueStore implements QueueStore {
         }
         Jedis jedis = jedisPool.getResource();
         try {
-            final HashSet<String> existedSet = Sets.newHashSet(jedis.lrange(makePoolQueueKey(queueID), 0, -1));
+            final Set<String> hkeys = jedis.hkeys(makeDataKey(queueID));
             return Sets.filter(resourceItemKeys, new Predicate<String>() {
                 @Override
                 public boolean apply(String input) {
-                    return !existedSet.contains(input);
+                    return !hkeys.contains(input);
                 }
             });
         } finally {
