@@ -254,10 +254,12 @@ public class JedisQueueStore implements QueueStore {
         Jedis jedis = jedisPool.getResource();
         try {
             String dataJson = jedis.hget(makeDataKey(queueID), key);
-            jedis.hdel(makeDataKey(queueID), key);
-            jedis.lrem(makePoolQueueKey(queueID), 1, key);
             if (isNil(dataJson)) {
                 return null;
+            } else {
+                jedis.hdel(makeDataKey(queueID), key);
+                //lrem很消耗资源,尽量减少该命令操作
+                jedis.lrem(makePoolQueueKey(queueID), 1, key);
             }
             return JSONObject.toJavaObject(JSON.parseObject(dataJson), ResourceItem.class);
         } finally {

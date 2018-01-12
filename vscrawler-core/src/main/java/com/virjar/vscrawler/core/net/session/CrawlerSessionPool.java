@@ -157,13 +157,10 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     public CrawlerSession borrowOne(long maxWaitMillis, boolean forceCreate) {
         init();
         long lessTimeMillis = maxWaitMillis;
-        // LinkedList<CrawlerSession> tempCrawlerSession = Lists.newLinkedList();
-
-        // logger.info("当前会话池中,共有:{}个用户可用", allSessions.size());
-
         long startRequestTimeStamp = System.currentTimeMillis();
         for (; ; ) {
-            CrawlerSession crawlerSession = getSessionInternal(lessTimeMillis);
+            //第一次尝试不能阻塞
+            CrawlerSession crawlerSession = getSessionInternal(0);
             if (crawlerSession == null) {// 如果系统本身线程数不够,则使用主调线程,此方案后续讨论是否合适
                 if (sessionQueue.size() + runningSessions.size() < maxSize || forceCreate) {
                     crawlerSession = createNewSession();
@@ -171,17 +168,18 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                     if (forceCreate && crawlerSession == null) {
                         crawlerSession = createNewSession();
                     }
-                    if (crawlerSession == null) {
-                        CommonUtil.sleep(2000);
+                    lessTimeMillis = maxWaitMillis > 0 ? lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp) : maxWaitMillis;
+                    if (crawlerSession == null && maxWaitMillis > 0 && lessTimeMillis > 0) {
+                        CommonUtil.sleep(lessTimeMillis >= 1000 ? 1000 : lessTimeMillis);
                     }
                 } else {
-                    crawlerSession = getSessionInternal(2000);
+                    crawlerSession = getSessionInternal(maxWaitMillis > 0 ? lessTimeMillis : 2000);
                 }
             }
-            if (crawlerSession == null && lessTimeMillis < 0 && maxWaitMillis > 0) {
+            lessTimeMillis = maxWaitMillis > 0 ? lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp) : maxWaitMillis;
+            if (crawlerSession == null && lessTimeMillis <= 0 && maxWaitMillis >= 0) {
                 return null;
             }
-            lessTimeMillis = maxWaitMillis > 0 ? lessTimeMillis - (System.currentTimeMillis() - startRequestTimeStamp) : maxWaitMillis;
             if (crawlerSession == null) {
                 continue;
             }
@@ -272,12 +270,9 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
             if (maxWait > 0) {
                 SessionHolder poll = sessionQueue.poll(maxWait, TimeUnit.MILLISECONDS);
                 return poll == null ? null : poll.crawlerSession;
-            } else if (sessionQueue.size() + runningSessions.size() >= maxSize) {
-                return sessionQueue.take().crawlerSession;
-            } else {
-                SessionHolder poll = sessionQueue.poll();
-                return poll == null ? null : poll.crawlerSession;
             }
+            SessionHolder poll = sessionQueue.poll();
+            return poll == null ? null : poll.crawlerSession;
         } catch (InterruptedException interruptedException) {
             throw new PoolException("lock interrupted", interruptedException);
         }
