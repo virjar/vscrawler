@@ -124,6 +124,8 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
             sessionDaemonThread = new SessionDaemonThread();
             sessionDaemonThread.start();
+
+            vsCrawlerContext.getAutoEventRegistry().registerObserver(this);
         } finally {
             inited = true;
             lock.unlock();
