@@ -125,6 +125,9 @@ public class ResourceQueue {
             resourceItem = queue.poll(makeLeaveQueueID());
         } while (resourceItem != null && !StringUtils.equals(headerKey, resourceItem.getKey()));
         nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
+        if (resourceItem != null) {
+            queue.addFirst(makePollingQueueID(), resourceItem);
+        }
         return recoveryItemsSize;
     }
 
