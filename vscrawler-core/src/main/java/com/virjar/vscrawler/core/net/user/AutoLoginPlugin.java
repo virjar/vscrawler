@@ -55,6 +55,7 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
             UserUtil.setUser(crawlerSession, user);
             return;
         }
+        crawlerSession.setValid(false);
         if (user.getUserStatus() == userStatus) {
             user.setUserStatus(UserStatus.BLOCK);
         }
