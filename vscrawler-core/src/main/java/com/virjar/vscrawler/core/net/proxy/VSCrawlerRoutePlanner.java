@@ -1,7 +1,9 @@
 package com.virjar.vscrawler.core.net.proxy;
 
-import static com.virjar.vscrawler.core.util.VSCrawlerConstant.VSCRAWLER_AVPROXY_KEY;
-
+import com.virjar.dungproxy.client.httpclient.conn.ProxyBindRoutPlanner;
+import com.virjar.vscrawler.core.net.proxy.strategy.ProxyPlanner;
+import com.virjar.vscrawler.core.net.session.CrawlerSession;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
@@ -14,15 +16,11 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.conn.DefaultRoutePlanner;
 import org.apache.http.protocol.HttpContext;
 
-import com.virjar.dungproxy.client.httpclient.conn.ProxyBindRoutPlanner;
-import com.virjar.vscrawler.core.net.proxy.strategy.ProxyPlanner;
-import com.virjar.vscrawler.core.net.session.CrawlerSession;
-
-import lombok.extern.slf4j.Slf4j;
+import static com.virjar.vscrawler.core.util.VSCrawlerConstant.VSCRAWLER_AVPROXY_KEY;
 
 /**
  * Created by virjar on 17/4/30.
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -36,7 +34,7 @@ public class VSCrawlerRoutePlanner extends DefaultRoutePlanner {
     private ProxyPlanner proxyPlanner;
 
     public VSCrawlerRoutePlanner(ProxyBindRoutPlanner delegate, IPPool ipPool, ProxyPlanner proxyPlanner,
-            CrawlerSession crawlerSession) {
+                                 CrawlerSession crawlerSession) {
         super(delegate.getSchemePortResolver());
         this.ipPool = ipPool;
         // this.proxyStrategy = proxyStrategy;
@@ -52,7 +50,9 @@ public class VSCrawlerRoutePlanner extends DefaultRoutePlanner {
         if (proxy == null) {
             return null;
         }
-        log.info("{} 当前使用IP为:{}:{}", host.getHostName(), proxy.getIp(), proxy.getPort());
+        if (log.isDebugEnabled()) {
+            log.debug("{} 当前使用IP为:{}:{}", host.getHostName(), proxy.getIp(), proxy.getPort());
+        }
         context.setAttribute(VSCRAWLER_AVPROXY_KEY, proxy);
 
         if (proxy.getAuthenticationHeaders() != null) {

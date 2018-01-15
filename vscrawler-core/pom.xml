@@ -5,12 +5,11 @@
     <parent>
         <groupId>com.virjar</groupId>
         <artifactId>vscrawler</artifactId>
-        <version>0.2.4-SNAPSHOT</version>
+        <version>0.2.4</version>
     </parent>
     <artifactId>vscrawler-core</artifactId>
     <packaging>jar</packaging>
     <version>${project.parent.version}</version>
-
     <name>core</name>
     <url>http://maven.apache.org</url>
     <dependencies>
