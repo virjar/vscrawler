@@ -84,7 +84,7 @@ public class JedisQueueStore implements QueueStore {
                     return false;
                 }
                 if (sleepTime > 0) {
-                    CommonUtil.sleep(sleepTime);
+                    CommonUtil.sleep(sleepTime / 4);
                 }
             }
         } finally {

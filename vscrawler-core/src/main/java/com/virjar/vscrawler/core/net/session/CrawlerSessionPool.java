@@ -6,6 +6,7 @@ import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionBorrowEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
+import com.virjar.vscrawler.core.event.systemevent.SessionRecycleEvent;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
 import com.virjar.vscrawler.core.net.proxy.strategy.ProxyPlanner;
@@ -153,6 +154,9 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
             crawlerSession.destroy();
         } else {
             sessionQueue.offer(new SessionHolder(crawlerSession));
+            vsCrawlerContext.getAutoEventRegistry()
+                    .findEventDeclaring(SessionRecycleEvent.class)
+                    .onSessionRecycle(vsCrawlerContext, crawlerSession);
         }
     }
 
