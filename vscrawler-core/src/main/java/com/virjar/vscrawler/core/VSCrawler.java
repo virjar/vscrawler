@@ -82,6 +82,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     @Getter
     private VSCrawlerContext vsCrawlerContext;
 
+    private boolean hasComponentInit = false;
+
     VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
               SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
               long slowStartDuration) {
@@ -351,7 +353,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         if (newThreadNumber < 0) {
             return;
         }
-        if (newThreadNumber != threadNumber) {
+        if (newThreadNumber != threadNumber && threadPool != null) {
             log.info("爬虫线程数目变更,由:{}  变化为:{}", threadNumber, newThreadNumber);
             threadPool.setCorePoolSize(newThreadNumber);
             threadPool.setMaximumPoolSize(newThreadNumber);
@@ -359,8 +361,10 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
     }
 
-    private void initComponentWithOutMainThread() {
-
+    private synchronized void initComponentWithOutMainThread() {
+        if(hasComponentInit){
+            return;
+        }
         // 开启事件循环
         vsCrawlerContext.getEventLoop().loop();
         vsCrawlerContext.getAutoEventRegistry().registerObserver(vsCrawlerContext.getEventLoop());
@@ -402,6 +406,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
 
         stat.set(STAT_RUNNING);
+        hasComponentInit = true;
     }
 
     private void initComponent() {
