@@ -38,8 +38,12 @@ public class RouteProcessor implements SeedProcessor {
     @Override
     public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
         if (!hasSorted) {
-            Collections.sort(allProcessor);
-            hasSorted = true;
+            synchronized (this) {
+                if (!hasSorted) {
+                    Collections.sort(allProcessor);
+                    hasSorted = true;
+                }
+            }
         }
         boolean hasProcessed = false;
         for (PriopityProcessorHolder seedRouter : allProcessor) {

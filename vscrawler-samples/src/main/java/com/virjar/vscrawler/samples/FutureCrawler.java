@@ -15,7 +15,7 @@ import org.joda.time.DateTime;
  */
 public class FutureCrawler {
     public static void main(String[] args) {
-        VSCrawler vsCrawler = VSCrawlerBuilder.create()
+        VSCrawler vsCrawler = VSCrawlerBuilder.create().setStopWhileTaskEmptyDuration(2000)
                 .setSegmentResolver(new SegmentResolver() {
                     @Override
                     public long resolveSegmentKey(long activeTime) {
@@ -28,7 +28,7 @@ public class FutureCrawler {
                         // 建立一个种子副本
                         Seed copy = seed.copy();
                         // 设置生效时间为两分钟后
-                        copy.setActiveTimeStamp(DateTime.now().plusMinutes(2).getMillis());
+                        copy.setActiveTimeStamp(DateTime.now().plusMinutes(1).getMillis());
                         // 返回新种子
                         crawlResult.addSeed(copy);
                     }

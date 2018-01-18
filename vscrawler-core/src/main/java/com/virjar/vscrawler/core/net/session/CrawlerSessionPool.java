@@ -288,6 +288,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     @Override
     public void crawlerEnd(VSCrawlerContext vsCrawlerContext) {
         sessionDaemonThread.interrupt();
+        log.info("关闭所有session....");
         for (SessionHolder crawlerSession : sessionQueue) {
             crawlerSession.crawlerSession.destroy();
         }
@@ -315,7 +316,6 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                     try {
                         empty.await();
                     } catch (InterruptedException e) {
-                        log.warn("wait interrupted", e);
                         break;
                     } finally {
                         lock.unlock();

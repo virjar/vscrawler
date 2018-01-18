@@ -134,7 +134,9 @@ public class CrawlerSession {
             return;
         }
         isDestroy = true;
-        log.debug("session销毁");
+        if (log.isDebugEnabled()) {
+            log.debug("session销毁");
+        }
         crawlerSessionPool.getVsCrawlerContext().getAutoEventRegistry().findEventDeclaring(SessionDestroyEvent.class).onSessionDestroy(crawlerSessionPool.getVsCrawlerContext(), this);
         cookieStore.clear();
         crawlerHttpClient.close();

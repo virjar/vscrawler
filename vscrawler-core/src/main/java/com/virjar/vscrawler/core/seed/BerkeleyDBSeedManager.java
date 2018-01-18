@@ -166,7 +166,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         if (openedDataBase.containsKey(key)) {
             return openedDataBase.get(key);
         }
-        synchronized (BerkeleyDBSeedManager.class) {
+        synchronized (this) {
             if (openedDataBase.containsKey(key)) {
                 return openedDataBase.get(key);
             }
@@ -177,10 +177,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
     }
 
     private void closeAllDatabase() {
-        for (Database database : openedDataBase.values()) {
-            IOUtils.closeQuietly(database);
+        for (String databaseName : openedDataBase.keySet()) {
+            IOUtils.closeQuietly(openedDataBase.remove(databaseName));
         }
-        openedDataBase.clear();
     }
 
     private synchronized int loadCache(String segmentName) {
@@ -612,36 +611,39 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         List<String> databaseNames = env.getDatabaseNames();
         long expectedNumber = NumberUtils.toLong(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties()
                 .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
-        for (Long segment : allSegments) {
-            String segmentName = RUNNING_SEGMENT_PREFIX + segment;
-            if (databaseNames.contains(segmentName)) {
-                env.removeDatabase(null, segmentName);
-            }
-
-            segmentName = FINISHED_SEGMENT_PREFIX + segment;
-            if (databaseNames.contains(segmentName)) {
-                env.removeDatabase(null, segmentName);
-            }
-
-            bloomFilters.put(String.valueOf(segment), BloomFilter.create(new Funnel<Seed>() {
-                @Override
-                public void funnel(Seed from, PrimitiveSink into) {
-                    into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
+        synchronized (this) {
+            closeAllDatabase();
+            for (Long segment : allSegments) {
+                String segmentName = RUNNING_SEGMENT_PREFIX + segment;
+                if (databaseNames.contains(segmentName)) {
+                    env.removeDatabase(null, segmentName);
                 }
-            }, expectedNumber));
-        }
 
-        // default segment
-        String segmentName = RUNNING_SEGMENT_PREFIX + defaultSegment;
-        if (databaseNames.contains(segmentName)) {
-            env.removeDatabase(null, segmentName);
-        }
+                segmentName = FINISHED_SEGMENT_PREFIX + segment;
+                if (databaseNames.contains(segmentName)) {
+                    env.removeDatabase(null, segmentName);
+                }
 
-        segmentName = FINISHED_SEGMENT_PREFIX + defaultSegment;
-        if (databaseNames.contains(segmentName)) {
-            env.removeDatabase(null, segmentName);
-        }
+                bloomFilters.put(String.valueOf(segment), BloomFilter.create(new Funnel<Seed>() {
+                    @Override
+                    public void funnel(Seed from, PrimitiveSink into) {
+                        into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
+                    }
+                }, expectedNumber));
+            }
 
+            // default segment
+            String segmentName = RUNNING_SEGMENT_PREFIX + defaultSegment;
+            if (databaseNames.contains(segmentName)) {
+                env.removeDatabase(null, segmentName);
+            }
+
+            segmentName = FINISHED_SEGMENT_PREFIX + defaultSegment;
+            if (databaseNames.contains(segmentName)) {
+                env.removeDatabase(null, segmentName);
+            }
+
+        }
         bloomFilters.put(defaultSegment, BloomFilter.create(new Funnel<Seed>() {
             @Override
             public void funnel(Seed from, PrimitiveSink into) {

@@ -33,16 +33,17 @@ public class EventLoop implements CrawlerEndEvent {
     private DelayQueue<Event> eventQueue = new DelayQueue<>();
 
     public void offerEvent(final Event event) {
-        if (!isRunning.get()) {
-            log.warn("程序已停止");
-            return;
-        }
         if (!allHandlers.containsKey(event.getTopic()) || allHandlers.get(event.getTopic()).size() < 0) {
             log.debug("cannot find handle for event:{}", event.getTopic());
             return;
         }
         if (event.isSync()) {
             disPatch(event);
+            return;
+        }
+        //程序停止后,同步事件仍然可以投递,异步事件表示事件不需要可靠性保证
+        if (!isRunning.get()) {
+            log.warn("程序已停止");
             return;
         }
         if (event.isCleanExpire()) {

@@ -414,6 +414,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                     new LinkedBlockingQueue<Runnable>(), new NamedThreadFactory("VSCrawlerWorker", false));
         }
         berkeleyDBSeedManager.init();
+        stat.set(STAT_RUNNING);
     }
 
     private class ResourceCleanHookThread extends Thread {
@@ -449,6 +450,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     public VSCrawler clearTask() {
+        initComponentWithOutMainThread();
         berkeleyDBSeedManager.clear();
         return this;
     }

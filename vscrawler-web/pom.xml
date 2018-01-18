@@ -5,7 +5,7 @@
     <parent>
         <artifactId>vscrawler</artifactId>
         <groupId>com.virjar</groupId>
-        <version>0.2.5-SNAPSHOT</version>
+        <version>0.2.6-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,8 +15,8 @@
 
 
     <properties>
-        <java_source_version>1.8</java_source_version>
-        <java_target_version>1.8</java_target_version>
+        <java_source_version>1.7</java_source_version>
+        <java_target_version>1.7</java_target_version>
         <spring-boot.version>1.5.6.RELEASE</spring-boot.version>
         <spring.framework.version>4.3.10.RELEASE</spring.framework.version>
         <dubbo.version>3.2.19</dubbo.version>
@@ -97,16 +97,16 @@
         <!-- spring end -->
 
         <!--<dependency>-->
-            <!--<groupId>ch.qos.logback</groupId>-->
-            <!--<artifactId>logback-access</artifactId>-->
+        <!--<groupId>ch.qos.logback</groupId>-->
+        <!--<artifactId>logback-access</artifactId>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>ch.qos.logback</groupId>-->
-            <!--<artifactId>logback-classic</artifactId>-->
+        <!--<groupId>ch.qos.logback</groupId>-->
+        <!--<artifactId>logback-classic</artifactId>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>ch.qos.logback</groupId>-->
-            <!--<artifactId>logback-core</artifactId>-->
+        <!--<groupId>ch.qos.logback</groupId>-->
+        <!--<artifactId>logback-core</artifactId>-->
         <!--</dependency>-->
 
 
