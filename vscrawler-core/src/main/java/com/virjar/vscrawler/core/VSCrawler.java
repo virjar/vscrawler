@@ -229,12 +229,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         try {
             VSCrawlerCommonUtil.setGrabStartTimeStampThreadLocal(System.currentTimeMillis());
             //start component
-            if (stat.get() == STAT_INIT) {
+            if (!hasComponentInit) {
                 initComponentWithOutMainThread();
-            }
-
-            if (stat.get() != STAT_RUNNING) {
-                throw new IllegalStateException("crawler is not running");
             }
 
             //set vsCrawlerContext into ThreadLocal ,for support event loop
@@ -362,7 +358,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     private synchronized void initComponentWithOutMainThread() {
-        if(hasComponentInit){
+        if (hasComponentInit) {
             return;
         }
         // 开启事件循环
@@ -405,7 +401,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             System.err.println("################################################");
         }
 
-        stat.set(STAT_RUNNING);
+        //stat.set(STAT_RUNNING);
         hasComponentInit = true;
     }
 
