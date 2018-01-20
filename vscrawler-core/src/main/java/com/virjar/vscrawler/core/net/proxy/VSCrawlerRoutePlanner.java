@@ -36,6 +36,9 @@ public class VSCrawlerRoutePlanner extends DefaultRoutePlanner {
     public VSCrawlerRoutePlanner(ProxyBindRoutPlanner delegate, IPPool ipPool, ProxyPlanner proxyPlanner,
                                  CrawlerSession crawlerSession) {
         super(delegate.getSchemePortResolver());
+        if (ipPool == null) {
+            ipPool = new DefaultIPPool();
+        }
         this.ipPool = ipPool;
         // this.proxyStrategy = proxyStrategy;
         this.proxyPlanner = proxyPlanner;
