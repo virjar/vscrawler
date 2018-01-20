@@ -7,7 +7,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.virjar.sipsoup.model.SIPNode;
 import com.virjar.sipsoup.util.ObjectFactory;
-import com.virjar.vscrawler.core.processor.CrawlResult;
+import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
 import lombok.NonNull;
@@ -95,7 +95,7 @@ class FetchTaskProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private AbstractAutoProcessModel fetchSubModel(Class type, AbstractSelectable subSelectable, AbstractAutoProcessModel parentModel, CrawlResult crawlResult) {
+    private AbstractAutoProcessModel fetchSubModel(Class type, AbstractSelectable subSelectable, AbstractAutoProcessModel parentModel, GrabResult crawlResult) {
         AbstractAutoProcessModel subModel = (AbstractAutoProcessModel) ObjectFactory.newInstance(type);
         subModel.setBaseUrl(parentModel.getBaseUrl());
         subModel.setSeed(parentModel.seed);
@@ -110,7 +110,7 @@ class FetchTaskProcessor {
 
 
     @SuppressWarnings("unchecked")
-    List<Seed> injectField(final AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, final CrawlResult crawlResult) {
+    List<Seed> injectField(final AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, final GrabResult crawlResult) {
         List<Seed> newSeeds = Lists.newLinkedList();
 
         for (final FetchTaskBean fetchTaskBean : fetchTaskBeanList) {

@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class AutoParseSeedProcessor implements SeedProcessor {
 
     @Override
-    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+    public void process(Seed seed, CrawlerSession crawlerSession, GrabResult crawlResult) {
         URL url;
         try {
             url = new URL(seed.getData());

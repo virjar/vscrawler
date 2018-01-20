@@ -36,7 +36,7 @@ public class RouteProcessor implements SeedProcessor {
     }
 
     @Override
-    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+    public void process(Seed seed, CrawlerSession crawlerSession, GrabResult crawlResult) {
         if (!hasSorted) {
             synchronized (this) {
                 if (!hasSorted) {
@@ -67,7 +67,7 @@ public class RouteProcessor implements SeedProcessor {
         private int priority;
 
         @Override
-        public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+        public void process(Seed seed, CrawlerSession crawlerSession, GrabResult crawlResult) {
             delegate.process(seed, crawlerSession, crawlResult);
         }
 

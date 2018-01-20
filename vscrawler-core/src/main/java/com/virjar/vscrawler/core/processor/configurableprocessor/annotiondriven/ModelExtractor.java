@@ -3,6 +3,7 @@ package com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven
 import com.alibaba.fastjson.JSON;
 import com.virjar.sipsoup.util.ObjectFactory;
 import com.virjar.vscrawler.core.processor.CrawlResult;
+import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.*;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.selector.combine.AbstractSelectable;
@@ -134,7 +135,7 @@ class ModelExtractor {
 
 
     @SuppressWarnings("unchecked")
-    public void process(Seed seed, String content, CrawlResult crawlResult, AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, boolean save) {
+    public void process(Seed seed, String content, GrabResult crawlResult, AbstractAutoProcessModel model, AbstractSelectable abstractSelectable, boolean save) {
         String url = model.getBaseUrl();
         if (StringUtils.isBlank(url)) {
             try {

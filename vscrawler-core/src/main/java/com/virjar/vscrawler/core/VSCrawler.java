@@ -8,6 +8,7 @@ import com.virjar.vscrawler.core.event.systemevent.*;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.core.processor.CrawlResult;
+import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.BerkeleyDBSeedManager;
 import com.virjar.vscrawler.core.seed.Seed;
@@ -225,7 +226,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
      * @param seed 任务种子
      * @return 抓取结果
      */
-    public CrawlResult grabSync(Seed seed) {
+    public GrabResult grabSync(Seed seed) {
         try {
             VSCrawlerCommonUtil.setGrabStartTimeStampThreadLocal(System.currentTimeMillis());
             //start component
@@ -242,7 +243,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
                 throw new IllegalStateException("can not allocate session resource from session pool");
             }
 
-            CrawlResult crawlResult = new CrawlResult();
+            GrabResult crawlResult = new GrabResult();
             try {
                 seed.setStatus(Seed.STATUS_RUNNING);
                 VSCrawlerCommonUtil.setCrawlerSession(session);
@@ -293,7 +294,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
             VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
             CrawlerSession session = crawlerSessionPool.borrowOne(-1, false);
             int originRetryCount = seed.getRetry();
-            CrawlResult crawlResult = new CrawlResult();
+            GrabResult crawlResult = new GrabResult();
             try {
                 seed.setStatus(Seed.STATUS_RUNNING);
                 VSCrawlerCommonUtil.setCrawlerSession(session);
@@ -317,16 +318,14 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
         }
 
-        private void processResult(Seed origin, CrawlResult crawlResult) {
-            List<Seed> seeds = crawlResult.allSeed();
+        private void processResult(Seed origin, GrabResult grabResult) {
+            List<Seed> seeds = grabResult.allSeed();
             if (seeds != null) {
                 berkeleyDBSeedManager.addNewSeeds(seeds);
             }
-
-            List<String> allResult = crawlResult.allResult();
-            if (allResult != null) {
+            if (!grabResult.allEntityResult().isEmpty()) {
                 for (Pipeline p : pipeline) {
-                    p.saveItem(allResult, origin);
+                    p.saveItem(grabResult, origin);
                 }
             }
         }

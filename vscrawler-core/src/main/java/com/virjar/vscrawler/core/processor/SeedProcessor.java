@@ -10,5 +10,5 @@ import com.virjar.vscrawler.core.seed.Seed;
  * @since 0.0.1
  */
 public interface SeedProcessor {
-    void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult);
+    void process(Seed seed, CrawlerSession crawlerSession, GrabResult grabResult);
 }

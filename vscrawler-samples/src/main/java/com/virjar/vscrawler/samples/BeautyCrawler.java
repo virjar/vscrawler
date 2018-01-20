@@ -9,7 +9,7 @@ import com.virjar.sipsoup.parse.XpathParser;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerBuilder;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
-import com.virjar.vscrawler.core.processor.CrawlResult;
+import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.util.PathResolver;
@@ -49,7 +49,7 @@ public class BeautyCrawler {
                     }
 
                     @Override
-                    public void process(final Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+                    public void process(final Seed seed, CrawlerSession crawlerSession, GrabResult crawlResult) {
                         if (StringUtils.endsWithIgnoreCase(seed.getData(), ".jpg")) {
                             handlePic(seed, crawlerSession);
                         } else {

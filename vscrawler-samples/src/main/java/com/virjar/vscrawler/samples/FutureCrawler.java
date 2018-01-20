@@ -4,6 +4,7 @@ import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerBuilder;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.processor.CrawlResult;
+import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.seed.SegmentResolver;
@@ -24,7 +25,7 @@ public class FutureCrawler {
                     }
                 }).setProcessor(new SeedProcessor() {
                     @Override
-                    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+                    public void process(Seed seed, CrawlerSession crawlerSession, GrabResult crawlResult) {
                         // 建立一个种子副本
                         Seed copy = seed.copy();
                         // 设置生效时间为两分钟后

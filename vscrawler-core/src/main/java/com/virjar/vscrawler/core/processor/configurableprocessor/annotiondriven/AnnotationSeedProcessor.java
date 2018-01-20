@@ -5,6 +5,7 @@ import com.virjar.sipsoup.util.ObjectFactory;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.processor.BindRouteProcessor;
 import com.virjar.vscrawler.core.processor.CrawlResult;
+import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.DownLoadMethod;
 import com.virjar.vscrawler.core.seed.Seed;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +39,7 @@ class AnnotationSeedProcessor implements BindRouteProcessor {
     }
 
     @Override
-    public void process(Seed seed, CrawlerSession crawlerSession, CrawlResult crawlResult) {
+    public void process(Seed seed, CrawlerSession crawlerSession, GrabResult crawlResult) {
         //创建模型对象
         AbstractAutoProcessModel model = ObjectFactory.newInstance(aClass);
         String content = downloader.download(seed, model, crawlerSession);

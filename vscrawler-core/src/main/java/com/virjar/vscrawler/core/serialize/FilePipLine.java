@@ -1,16 +1,16 @@
 package com.virjar.vscrawler.core.serialize;
 
+import com.virjar.vscrawler.core.processor.GrabResult;
+import com.virjar.vscrawler.core.seed.Seed;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
-import java.util.Collection;
-
-import com.virjar.vscrawler.core.seed.Seed;
 
 /**
  * Created by virjar on 17/4/16.
- * 
+ *
  * @author virjar
  * @since 0.0.1
  */
@@ -25,8 +25,8 @@ public class FilePipLine implements Pipeline {
     }
 
     @Override
-    public void saveItem(Collection<String> itemJson, Seed seed) {
-        for (String str : itemJson) {
+    public void saveItem(GrabResult grabResult, Seed seed) {
+        for (String str : grabResult.allResult()) {
             printWriter.println(str);
         }
         printWriter.flush();
