@@ -28,7 +28,7 @@ public class GrabResult extends CrawlResult {
     }
 
     @Override
-    public void addResults(Collection<Object> resultsIn) {
+    public void addResults(Collection<?> resultsIn) {
         entityResult.addAll(resultsIn);
     }
 

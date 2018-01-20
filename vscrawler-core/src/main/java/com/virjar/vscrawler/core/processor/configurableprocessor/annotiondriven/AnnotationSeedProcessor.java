@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.virjar.sipsoup.util.ObjectFactory;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.processor.BindRouteProcessor;
-import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.DownLoadMethod;
 import com.virjar.vscrawler.core.seed.Seed;

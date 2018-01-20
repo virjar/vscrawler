@@ -2,7 +2,6 @@ package com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven
 
 import com.alibaba.fastjson.JSON;
 import com.virjar.sipsoup.util.ObjectFactory;
-import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.*;
 import com.virjar.vscrawler.core.seed.Seed;

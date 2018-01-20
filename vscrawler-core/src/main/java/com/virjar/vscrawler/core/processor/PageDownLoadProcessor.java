@@ -1,13 +1,12 @@
 package com.virjar.vscrawler.core.processor;
 
-import java.util.List;
-
+import com.virjar.sipsoup.parse.XpathParser;
+import com.virjar.vscrawler.core.seed.Seed;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
-import com.virjar.sipsoup.parse.XpathParser;
-import com.virjar.vscrawler.core.seed.Seed;
+import java.util.List;
 
 /**
  * Created by virjar on 17/4/16.
@@ -21,7 +20,7 @@ public class PageDownLoadProcessor extends AutoParseSeedProcessor {
     }
 
     @Override
-    protected void parse(Seed seed, String result, CrawlResult crawlResult) {
+    protected void parse(Seed seed, String result, GrabResult crawlResult) {
         if (StringUtils.isEmpty(result)) {
             return;
         }

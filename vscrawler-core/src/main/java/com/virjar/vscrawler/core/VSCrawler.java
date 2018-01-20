@@ -7,7 +7,6 @@ import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.event.systemevent.*;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
-import com.virjar.vscrawler.core.processor.CrawlResult;
 import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.seed.BerkeleyDBSeedManager;
@@ -262,7 +261,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
     }
 
-    public CrawlResult grabSync(String seed) {
+    public GrabResult grabSync(String seed) {
         return grabSync(new Seed(seed));
     }
 

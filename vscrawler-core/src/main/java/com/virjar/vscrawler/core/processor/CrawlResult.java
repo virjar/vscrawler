@@ -28,7 +28,7 @@ public class CrawlResult {
         // results.add(result);
     }
 
-    public void addResults(Collection<Object> resultsIn) {
+    public void addResults(Collection<?> resultsIn) {
         throw new UnsupportedOperationException("add result for  CrawlResult is not allowed now");
         //results.addAll(resultsIn);
     }

@@ -2,7 +2,7 @@ package com.virjar.vscrawler.over.webmagic7;
 
 import com.alibaba.fastjson.JSONObject;
 import com.virjar.vscrawler.core.processor.AutoParseSeedProcessor;
-import com.virjar.vscrawler.core.processor.CrawlResult;
+import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.seed.Seed;
 import lombok.extern.slf4j.Slf4j;
 import us.codecraft.webmagic.Request;
@@ -24,7 +24,7 @@ public class WebMagicProcessorDelegator extends AutoParseSeedProcessor {
     }
 
     @Override
-    protected void parse(Seed seed, String result, CrawlResult crawlResult) {
+    protected void parse(Seed seed, String result, GrabResult crawlResult) {
         if (result == null) {
             seed.retry();
             return;
