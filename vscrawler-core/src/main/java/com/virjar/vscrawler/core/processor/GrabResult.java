@@ -19,14 +19,16 @@ public class GrabResult extends CrawlResult {
     private List<Object> entityResult = Lists.newLinkedList();
 
     @Override
-    @Deprecated
     public void addResult(String result) {
         entityResult.add(result);
     }
 
+    public void addResult(Object entity) {
+        entityResult.add(entity);
+    }
+
     @Override
-    @Deprecated
-    public void addResults(Collection<String> resultsIn) {
+    public void addResults(Collection<Object> resultsIn) {
         entityResult.addAll(resultsIn);
     }
 

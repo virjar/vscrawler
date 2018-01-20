@@ -8,29 +8,34 @@ import java.util.List;
 
 /**
  * Created by virjar on 17/4/16.
+ * 请使用GrabResult
  *
  * @author virjar
+ * @see GrabResult
  * @since 0.0.1
+ * @deprecated
  */
 public class CrawlResult {
     /**
      * 一个种子可能产生多个结果
      */
-    private List<String> results = Lists.newLinkedList();
+    //private List<String> results = Lists.newLinkedList();
     private List<Seed> newSeeds = Lists.newLinkedList();
 
 
     public void addResult(String result) {
-        results.add(result);
+        throw new UnsupportedOperationException("add result for  CrawlResult is not allowed now");
+        // results.add(result);
     }
 
-    public void addResults(Collection<String> resultsIn) {
-        results.addAll(resultsIn);
+    public void addResults(Collection<Object> resultsIn) {
+        throw new UnsupportedOperationException("add result for  CrawlResult is not allowed now");
+        //results.addAll(resultsIn);
     }
 
-    @Deprecated
     public List<String> allResult() {
-        return Lists.newArrayList(results);
+        throw new UnsupportedOperationException("allResult  for  CrawlResult is not allowed now");
+        //return Lists.newArrayList(results);
     }
 
     public void addSeed(Seed seed) {
