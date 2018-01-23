@@ -5,6 +5,7 @@ import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerStartEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,7 +45,7 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
     public void watchAndBindEvent() {
         if (hasStartWatch.compareAndSet(false, true)) {
             URL resource = VSCrawlerConfigFileWatcher.class.getResource(configFileName);
-            String dir = null;
+            String dir;
             if (resource == null) {
                 URL classPathRoot = VSCrawlerConfigFileWatcher.class.getResource("/");
                 if (classPathRoot != null) {
@@ -59,6 +60,10 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
 
             loadFileAndSendEvent(file);
 
+            if (StringUtils.endsWithIgnoreCase(dir, ".jar!") && !new File(dir).isDirectory()) {
+                //目录解析到jar包下面,证明用户使用all_in_one jar的方式,此方式没有热发文件,因为jar包不是可写文件
+                return;
+            }
             DirectoryWatcher.WatcherCallback watcherCallback = new DirectoryWatcher.WatcherCallback() {
                 private long lastExecute = System.currentTimeMillis();
 
