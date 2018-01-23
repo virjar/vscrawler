@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.virjar</groupId>
             <artifactId>sipsoup</artifactId>
-            <version>1.4</version>
+            <version>1.5</version>
         </dependency>
 
         <!-- 配置文件表达式计算  -->

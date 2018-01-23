@@ -55,7 +55,7 @@ public class AutoEventRegistry {
     private Map<Class, Object> allAutoEventMap = Maps.newHashMap();
 
     private void scanDelegate() {
-        AnnotationMethodVisitor eventVisitor = new AnnotationMethodVisitor(AutoEvent.class);
+        ClassScanner.AnnotationMethodVisitor eventVisitor = new ClassScanner.AnnotationMethodVisitor(AutoEvent.class);
         ClassScanner.scan(eventVisitor, basePackages);
         // 所有自动事件的声明
         registerMethods(eventVisitor.getMethodSet());
@@ -65,7 +65,7 @@ public class AutoEventRegistry {
         if (!clazz.isInterface()) {
             throw new IllegalStateException("" + clazz + " is not a interface");
         }
-        AnnotationMethodVisitor eventVisitor = new AnnotationMethodVisitor(AutoEvent.class);
+        ClassScanner.AnnotationMethodVisitor eventVisitor = new ClassScanner.AnnotationMethodVisitor(AutoEvent.class);
         eventVisitor.visit(clazz);
         registerMethods(eventVisitor.getMethodSet());
     }

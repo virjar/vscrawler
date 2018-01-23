@@ -1,5 +1,11 @@
 package com.virjar.vscrawler.core.util;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.event.support.AutoEvent;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -9,13 +15,6 @@ import java.net.URLClassLoader;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-
-import org.apache.commons.io.IOUtils;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 类扫描器
@@ -34,12 +33,17 @@ public class ClassScanner {
             "javafx-mx.jar", "jconsole.jar", "packager.jar", "sa-jdi.jar", "tools.jar");
 
     public static void main(String[] args) {
-        List<File> files = allJar();
+        List<URL> files = allJar();
 
-        for (File file : files) {
-            System.out.println(file.getAbsolutePath());
+        for (URL file : files) {
+            System.out.println(file.toString());
         }
 
+        AnnotationMethodVisitor annotationClassVisitor = new AnnotationMethodVisitor(AutoEvent.class);
+        scan(annotationClassVisitor);
+        for (Method method : annotationClassVisitor.getMethodSet()) {
+            System.out.println(method.getName());
+        }
     }
 
     public static <T> List<Class<? extends T>> scan(Class<T> pclazz) {
@@ -55,23 +59,23 @@ public class ClassScanner {
 
     public static <T> void scan(ClassVisitor<T> subClassVisitor, Collection<String> basePackages) {
 
-        List<File> jarFiles = allJar();
+        List<URL> jarFiles = allJar();
         if (jarFiles.size() == 0) {
             URL location = ClassScanner.class.getProtectionDomain().getCodeSource().getLocation();
             if (location != null) {
-                jarFiles.add(new File(location.getPath()));
+                jarFiles.add(location);
             }
         }
-        for (File f : jarFiles) {
+        for (URL f : jarFiles) {
             scan(f, subClassVisitor, basePackages);
         }
     }
 
-    private static List<File> allJar() {
-        Set<String> jars = findJars(ClassScanner.class.getClassLoader());
-        List<File> ret = new ArrayList<>(jars.size());
-        for (String fileName : jars) {
-            ret.add(new File(fileName));
+    private static List<URL> allJar() {
+        Set<URL> jars = findJars(ClassScanner.class.getClassLoader());
+        List<URL> ret = new ArrayList<>(jars.size());
+        for (URL fileName : jars) {
+            ret.add(fileName);
         }
         return ret;
     }
@@ -85,15 +89,16 @@ public class ClassScanner {
         return false;
     }
 
-    public static Set<String> findJars(ClassLoader classLoader) {
-        Set<String> ret = new HashSet<>();
+    public static Set<URL> findJars(ClassLoader classLoader) {
+
+        Set<URL> ret = new HashSet<>();
         if (classLoader instanceof URLClassLoader && !excludeClassLoader.contains(classLoader.getClass().getName())) {
             URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
             URL[] urLs = urlClassLoader.getURLs();
             for (URL url : urLs) {
                 String s = url.toString();
-                if (s.startsWith("file:") && !isExculed(s)) {// URL对象是抽象的,可能不是本地文件,可能是一个目录,这里就不讨论如何处理了
-                    ret.add(url.getPath());
+                if (!isExculed(s)) {// URL对象是抽象的,可能不是本地文件,可能是一个目录,这里就不讨论如何处理了
+                    ret.add(url);
                 }
             }
         }
@@ -190,43 +195,62 @@ public class ClassScanner {
 
     }
 
-    public static <T> void scan(File f, ClassVisitor<T> classVisitor, Collection<String> basePackages) {
+    public static <T> void scan(URL url, ClassVisitor<T> classVisitor, Collection<String> basePackages) {
 
-        if (f.isDirectory()) {
-            List<File> classFileList = new ArrayList<File>();
-            scanClass(classFileList, f.getPath());
-            for (File file : classFileList) {
+        // normal file
+        if (url.toString().startsWith("file:")) {
+            File f = new File(url.getPath());
+            if (f.isDirectory()) {
+                List<File> classFileList = new ArrayList<File>();
+                scanClass(classFileList, f.getPath());
+                for (File file : classFileList) {
 
-                int start = f.getPath().length();
-                int end = file.toString().length() - 6; // 6 == ".class".length();
+                    int start = f.getPath().length();
+                    int end = file.toString().length() - 6; // 6 == ".class".length();
 
-                String classFile = file.toString().substring(start + 1, end);
-                String className = classFile.replace(File.separator, ".");
-                visitClass(className, basePackages, classVisitor);
-            }
-            return;
-        }
-
-        JarFile jarFile = null;
-
-        try {
-            jarFile = new JarFile(f);
-            Enumeration<JarEntry> entries = jarFile.entries();
-
-            while (entries.hasMoreElements()) {
-                JarEntry jarEntry = entries.nextElement();
-                String entryName = jarEntry.getName();
-                if (!jarEntry.isDirectory() && entryName.endsWith(".class")) {
-                    String className = entryName.replace("/", ".").substring(0, entryName.length() - 6);
+                    String classFile = file.toString().substring(start + 1, end);
+                    String className = classFile.replace(File.separator, ".");
                     visitClass(className, basePackages, classVisitor);
                 }
+                return;
             }
-        } catch (IOException e1) {
-        } finally {
-            IOUtils.closeQuietly(jarFile);
-        }
 
+            JarFile jarFile = null;
+            try {
+                jarFile = new JarFile(f);
+                visitJarFile(jarFile, basePackages, classVisitor);
+            } catch (IOException e1) {
+                //do nothing
+            } finally {
+                IOUtils.closeQuietly(jarFile);
+            }
+
+        } else {
+            try {
+                Object content = url.getContent();
+                // for spring boot, all in one jar launcher will be jarfile. @see org.springframework.boot.loader.archive.JarFileArchive
+                // and for spring boot ,Exploded model ,all jar file will be file pattern. @see org.springframework.boot.loader.archive.ExplodedArchive
+                if (content instanceof JarFile) {
+                    visitJarFile((JarFile) content, basePackages, classVisitor);
+                }
+            } catch (IOException e) {
+                //do nothing
+            }
+        }
     }
+
+    private static void visitJarFile(JarFile jarFile, Collection<String> basePackages, ClassVisitor classVisitor) {
+        Enumeration<JarEntry> entries = jarFile.entries();
+        while (entries.hasMoreElements()) {
+            JarEntry jarEntry = entries.nextElement();
+            String entryName = jarEntry.getName();
+            if (!jarEntry.isDirectory() && entryName.endsWith(".class")) {
+                String className = entryName.replace("/", ".").substring(0, entryName.length() - 6);
+                visitClass(className, basePackages, classVisitor);
+            }
+        }
+    }
+
 
     private static <T> void visitClass(String className, Collection<String> basePackages,
                                        ClassVisitor<T> classVisitor) {
