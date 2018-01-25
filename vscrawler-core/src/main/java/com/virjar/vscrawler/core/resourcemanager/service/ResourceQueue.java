@@ -169,12 +169,13 @@ public class ResourceQueue {
             long queueSize = queue.size(makePollingQueueID());
             if (queueSize <= 3) {
                 queue.addLast(makePollingQueueID(), resourceItem);
+            } else {
+                long index = (long) (resourceSetting.getScoreRatio() * queueSize);
+                if (index > queueSize - 1) {
+                    index = queueSize - 1;
+                }
+                queue.addIndex(makePollingQueueID(), index, resourceItem);
             }
-            long index = (long) (resourceSetting.getScoreRatio() * queueSize);
-            if (index > queueSize - 1) {
-                index = queueSize - 1;
-            }
-            queue.addIndex(makePollingQueueID(), index, resourceItem);
             return resourceItem;
         }
     }
