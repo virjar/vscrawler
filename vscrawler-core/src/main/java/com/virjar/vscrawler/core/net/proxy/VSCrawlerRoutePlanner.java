@@ -57,6 +57,7 @@ public class VSCrawlerRoutePlanner extends DefaultRoutePlanner {
             log.debug("{} 当前使用IP为:{}:{}", host.getHostName(), proxy.getIp(), proxy.getPort());
         }
         context.setAttribute(VSCRAWLER_AVPROXY_KEY, proxy);
+        crawlerSession.setExtInfo(VSCRAWLER_AVPROXY_KEY, proxy);
 
         if (proxy.getAuthenticationHeaders() != null) {
             for (Header header : proxy.getAuthenticationHeaders()) {

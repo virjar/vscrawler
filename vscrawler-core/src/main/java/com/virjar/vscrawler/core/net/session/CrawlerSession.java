@@ -7,11 +7,13 @@ import com.virjar.dungproxy.client.httpclient.conn.ProxyBindRoutPlanner;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
 import com.virjar.vscrawler.core.net.proxy.IPPool;
+import com.virjar.vscrawler.core.net.proxy.Proxy;
 import com.virjar.vscrawler.core.net.proxy.ProxyFeedBackDecorateHttpClientBuilder;
 import com.virjar.vscrawler.core.net.proxy.VSCrawlerRoutePlanner;
 import com.virjar.vscrawler.core.net.proxy.strategy.*;
 import com.virjar.vscrawler.core.net.user.User;
 import com.virjar.vscrawler.core.net.user.UserUtil;
+import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -144,5 +146,15 @@ public class CrawlerSession {
 
     public User getUser() {
         return UserUtil.getUser(this);
+    }
+
+    public void invalidProxyIp() {
+        Object extInfo = getExtInfo(VSCrawlerConstant.VSCRAWLER_AVPROXY_KEY);
+        if (!(extInfo instanceof Proxy)) {
+            return;
+        }
+        Proxy proxy = (Proxy) extInfo;
+        proxy.recordFailed();
+        proxy.offline();
     }
 }

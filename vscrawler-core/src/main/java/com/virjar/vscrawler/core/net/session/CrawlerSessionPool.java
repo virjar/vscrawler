@@ -136,8 +136,13 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     private CrawlerSession createNewSession() {
         CrawlerSession crawlerSession = new CrawlerSession(crawlerHttpClientGenerator, proxyStrategy, ipPool,
                 proxyPlanner, this);
-        vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SessionCreateEvent.class)
-                .onSessionCreateEvent(vsCrawlerContext, crawlerSession);
+        try {
+            vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SessionCreateEvent.class)
+                    .onSessionCreateEvent(vsCrawlerContext, crawlerSession);
+        } catch (Exception e) {
+            log.error("error when create session", e);
+            crawlerSession.setValid(false);
+        }
         if (crawlerSession.isValid()) {
             crawlerSession.setInitTimeStamp(System.currentTimeMillis());
             createNewSessionStatus = true;

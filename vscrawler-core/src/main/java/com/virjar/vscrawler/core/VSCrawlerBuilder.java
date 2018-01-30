@@ -1,6 +1,8 @@
 package com.virjar.vscrawler.core;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.event.systemevent.SeedEmptyEvent;
 import com.virjar.vscrawler.core.event.systemevent.ShutDownChecker;
 import com.virjar.vscrawler.core.net.CrawlerHttpClientGenerator;
@@ -27,6 +29,7 @@ import com.virjar.vscrawler.core.serialize.Pipeline;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by virjar on 17/4/30.<br/>
@@ -152,6 +155,8 @@ public class VSCrawlerBuilder {
     private QueueStore defaultQueueStore;
 
     private ResourceSetting defaultResourceSetting;
+
+    private Set<Object> eventObservers = Sets.newHashSet();
 
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
@@ -321,6 +326,11 @@ public class VSCrawlerBuilder {
         return this;
     }
 
+    public VSCrawlerBuilder addEventObserver(Object observer) {
+        this.eventObservers.add(observer);
+        return this;
+    }
+
     public VSCrawler build() {
 
         final VSCrawlerContext vsCrawlerContext = VSCrawlerContext.create(crawlerName);
@@ -432,6 +442,18 @@ public class VSCrawlerBuilder {
                                     .checkShutDown(vsCrawlerContext);
                         }
                     });
+                }
+            });
+        }
+
+        if (eventObservers.size() > 0) {
+            vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
+                @Override
+                public void onCrawlerStart(VSCrawler vsCrawler) {
+                    AutoEventRegistry autoEventRegistry = vsCrawler.getVsCrawlerContext().getAutoEventRegistry();
+                    for (Object eventObserver : eventObservers) {
+                        autoEventRegistry.registerObserver(eventObserver);
+                    }
                 }
             });
         }
