@@ -3,9 +3,12 @@ package com.virjar.vscrawler.core.processor;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by virjar on 2018/1/20.
@@ -17,6 +20,11 @@ import java.util.List;
  */
 public class GrabResult extends CrawlResult {
     private List<Object> entityResult = Lists.newLinkedList();
+    private Map<String, Object> fieldMap = Maps.newHashMap();
+
+    public void putField(String key, Object value) {
+        fieldMap.put(key, value);
+    }
 
     @Override
     public void addResult(String result) {
@@ -34,7 +42,7 @@ public class GrabResult extends CrawlResult {
 
     @Override
     public List<String> allResult() {
-        return Lists.transform(entityResult, new Function<Object, String>() {
+        List<String> entities = Lists.transform(entityResult, new Function<Object, String>() {
             @Override
             public String apply(Object input) {
                 if (input instanceof CharSequence) {
@@ -43,9 +51,24 @@ public class GrabResult extends CrawlResult {
                 return JSONObject.toJSONString(input);
             }
         });
+        if (fieldMap.size() == 0) {
+            return entities;
+        }
+        ArrayList<String> ret = Lists.newArrayListWithExpectedSize(entities.size() + 1);
+        ret.addAll(entities);
+        ret.add(JSONObject.toJSONString(fieldMap));
+        return ret;
     }
 
     public List<Object> allEntityResult() {
         return Lists.newArrayList(entityResult);
+    }
+
+    public Object getFiled(String key) {
+        return fieldMap.get(key);
+    }
+
+    public Map<String, Object> allFiled() {
+        return Maps.newHashMap(fieldMap);
     }
 }
