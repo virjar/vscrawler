@@ -7,9 +7,9 @@
     <version>0.2.6</version>
     <modules>
         <module>vscrawler-core</module>
-        <!--<module>vscrawler-web</module>-->
-        <!--<module>vscrawler-samples</module>-->
-        <!--<module>vscrawler-over-webmagic7</module>-->
+        <module>vscrawler-web</module>
+        <module>vscrawler-samples</module>
+        <module>vscrawler-over-webmagic7</module>
     </modules>
     <name>vscrawler</name>
     <url>http://maven.apache.org</url>

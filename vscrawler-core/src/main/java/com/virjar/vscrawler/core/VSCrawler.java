@@ -17,6 +17,7 @@ import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.util.Date;
@@ -389,16 +390,18 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
         // 一般请求请正常停止程序,关机拦截这是挽救方案,并不一定可以完整的实现收尾工作
         Runtime.getRuntime().addShutdownHook(new ResourceCleanHookThread());
-        synchronized (System.out) {// 血可流头可断,队形不能乱
-            System.err.println("################################################");
-            System.err.println("##############     VSCrawler      ##############");
-            System.err.println("##############       0.2.6        ##############");
-            System.err.println("############## 你有一个有意思的灵魂 ##############");
-            System.err.println("################################################");
-            System.err.println("##############       virjar       ##############");
-            System.err.println("################################################");
+        if (Version.needPrintBanner()) {
+            synchronized (System.out) {// 血可流头可断,队形不能乱
+                int length = "      VSCrawler       ".length();
+                System.err.println("##################################################");
+                System.err.println("##############      VSCrawler       ##############");
+                System.err.println("##############" + StringUtils.center(Version.getVersion(), length) + "##############");
+                System.err.println("##############  你有一个有意思的灵魂  ##############");
+                System.err.println("##################################################");
+                System.err.println("##############        virjar        ##############");
+                System.err.println("##################################################");
+            }
         }
-
         //stat.set(STAT_RUNNING);
         hasComponentInit = true;
     }
