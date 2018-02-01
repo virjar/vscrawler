@@ -218,6 +218,10 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
             vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SessionBorrowEvent.class)
                     .onSessionBorrow(vsCrawlerContext, crawlerSession);
+            if(!crawlerSession.isValid()){
+                crawlerSession.destroy();
+                continue;
+            }
             if (log.isDebugEnabled()) {
                 log.debug("当前session数量:{}", sessionQueue.size() + runningSessions.size());
             }
