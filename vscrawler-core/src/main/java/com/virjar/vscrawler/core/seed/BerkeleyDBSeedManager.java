@@ -300,6 +300,9 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 });
             } catch (IOException ioe) {
                 log.warn("不能读取BloomFilter数据,消重逻辑可能转移到数据库,性能可能受到影响", ioe);
+                if (!bloomData.delete()) {
+                    log.warn("delete bloom failed:{}", bloomData.getAbsoluteFile());
+                }
             } finally {
                 IOUtils.closeQuietly(inputStream);
             }
