@@ -1,6 +1,5 @@
 package com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven;
 
-import com.alibaba.fastjson.JSON;
 import com.virjar.sipsoup.util.ObjectFactory;
 import com.virjar.vscrawler.core.processor.GrabResult;
 import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.annotation.*;
@@ -176,10 +175,7 @@ class ModelExtractor {
 
             crawlResult.addSeeds(newSeeds);
             if (save) {
-                String resultString = JSON.toJSONString(model);
-                if (!"{}".equals(resultString)) {//fastjson,如果数据为空,可以不序列化
-                    crawlResult.addResult(resultString);
-                }
+                crawlResult.addResult(model);
             }
             if (iterator.hasNext()) {
                 model = ObjectFactory.newInstance(aClass);

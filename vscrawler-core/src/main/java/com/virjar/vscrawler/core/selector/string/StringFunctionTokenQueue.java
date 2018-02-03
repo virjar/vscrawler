@@ -4,10 +4,9 @@ package com.virjar.vscrawler.core.selector.string;
  * Created by virjar on 17/7/8.
  */
 
+import lombok.Getter;
 import org.jsoup.helper.StringUtil;
 import org.jsoup.helper.Validate;
-
-import lombok.Getter;
 
 /**
  * A character queue with parsing helpers.改造自JSoup,但是去掉了css部分方法和规则,标识符根据一般语言来设定(没有"_",":")
@@ -359,7 +358,7 @@ public class StringFunctionTokenQueue {
         } while (true);
 
         if (end >= 0) {
-            return queue.substring(start, end);
+            return queue.substring(start, end - 1);
         }
         pos = start;
         return null;
@@ -372,7 +371,7 @@ public class StringFunctionTokenQueue {
      * escaped (with \). Those escapes will be left in the returned string, which is suitable for regexes (where we need
      * to preserve the escape), but unsuitable for contains text strings; use unescape for that.
      *
-     * @param open opener
+     * @param open  opener
      * @param close closer
      * @return data matched from the queue
      */
@@ -490,7 +489,7 @@ public class StringFunctionTokenQueue {
     /**
      * 标识符,字母开始,后续可接字母或者数字
      *
-     * @return 标志符,如果不满足,则返回空字符串
+     * @return 标志符, 如果不满足, 则返回空字符串
      */
     public String consumeIdentify() {
         if (!Character.isLetter(queue.charAt(pos))) {

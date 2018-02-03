@@ -1,14 +1,13 @@
 package com.virjar.vscrawler.core.selector.string;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.selector.string.syntax.FunctionSyntaxNode;
 import com.virjar.vscrawler.core.selector.string.syntax.StringContext;
-
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.LinkedHashSet;
+import java.util.List;
 
 /**
  * Created by virjar on 17/7/1.
@@ -32,8 +31,8 @@ public class StingEvaluator {
             } else if (calculate instanceof CharSequence) {
                 linkedHashSet.add(calculate.toString());
             } else {
-                log.warn("result type for function: " + stringFunction.functionName() + " is not strings");
-
+                linkedHashSet.add(calculate.toString());
+                //log.warn("result type for function: " + stringFunction.functionName() + " is not strings");
             }
             i++;
         }

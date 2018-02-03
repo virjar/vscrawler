@@ -29,22 +29,22 @@ public class GrabController {
 
     @RequestMapping("/grab")
     @ResponseBody
-    public WebJsonResponse<String> grab(@RequestBody GrabRequest grabRequestBean) {
+    public WebJsonResponse<?> grab(@RequestBody GrabRequest grabRequestBean) {
         try {
-            VSCrawler vsCrawler = crawlerManager.get(grabRequestBean.getAppSource());
+            VSCrawler vsCrawler = crawlerManager.get(grabRequestBean.getCrawlerName());
             if (vsCrawler == null) {
-                return ReturnUtil.failed("no crawler defined :" + grabRequestBean.getAppSource());
+                return ReturnUtil.failed("no crawler defined :" + grabRequestBean.getCrawlerName());
             }
 
             Seed seed = new Seed(JSONObject.toJSONString(grabRequestBean));
             GrabResult crawlResult = vsCrawler.grabSync(seed);
-            List<String> strings = crawlResult.allResult();
+            List<Object> strings = crawlResult.allEntityResult();
             if (strings.size() == 1) {
                 return ReturnUtil.success(strings.get(0));
             } else if (strings.size() == 0 && seed.getRetry() > 0) {
                 return ReturnUtil.failed("timeOut", ReturnUtil.status_timeout);
             } else {
-                return ReturnUtil.success(JSONObject.toJSONString(strings));
+                return ReturnUtil.success(strings);
             }
         } catch (Exception e) {
             return ReturnUtil.failed(e.getMessage());

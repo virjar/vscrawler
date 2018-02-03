@@ -8,8 +8,8 @@ import lombok.Data;
  */
 @Data
 public class GrabRequest {
-    private String appSource;
-    private String appVersion;
+    private String crawlerName;
+    private String crawlerVersion;
     private String queryPage;
     private Object param;
 }

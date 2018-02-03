@@ -33,7 +33,7 @@ class AnnotationSeedProcessor implements BindRouteProcessor {
         judgeDownloader(aClass);
     }
 
-    public int priority(){
+    public int priority() {
         return matchStrategy.priority();
     }
 
@@ -52,6 +52,7 @@ class AnnotationSeedProcessor implements BindRouteProcessor {
 
     interface MatchStrategy {
         boolean matchSeed(Seed seed);
+
         int priority();
     }
 

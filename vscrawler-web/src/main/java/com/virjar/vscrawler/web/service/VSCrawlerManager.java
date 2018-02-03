@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.web.service;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.util.ClassScanner;
@@ -17,7 +18,6 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import javax.servlet.ServletContext;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -42,9 +42,6 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
     }
 
     public VSCrawler get(String appSource) {
-        if (!hasInit) {
-            init();
-        }
         return allCrawler.get(appSource).getCrawler();
     }
 
@@ -52,6 +49,10 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
         if (hasInit) {
             return;
         }
+
+        //cannot auto inject by spring framework,if there no implementations ,a exception will throw
+        Map<String, CrawlerBuilder> beansOfType = webApplicationContext.getBeansOfType(CrawlerBuilder.class);
+        crawlerBuilderList.addAll(beansOfType.values());
 
         //load system crawler
         for (CrawlerBuilder crawlerBuilder : crawlerBuilderList) {
@@ -122,8 +123,8 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
     }
 
 
-    @Resource
-    private List<CrawlerBuilder> crawlerBuilderList;
+    //@Resource
+    private List<CrawlerBuilder> crawlerBuilderList = Lists.newArrayList();
 
 
     @PreDestroy
@@ -140,6 +141,7 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
         webApplicationContext = (WebApplicationContext) applicationContext;
         ServletContext servletContext = webApplicationContext.getServletContext();
         webAppPath = servletContext.getRealPath("/");
+        init();
     }
 
     private WebApplicationContext webApplicationContext;

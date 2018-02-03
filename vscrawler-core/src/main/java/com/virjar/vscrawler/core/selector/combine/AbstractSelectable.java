@@ -40,7 +40,7 @@ public abstract class AbstractSelectable<M> {
     private ConcurrentMap<Class, AbstractSelectable> covertCache = Maps.newConcurrentMap();
 
     public String getRawText() {
-        if (StringUtils.isBlank(rawText) && !hasRawTextLoad) {
+        if (StringUtils.isBlank(rawText) && !hasRawTextLoad && rawTextStringFactory != null) {
             hasRawTextLoad = true;
             rawText = rawTextStringFactory.rawText();
         }

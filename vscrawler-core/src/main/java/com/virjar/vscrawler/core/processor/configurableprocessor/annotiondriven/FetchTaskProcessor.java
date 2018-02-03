@@ -148,7 +148,7 @@ class FetchTaskProcessor {
                     continue;
                 }
 
-                Object transformedObject = TypeCastUtils.cast(data, type);
+                Object transformedObject = TypeCastUtils.cast(data, type, fetchTaskBean.getHelpClazz());
                 if (transformedObject == null) {
                     transformedObject = TypeUtils.cast(data, type, ParserConfig.getGlobalInstance());
                 }

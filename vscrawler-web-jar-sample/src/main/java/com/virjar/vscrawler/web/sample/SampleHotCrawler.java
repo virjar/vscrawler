@@ -1,6 +1,8 @@
 package com.virjar.vscrawler.web.sample;
 
 import com.virjar.vscrawler.core.VSCrawler;
+import com.virjar.vscrawler.core.VSCrawlerBuilder;
+import com.virjar.vscrawler.core.processor.configurableprocessor.annotiondriven.AnnotationProcessorBuilder;
 import com.virjar.vscrawler.web.api.CrawlerBuilder;
 
 /**
@@ -10,7 +12,13 @@ import com.virjar.vscrawler.web.api.CrawlerBuilder;
 public class SampleHotCrawler implements CrawlerBuilder {
     @Override
     public VSCrawler build() {
-
-        return null;
+        return VSCrawlerBuilder.create()
+                .setProcessor(AnnotationProcessorBuilder
+                        .create()
+                        .registryBean(GitEEProject.class)
+                        .build())
+                .setStopWhileTaskEmptyDuration(-1)
+                .setCrawlerName("giteeProjectCrawler")
+                .build();
     }
 }

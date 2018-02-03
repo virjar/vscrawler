@@ -27,11 +27,11 @@
             <scope>provided</scope>
         </dependency>
         <!-- 可以加入第三方依赖,请注意如果vscrawler本身加入了依赖,那么就不需要再次引入,如果你引入了,也是使用vscrawler所定义的版本 -->
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-            <version>4.0.4</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>cn.hutool</groupId>-->
+            <!--<artifactId>hutool-all</artifactId>-->
+            <!--<version>4.0.4</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -49,24 +49,9 @@
                     <minimizeJar>true</minimizeJar>
                     <filters>
                         <filter>
-                            <artifact>junit:junit</artifact>
-                            <includes>
-                                <include>junit/framework/**</include>
-                                <include>org/junit/**</include>
-                            </includes>
-                            <excludes>
-                                <exclude>org/junit/experimental/**</exclude>
-                                <exclude>org/junit/runners/**</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
                             <artifact>*:*</artifact>
                             <excludes>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                                <exclude>META-INF/maven/**</exclude>
-                                <exclude>META-INF/services/**</exclude>
+                                <exclude>META-INF/**</exclude>
                             </excludes>
                         </filter>
                     </filters>

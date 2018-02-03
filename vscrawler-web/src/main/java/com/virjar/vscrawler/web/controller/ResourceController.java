@@ -27,7 +27,7 @@ public class ResourceController {
 
     @RequestMapping("/reloadAccount")
     @ResponseBody
-    public WebJsonResponse<String> reloadAccount(@RequestParam("appSource") String appSource) {
+    public WebJsonResponse<String> reloadAccount(@RequestParam("crawlerName") String appSource) {
         VSCrawler vsCrawler = crawlerManager.get(appSource);
         if (vsCrawler == null) {
             return ReturnUtil.failed("no crawler defined :" + appSource);
@@ -39,7 +39,7 @@ public class ResourceController {
 
     @RequestMapping("/reloadResource")
     @ResponseBody
-    public WebJsonResponse<String> reloadResource(@RequestParam("appSource") String appSource,
+    public WebJsonResponse<String> reloadResource(@RequestParam("crawlerName") String appSource,
                                                   @RequestParam("resourceName") String resourceName) {
         VSCrawler vsCrawler = crawlerManager.get(appSource);
         if (vsCrawler == null) {
@@ -52,7 +52,7 @@ public class ResourceController {
 
     @RequestMapping("/resourceStatus")
     @ResponseBody
-    public WebJsonResponse<AllResourceItems> resourceStatus(@RequestParam("appSource") String appSource,
+    public WebJsonResponse<AllResourceItems> resourceStatus(@RequestParam("crawlerName") String appSource,
                                                             @RequestParam("resourceName") String resourceName) {
         VSCrawler vsCrawler = crawlerManager.get(appSource);
         if (vsCrawler == null) {

@@ -1,19 +1,18 @@
 package com.virjar.vscrawler.core.selector.string;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
-
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.selector.string.function.StringFunction;
 import com.virjar.vscrawler.core.selector.string.function.StringFunctionEnv;
+import com.virjar.vscrawler.core.selector.string.operator.*;
+import com.virjar.vscrawler.core.selector.string.syntax.*;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.virjar.vscrawler.core.selector.string.operator.*;
-import com.virjar.vscrawler.core.selector.string.syntax.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
 
 /**
  * Created by virjar on 17/7/8.
@@ -105,6 +104,7 @@ public class ExpressionParser {
 
     private static Map<String, Integer> proproityMap = Maps.newHashMap();
     private static Map<String, Operation> operationMap = Maps.newHashMap();
+
     static {
         proproityMap.put("*", 3);
         proproityMap.put("/", 3);
@@ -154,7 +154,7 @@ public class ExpressionParser {
                 }
                 ret.add(new TokenHolder(StringFunctionTokenQueue.unescape(str), TokenType.String));
             } else {
-                throw new IllegalStateException("unknown token:" + stringFunctionTokenQueue.remainder());
+                throw new IllegalStateException("unknown token:" + stringFunctionTokenQueue.remainder() + " for expression: " + stringFunctionTokenQueue.getQueue());
             }
             stringFunctionTokenQueue.consumeWhitespace();
         }
@@ -199,7 +199,7 @@ public class ExpressionParser {
             params.add(new ExpressionParser(new StringFunctionTokenQueue(parameter)).parse());
         }
         paramTokenQueue.consumeWhitespace();
-        if(!paramTokenQueue.isEmpty()){
+        if (!paramTokenQueue.isEmpty()) {
             params.add(new ExpressionParser(new StringFunctionTokenQueue(paramTokenQueue.remainder())).parse());
         }
         return new FunctionSyntaxNode(function, params);
