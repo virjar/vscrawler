@@ -21,7 +21,7 @@ public class GitEEProject extends AbstractAutoProcessModel {
     /**
      * 头像
      */
-    @Xpath("//css('.avatar'::self()/a/absUrl('src')")
+    @Xpath("//css('.avatar')::self()/a/absUrl('src')")
     private String avatar;
 
     /**
