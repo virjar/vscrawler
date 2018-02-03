@@ -8,9 +8,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class WebJsonResponse<T> {
 
-    public final int status;
-    public final String message;
-    public final T data;
+    private final int status;
+    private final String message;
+    private final T data;
 
     @JsonCreator
     public WebJsonResponse(@JsonProperty("status") int status,
