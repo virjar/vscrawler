@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 0.0.1
  */
 @Slf4j
-public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, FirstSeedPushEvent {
+public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, Runnable {
 
     private CrawlerSessionPool crawlerSessionPool;
     private BerkeleyDBSeedManager berkeleyDBSeedManager;
@@ -88,8 +88,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
               SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
               long slowStartDuration) {
-        super("VSCrawler-Dispatch");
-        setDaemon(false);
+        //super("VSCrawler-Dispatch");
+        //setDaemon(false);
         this.vsCrawlerContext = vsCrawlerContext;
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
@@ -102,28 +102,27 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
 
 
     public void stopCrawler() {
-        if (stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
-            log.info("爬虫<{}>停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent", vsCrawlerContext.getCrawlerName());
-            System.out.flush();// 刷新系统buffer,避免影响队形
-            synchronized (System.out) {
-                System.err.println("                      江城子 . 程序员之歌");
-                System.err.println("");
-                System.err.println("                  十年生死两茫茫，写程序，到天亮。");
-                System.err.println("                      千行代码，Bug何处藏。");
-                System.err.println("                  纵使上线又怎样，朝令改，夕断肠。");
-                System.err.println("");
-                System.err.println("                  领导每天新想法，天天改，日日忙。");
-                System.err.println("                      相顾无言，惟有泪千行。");
-                System.err.println("                  每晚灯火阑珊处，夜难寐，加班狂。");
-            }
-            vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd(vsCrawlerContext);
-            VSCrawlerContext.removeContext(vsCrawlerContext);
-            //终止爬虫主派发线程,派发线程是宿主线程,需要最后中断,否则容易引起其他非守护线程提前被中断
-            if (crawlerMainThread != null && !crawlerMainThread.isInterrupted()) {
-                crawlerMainThread.interrupt();
-            }
-        } else {
-            log.info("爬虫已经停止,不需要发生爬虫停止事件消息");
+        if (!stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
+            return;
+        }
+        log.info("爬虫<{}>停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent", vsCrawlerContext.getCrawlerName());
+        System.out.flush();// 刷新系统buffer,避免影响队形
+        synchronized (System.out) {
+            System.err.println("                      江城子 . 程序员之歌");
+            System.err.println("");
+            System.err.println("                  十年生死两茫茫，写程序，到天亮。");
+            System.err.println("                      千行代码，Bug何处藏。");
+            System.err.println("                  纵使上线又怎样，朝令改，夕断肠。");
+            System.err.println("");
+            System.err.println("                  领导每天新想法，天天改，日日忙。");
+            System.err.println("                      相顾无言，惟有泪千行。");
+            System.err.println("                  每晚灯火阑珊处，夜难寐，加班狂。");
+        }
+        vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd(vsCrawlerContext);
+        VSCrawlerContext.removeContext(vsCrawlerContext);
+        //终止爬虫主派发线程,派发线程是宿主线程,需要最后中断,否则容易引起其他非守护线程提前被中断
+        if (crawlerMainThread != null && !crawlerMainThread.isInterrupted()) {
+            crawlerMainThread.interrupt();
         }
     }
 
@@ -197,6 +196,8 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
         }
         stopCrawler();// 直接在外部终止爬虫,这里可能调两次
         log.info("爬虫结束");
+        crawlerMainThread = null;
+        stat.set(STAT_INIT);
     }
 
     private void activeDispatchThread() {
@@ -265,6 +266,7 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     public GrabResult grabSync(String seed) {
         return grabSync(new Seed(seed));
     }
+
 
     private class SeedProcessTask implements Runnable {
         private Seed seed;
@@ -457,6 +459,25 @@ public class VSCrawler extends Thread implements CrawlerConfigChangeEvent, First
     }
 
     public int activeWorker() {
+        if (threadPool == null) {
+            return 0;
+        }
         return threadPool.getActiveCount();
     }
+
+    public void start() {
+        if (crawlerMainThread != null) {
+            return;
+        }
+        synchronized (this) {
+            if (crawlerMainThread != null) {
+                return;
+            }
+            Thread mainThread = new Thread("VSCrawler-Dispatch");
+            mainThread.setDaemon(false);
+            crawlerMainThread = mainThread;
+            crawlerMainThread.start();
+        }
+    }
+
 }

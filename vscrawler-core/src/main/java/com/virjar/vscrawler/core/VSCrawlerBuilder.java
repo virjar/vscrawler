@@ -415,33 +415,29 @@ public class VSCrawlerBuilder {
             } else {
                 resourceManager.registry(new ResourceQueue(vsCrawlerContext.makeUserResourceTag(), defaultQueueStore, defaultResourceSetting, new UserManager2ResourceLoader(userResourceFacade)));
             }
-            vsCrawler.addCrawlerStartCallBack(new AutoLoginPlugin(loginHandler, new UserManager2(resourceManager, vsCrawlerContext)));
+            addEventObserver(new AutoLoginPlugin(loginHandler, new UserManager2(resourceManager, vsCrawlerContext)));
         }
 
         if (stopWhileTaskEmptyDuration > 0) {
-            vsCrawler.addCrawlerStartCallBack(new VSCrawler.CrawlerStartCallBack() {
-                @Override
-                public void onCrawlerStart(final VSCrawler vsCrawler) {
-                    vsCrawler.getVsCrawlerContext().getAutoEventRegistry().registerObserver(new ShutDownChecker() {
+            final VSCrawler finalVSCrawler = vsCrawler;
+            addEventObserver(new ShutDownChecker() {
 
-                        @Override
-                        public void checkShutDown(VSCrawlerContext vsCrawlerContext1) {
-                            // 15s之后检查活跃线程数,发现为0,证明连续10s都没用任务执行了
-                            if (vsCrawler.activeWorker() == 0
-                                    && (System.currentTimeMillis() - vsCrawler.getLastActiveTime()) > 10000) {
-                                System.out.println((stopWhileTaskEmptyDuration / 1000) + "秒没收到爬虫任务,自动爬虫关闭器,尝试停止爬虫");
-                                vsCrawler.stopCrawler();
-                            }
-                        }
-                    });
-                    vsCrawler.getVsCrawlerContext().getAutoEventRegistry().registerObserver(new SeedEmptyEvent() {
-                        @Override
-                        public void onSeedEmpty(VSCrawlerContext vsCrawlerContext1) {
-                            vsCrawler.getVsCrawlerContext().getAutoEventRegistry().createDelayEventSender(ShutDownChecker.class,
-                                    stopWhileTaskEmptyDuration).delegate()
-                                    .checkShutDown(vsCrawlerContext);
-                        }
-                    });
+                @Override
+                public void checkShutDown(VSCrawlerContext vsCrawlerContext1) {
+                    // 15s之后检查活跃线程数,发现为0,证明连续10s都没用任务执行了
+                    if (finalVSCrawler.activeWorker() == 0
+                            && (System.currentTimeMillis() - finalVSCrawler.getLastActiveTime()) > 10000) {
+                        System.out.println((stopWhileTaskEmptyDuration / 1000) + "秒没收到爬虫任务,自动爬虫关闭器,尝试停止爬虫");
+                        finalVSCrawler.stopCrawler();
+                    }
+                }
+            });
+            addEventObserver(new SeedEmptyEvent() {
+                @Override
+                public void onSeedEmpty(VSCrawlerContext vsCrawlerContext1) {
+                    finalVSCrawler.getVsCrawlerContext().getAutoEventRegistry().createDelayEventSender(ShutDownChecker.class,
+                            stopWhileTaskEmptyDuration).delegate()
+                            .checkShutDown(vsCrawlerContext);
                 }
             });
         }

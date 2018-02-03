@@ -1,7 +1,6 @@
 package com.virjar.vscrawler.core.net.user;
 
 import com.alibaba.fastjson.JSONObject;
-import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
@@ -16,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 0.0.1
  */
 @Slf4j
-public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionCreateEvent, SessionDestroyEvent {
+public class AutoLoginPlugin implements SessionCreateEvent, SessionDestroyEvent {
     private IUserManager userManager;
     private LoginHandler loginHandler;
 
@@ -25,10 +24,10 @@ public class AutoLoginPlugin implements VSCrawler.CrawlerStartCallBack, SessionC
         this.userManager = userManager;
     }
 
-    @Override
-    public void onCrawlerStart(VSCrawler vsCrawler) {
-        vsCrawler.getVsCrawlerContext().getAutoEventRegistry().registerObserver(this);
-    }
+//    @Override
+//    public void onCrawlerStart(VSCrawler vsCrawler) {
+//        vsCrawler.getVsCrawlerContext().getAutoEventRegistry().registerObserver(this);
+//    }
 
     @Override
     public void onSessionCreateEvent(VSCrawlerContext vsCrawlerContext, CrawlerSession crawlerSession) {
