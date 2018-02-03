@@ -17,10 +17,16 @@ public class CrawlerBean {
      * class when program restart next time, for jar hot load please upload crawler class to webapp lib directory with jar format file
      */
     @Getter
-    private boolean reloadAble;
+    private boolean reloadAble = false;
 
     public CrawlerBean(VSCrawler crawler) {
         this.crawler = crawler;
+    }
+
+    public CrawlerBean(VSCrawler crawler, boolean reloadAble, VSCrawlerClassLoader vsCrawlerClassLoader) {
+        this.crawler = crawler;
+        this.reloadAble = reloadAble;
+        this.vsCrawlerClassLoader = vsCrawlerClassLoader;
     }
 
     private VSCrawlerClassLoader vsCrawlerClassLoader;

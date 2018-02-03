@@ -195,6 +195,10 @@ public class ClassScanner {
 
     }
 
+    public static <T> void scanJarFile(JarFile jarFile, ClassVisitor<T> classVisitor) {
+        visitJarFile(jarFile, Collections.<String>emptyList(), classVisitor);
+    }
+
     public static <T> void scan(URL url, ClassVisitor<T> classVisitor, Collection<String> basePackages) {
 
         // normal file
