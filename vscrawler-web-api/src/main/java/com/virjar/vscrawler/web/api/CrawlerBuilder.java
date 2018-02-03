@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.web.crawler;
+package com.virjar.vscrawler.web.api;
 
 import com.virjar.vscrawler.core.VSCrawler;
 

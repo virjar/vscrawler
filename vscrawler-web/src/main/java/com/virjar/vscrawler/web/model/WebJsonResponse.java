@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Created by virjar on 2018/2/3.
+ * Created by virjar on 2018/2/3.<br>
+ * 前端返回统一数据结构
  */
 public class WebJsonResponse<T> {
 

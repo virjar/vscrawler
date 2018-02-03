@@ -218,7 +218,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
             vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SessionBorrowEvent.class)
                     .onSessionBorrow(vsCrawlerContext, crawlerSession);
-            if(!crawlerSession.isValid()){
+            if (!crawlerSession.isValid()) {
                 crawlerSession.destroy();
                 continue;
             }
@@ -346,5 +346,9 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 sessionQueue.add(new SessionHolder(newSession));
             }
         }
+    }
+
+    public int sessionNumber() {
+        return runningSessions.size() + sessionQueue.size();
     }
 }

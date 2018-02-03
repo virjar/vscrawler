@@ -43,3 +43,5 @@ bin/
 .springBeans
 catalina.base_IS_UNDEFINED/
 
+#shade plugin ignore
+dependency-reduced-pom.xml

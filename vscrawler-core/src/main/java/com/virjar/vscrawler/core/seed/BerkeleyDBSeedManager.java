@@ -653,6 +653,35 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
             }
         }, expectedNumber));
+    }
 
+    public long finishedSeed() {
+        if (isClosed) {
+            return 0;
+        }
+        long recordSize = 0;
+        // default segment
+        String segmentName = FINISHED_SEGMENT_PREFIX + defaultSegment;
+        recordSize += createOrGetDataBase(segmentName).count();
+        for (Long segment : allSegments) {
+            segmentName = FINISHED_SEGMENT_PREFIX + segment;
+            recordSize += createOrGetDataBase(segmentName).count();
+        }
+        return recordSize;
+    }
+
+    public long totalSeed() {
+        if (isClosed) {
+            return 0;
+        }
+        long recordSize = 0;
+        for (Long segment : allSegments) {
+            String segmentName = RUNNING_SEGMENT_PREFIX + segment;
+            recordSize += createOrGetDataBase(segmentName).count();
+        }
+        // default segment
+        String segmentName = RUNNING_SEGMENT_PREFIX + defaultSegment;
+        recordSize += createOrGetDataBase(segmentName).count();
+        return recordSize + finishedSeed();
     }
 }

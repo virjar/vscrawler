@@ -40,7 +40,9 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, Runnable {
 
+    @Getter
     private CrawlerSessionPool crawlerSessionPool;
+    @Getter
     private BerkeleyDBSeedManager berkeleyDBSeedManager;
     private SeedProcessor seedProcessor;
     private List<Pipeline> pipeline = Lists.newArrayList();
@@ -84,6 +86,24 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
     private VSCrawlerContext vsCrawlerContext;
 
     private boolean hasComponentInit = false;
+
+
+    public String status() {
+        int i = stat.get();
+        if (i == STAT_INIT) {
+            return "初始化";
+        }
+        if (i == STAT_RUNNING) {
+            return "运行中";
+        }
+        if (i == STAT_STOPPED) {
+            return "已停止";
+        }
+        if (i == STAT_STARING) {
+            return "启动中";
+        }
+        return "未知";
+    }
 
     VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
               SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
@@ -457,6 +477,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         berkeleyDBSeedManager.clear();
         return this;
     }
+
 
     public int activeWorker() {
         if (threadPool == null) {

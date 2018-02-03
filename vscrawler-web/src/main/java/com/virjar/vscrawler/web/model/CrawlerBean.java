@@ -4,8 +4,11 @@ import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.web.crawlerloader.VSCrawlerClassLoader;
 import lombok.Getter;
 
+import java.io.File;
+
 /**
- * Created by virjar on 2018/2/1.
+ * Created by virjar on 2018/2/1.<br>
+ * 包裹一个爬虫对象,包括爬虫相关描述参数
  */
 public class CrawlerBean {
     @Getter
@@ -29,5 +32,17 @@ public class CrawlerBean {
         this.vsCrawlerClassLoader = vsCrawlerClassLoader;
     }
 
+    @Getter
     private VSCrawlerClassLoader vsCrawlerClassLoader;
+
+    public File relatedJarFile() {
+        if (vsCrawlerClassLoader == null) {
+            return null;
+        }
+        return vsCrawlerClassLoader.getJarFile();
+    }
+
+    public String crawlerName() {
+        return crawler.getVsCrawlerContext().getCrawlerName();
+    }
 }
