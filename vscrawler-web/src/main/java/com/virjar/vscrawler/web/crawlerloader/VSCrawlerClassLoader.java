@@ -114,11 +114,15 @@ public class VSCrawlerClassLoader extends URLClassLoader {
         if (registerSelf) {
             registerBean(bean);
         }
-        Field[] declaredFields = bean.getClass().getDeclaredFields();
-        for (Field field : declaredFields) {
-            if (field.getAnnotation(Resource.class) != null || field.getAnnotation(Autowired.class) != null) {
-                injectField(bean, registerSelf, webApplicationContext, field);
+        Class clazz = bean.getClass();
+        while (clazz != null) {
+            Field[] declaredFields = clazz.getDeclaredFields();
+            for (Field field : declaredFields) {
+                if (field.getAnnotation(Resource.class) != null || field.getAnnotation(Autowired.class) != null) {
+                    injectField(bean, registerSelf, webApplicationContext, field);
+                }
             }
+            clazz = clazz.getSuperclass();
         }
     }
 }
