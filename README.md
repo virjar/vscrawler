@@ -135,6 +135,11 @@ public class SampleHotCrawler implements CrawlerBuilder {
 5. 将得到的jar包放置到web工程``WEB-INF/vscrawler_hot_jar/``目录下面,或者使用web页面在线上传
 6. 此时可以开始在线爬虫测试了,或者可以通过web控制台启动离线抓取爬虫
 
+
 ### 热加载jar代码规则
 1. 基本没有限制,想怎么写都可以,但是如果vscrawler本身引入了某个依赖的话,你自己引入的依赖将不会生效(受限于classloader双亲委派机制),所以如果vscrawler本身某个依赖版本存在问题,需要在web工程控制,在爬虫jar工程控制将不会生效。
 2. 由于jar包只是一段代码,没法和spring容器配合,如依赖注入,aop等。但是现在业务线的代码几乎逃不开spring了,所以我又免为其难的支持了一部分spring的特性,具体包括简单的spring上下文感知``com.virjar.vscrawler.web.api.SpringContextAware``,如果你的爬虫入口类实现了这个接口,那么在框架加载你的jar包的时候,将会通过这个接口注入spring上下文,那你可以拿着它做一些事情(获取bean,刷新bean定义,或者类似于springMVC再做一个subContext),当然手动获取bean确实很傻的样子,所以如果jar里面的class字段标记了``Resource``或者``Autowired``任意一个注解,那么框架将会尝试使用spring上线的bean进行自动注入,注入方式只支持根据type(多个type的bean,将会出问题,因为实际工程实践中我们貌似都是根据type来注入的,那些花样玩儿法每个都支持太累了)。总之jar包可以拿到web工程的spring bean,但是jar包的class无法影响web工程的spring 上下文。web工程和jar包是单向依赖关系。
+
+
+### 关于爬虫仓库
+目前,我新建了一个爬虫仓库,计划在里面实现基于vscrawler的各类爬虫代码,该项目也是maven工程,每个module都是是个单独的爬虫,可以打包为一个jar包丢到vscrawler-web平台。当然也欢迎有同学可以和我一起维护这个仓库,仓库地址为:[基于vscrawler的爬虫仓库](https://gitee.com/virjar/vscrawler-crawler-repository)
