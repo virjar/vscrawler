@@ -502,7 +502,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
             if (crawlerMainThread != null) {
                 return;
             }
-            Thread mainThread = new Thread("VSCrawler-Dispatch");
+            Thread mainThread = new Thread(this, "VSCrawler-Dispatch");
             mainThread.setDaemon(false);
             crawlerMainThread = mainThread;
             crawlerMainThread.start();
