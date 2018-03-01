@@ -50,7 +50,7 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
             return;
         }
 
-        //cannot auto inject by spring framework,if there no implementations ,a exception will throw
+        //cannot auto inject by spring framework,if there no implementations ,a exception will be throw
         Map<String, CrawlerBuilder> beansOfType = webApplicationContext.getBeansOfType(CrawlerBuilder.class);
         crawlerBuilderList.addAll(beansOfType.values());
 

@@ -1,10 +1,25 @@
 package com.virjar.vscrawler.core;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.slf4j.MDC;
+
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.event.systemevent.*;
+import com.virjar.vscrawler.core.log.LogIdGenarator;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.core.processor.GrabResult;
@@ -15,20 +30,9 @@ import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
 import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
-
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by virjar on 17/4/16. <br/>
@@ -87,7 +91,6 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
 
     private boolean hasComponentInit = false;
 
-
     public String status() {
         int i = stat.get();
         if (i == STAT_INIT) {
@@ -105,11 +108,11 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         return "未知";
     }
 
-    VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool, BerkeleyDBSeedManager berkeleyDBSeedManager,
-              SeedProcessor seedProcessor, List<Pipeline> pipeline, int threadNum, boolean slowStart,
-              long slowStartDuration) {
-        //super("VSCrawler-Dispatch");
-        //setDaemon(false);
+    VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool,
+            BerkeleyDBSeedManager berkeleyDBSeedManager, SeedProcessor seedProcessor, List<Pipeline> pipeline,
+            int threadNum, boolean slowStart, long slowStartDuration) {
+        // super("VSCrawler-Dispatch");
+        // setDaemon(false);
         this.vsCrawlerContext = vsCrawlerContext;
         this.crawlerSessionPool = crawlerSessionPool;
         this.berkeleyDBSeedManager = berkeleyDBSeedManager;
@@ -120,12 +123,12 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         this.slowStartDuration = slowStartDuration;
     }
 
-
     public void stopCrawler() {
         if (!stat.compareAndSet(STAT_RUNNING, STAT_STOPPED)) {
             return;
         }
-        log.info("爬虫<{}>停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent", vsCrawlerContext.getCrawlerName());
+        log.info("爬虫<{}>停止,发送爬虫停止事件消息:com.virjar.vscrawler.event.systemevent.CrawlerEndEvent",
+                vsCrawlerContext.getCrawlerName());
         System.out.flush();// 刷新系统buffer,避免影响队形
         synchronized (System.out) {
             System.err.println("                      江城子 . 程序员之歌");
@@ -140,7 +143,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         }
         vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerEndEvent.class).crawlerEnd(vsCrawlerContext);
         VSCrawlerContext.removeContext(vsCrawlerContext);
-        //终止爬虫主派发线程,派发线程是宿主线程,需要最后中断,否则容易引起其他非守护线程提前被中断
+        // 终止爬虫主派发线程,派发线程是宿主线程,需要最后中断,否则容易引起其他非守护线程提前被中断
         if (crawlerMainThread != null && !crawlerMainThread.isInterrupted()) {
             crawlerMainThread.interrupt();
         }
@@ -155,7 +158,6 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         berkeleyDBSeedManager.addNewSeeds(Lists.newArrayList(new Seed(seed)));
         return this;
     }
-
 
     private AtomicInteger activeTasks = new AtomicInteger(0);
 
@@ -174,7 +176,8 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
                 if (stat.get() == STAT_STOPPED) {
                     break;
                 }
-                vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SeedEmptyEvent.class).onSeedEmpty(vsCrawlerContext);
+                vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(SeedEmptyEvent.class)
+                        .onSeedEmpty(vsCrawlerContext);
                 if (!waitDispatchThread()) {
                     log.warn("爬虫线程休眠被打断");
                     break;
@@ -249,18 +252,19 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
      */
     public GrabResult grabSync(Seed seed) {
         try {
+            MDC.put("grabID", LogIdGenarator.genGrabTransactionID(vsCrawlerContext.getCrawlerName()));
             VSCrawlerCommonUtil.setGrabStartTimeStampThreadLocal(System.currentTimeMillis());
-            //start component
+            // start component
             if (!hasComponentInit) {
                 initComponentWithOutMainThread();
             }
 
-            //set vsCrawlerContext into ThreadLocal ,for support event loop
+            // set vsCrawlerContext into ThreadLocal ,for support event loop
             VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
-            //30秒资源请求超时,防止线程阻塞
+            // 30秒资源请求超时,防止线程阻塞
             CrawlerSession session = crawlerSessionPool.borrowOne(VSCrawlerCommonUtil.grabTaskLessTime(), true);
             if (session == null) {
-                //TODO store in crawlResult
+                // TODO store in crawlResult
                 throw new IllegalStateException("can not allocate session resource from session pool");
             }
 
@@ -277,6 +281,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
                 // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
                 VSCrawlerCommonUtil.clearCrawlerSession();
                 crawlerSessionPool.recycle(session);
+                MDC.clear();
             }
         } finally {
             VSCrawlerCommonUtil.clearGrabTimeOutControl();
@@ -286,7 +291,6 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
     public GrabResult grabSync(String seed) {
         return grabSync(new Seed(seed));
     }
-
 
     private class SeedProcessTask implements Runnable {
         private Seed seed;
@@ -298,8 +302,9 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         @Override
         public void run() {
             try {
+                MDC.put("grabID", LogIdGenarator.genGrabTransactionID(vsCrawlerContext.getCrawlerName()));
                 activeTasks.incrementAndGet();
-                //为了性能,不打印json
+                // 为了性能,不打印json
                 log.info("handle seed: {}", seed.getData());
                 processSeed(seed);
             } catch (Exception e) {
@@ -308,11 +313,12 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
                 if (activeTasks.decrementAndGet() < threadPool.getMaximumPoolSize()) {
                     activeDispatchThread();
                 }
+                MDC.clear();
             }
         }
 
         private void processSeed(Seed seed) {
-            //set vsCrawlerContext into ThreadLocal ,for support event loop
+            // set vsCrawlerContext into ThreadLocal ,for support event loop
             VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
             CrawlerSession session = crawlerSessionPool.borrowOne(-1, false);
             int originRetryCount = seed.getRetry();
@@ -366,7 +372,10 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
 
     private void config(Properties properties) {
         // 事件循环是单线程的,所以设计上来说,不会有并发问题
-        int newThreadNumber = NumberUtils.toInt(properties.getProperty(String.format(VSCrawlerConstant.VSCRAWLER_THREAD_NUMBER, vsCrawlerContext.getCrawlerName())), -1);
+        int newThreadNumber = NumberUtils.toInt(
+                properties.getProperty(
+                        String.format(VSCrawlerConstant.VSCRAWLER_THREAD_NUMBER, vsCrawlerContext.getCrawlerName())),
+                -1);
         if (newThreadNumber < 0) {
             return;
         }
@@ -389,7 +398,6 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         // 开启文件监听,并发送初始化配置事件
         VSCrawlerContext.vsCrawlerConfigFileWatcher.watchAndBindEvent();
 
-
         // 加载初始化配置
         config(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties());
 
@@ -402,12 +410,12 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
 
         startTime = new Date();
 
-
         for (CrawlerStartCallBack crawlerStartCallBack : allStartCallBacks) {
             crawlerStartCallBack.onCrawlerStart(this);
         }
 
-        vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerStartEvent.class).onCrawlerStart(vsCrawlerContext);
+        vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(CrawlerStartEvent.class)
+                .onCrawlerStart(vsCrawlerContext);
 
         // 如果爬虫是强制停止的,比如kill -9,那么尝试发送爬虫停止信号,请注意
         // 一般请求请正常停止程序,关机拦截这是挽救方案,并不一定可以完整的实现收尾工作
@@ -417,14 +425,15 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
                 int length = "      VSCrawler       ".length();
                 System.err.println("##################################################");
                 System.err.println("##############      VSCrawler       ##############");
-                System.err.println("##############" + StringUtils.center(Version.getVersion(), length) + "##############");
+                System.err.println(
+                        "##############" + StringUtils.center(Version.getVersion(), length) + "##############");
                 System.err.println("##############  你有一个有意思的灵魂  ##############");
                 System.err.println("##################################################");
                 System.err.println("##############        virjar        ##############");
                 System.err.println("##################################################");
             }
         }
-        //stat.set(STAT_RUNNING);
+        // stat.set(STAT_RUNNING);
         hasComponentInit = true;
     }
 
@@ -477,7 +486,6 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         berkeleyDBSeedManager.clear();
         return this;
     }
-
 
     public int activeWorker() {
         if (threadPool == null) {
