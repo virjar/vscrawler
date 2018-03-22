@@ -1,12 +1,5 @@
 package com.virjar.vscrawler.core.config;
 
-import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
-import com.virjar.vscrawler.core.VSCrawlerContext;
-import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
-import com.virjar.vscrawler.core.event.systemevent.CrawlerEndEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -16,6 +9,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
 
 /**
  * 文件系统目录和文件监控服务
@@ -31,22 +29,24 @@ public class DirectoryWatcher {
     private WatchEvent.Kind<?>[] events;
 
     public static DirectoryWatcher getDirectoryWatcher(final WatcherCallback watcherCallback,
-                                                       WatchEvent.Kind<?>... events) {
+            WatchEvent.Kind<?>... events) {
         return new DirectoryWatcher(watcherCallback, events);
 
     }
 
     private DirectoryWatcher(final WatcherCallback watcherCallback, WatchEvent.Kind<?>... events) {
-        //AutoEventRegistry.getInstance().registerObserver(this);
+        // AutoEventRegistry.getInstance().registerObserver(this);
         try {
             if (events.length == 0) {
                 throw new RuntimeException(
                         "必须至少指定一个监控的事件，如：StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE");
             }
-            synchronized (DirectoryWatcher.class) {
-                if (EXECUTOR_SERVICE == null) {
-                    EXECUTOR_SERVICE = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS,
-                            new SynchronousQueue<Runnable>(), new NamedThreadFactory("watch-service"));
+            if ((EXECUTOR_SERVICE == null)) {
+                synchronized (DirectoryWatcher.class) {
+                    if (EXECUTOR_SERVICE == null) {
+                        EXECUTOR_SERVICE = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS,
+                                new SynchronousQueue<Runnable>(), new NamedThreadFactory("watch-service"));
+                    }
                 }
             }
             this.events = new WatchEvent.Kind<?>[events.length];
@@ -68,7 +68,7 @@ public class DirectoryWatcher {
                 @Override
                 public void run() {
                     if (!EXECUTOR_SERVICE.isShutdown()) {
-                        //线程池本身就是deamo的
+                        // 线程池本身就是deamo的
                         EXECUTOR_SERVICE.shutdown();
                     }
                 }
@@ -153,21 +153,21 @@ public class DirectoryWatcher {
                     LOGGER.info("kind:" + kind);
                     // 判断事件类别
                     switch (kind.name()) {
-                        case "ENTRY_CREATE":
-                            if (Files.isDirectory(absolutePath, LinkOption.NOFOLLOW_LINKS)) {
-                                LOGGER.info("新增目录：" + absolutePath);
-                                // 为新增的目录及其所有子目录注册监控事件
-                                registerDirectoryTree(absolutePath);
-                            } else {
-                                LOGGER.info("新增文件：" + absolutePath);
-                            }
-                            break;
-                        case "ENTRY_DELETE":
-                            LOGGER.info("删除：" + absolutePath);
-                            break;
-                        case "ENTRY_MODIFY":
-                            LOGGER.info("修改：" + absolutePath);
-                            break;
+                    case "ENTRY_CREATE":
+                        if (Files.isDirectory(absolutePath, LinkOption.NOFOLLOW_LINKS)) {
+                            LOGGER.info("新增目录：" + absolutePath);
+                            // 为新增的目录及其所有子目录注册监控事件
+                            registerDirectoryTree(absolutePath);
+                        } else {
+                            LOGGER.info("新增文件：" + absolutePath);
+                        }
+                        break;
+                    case "ENTRY_DELETE":
+                        LOGGER.info("删除：" + absolutePath);
+                        break;
+                    case "ENTRY_MODIFY":
+                        LOGGER.info("修改：" + absolutePath);
+                        break;
                     }
                     // 业务逻辑
                     watcherCallback.execute(kind, absolutePath.toAbsolutePath().toString());
@@ -225,7 +225,6 @@ public class DirectoryWatcher {
             LOGGER.error("监控目录失败：" + path.toAbsolutePath(), ex);
         }
     }
-
 
     public interface WatcherCallback {
         void execute(WatchEvent.Kind<?> kind, String path);
