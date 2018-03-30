@@ -77,4 +77,5 @@ public class PackageSearchNode {
         String node = packageSplitItems.get(index);
         return children.containsKey(node) && children.get(node).isSubPackage(packageSplitItems, index + 1);
     }
+
 }

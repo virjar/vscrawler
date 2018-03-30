@@ -1,11 +1,5 @@
 package com.virjar.vscrawler.core.util;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.virjar.vscrawler.core.event.support.AutoEvent;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -15,6 +9,14 @@ import java.net.URLClassLoader;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
+import org.apache.commons.io.IOUtils;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.event.support.AutoEvent;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 类扫描器
@@ -196,11 +198,15 @@ public class ClassScanner {
     }
 
     public static <T> void scanJarFile(JarFile jarFile, ClassVisitor<T> classVisitor) {
-        visitJarFile(jarFile, Collections.<String>emptyList(), classVisitor);
+        visitJarFile(jarFile, new PackageSearchNode(), classVisitor);
     }
 
     public static <T> void scan(URL url, ClassVisitor<T> classVisitor, Collection<String> basePackages) {
 
+        PackageSearchNode packageSearchNode = new PackageSearchNode();
+        for(String packageName:basePackages){
+            packageSearchNode.addToTree(packageName);
+        }
         // normal file
         if (url.toString().startsWith("file:")) {
             File f = new File(url.getPath());
@@ -214,7 +220,7 @@ public class ClassScanner {
 
                     String classFile = file.toString().substring(start + 1, end);
                     String className = classFile.replace(File.separator, ".");
-                    visitClass(className, basePackages, classVisitor);
+                    visitClass(className, packageSearchNode, classVisitor);
                 }
                 return;
             }
@@ -222,7 +228,7 @@ public class ClassScanner {
             JarFile jarFile = null;
             try {
                 jarFile = new JarFile(f);
-                visitJarFile(jarFile, basePackages, classVisitor);
+                visitJarFile(jarFile, packageSearchNode, classVisitor);
             } catch (IOException e1) {
                 //do nothing
             } finally {
@@ -235,7 +241,7 @@ public class ClassScanner {
                 // for spring boot, all in one jar launcher will be jarfile. @see org.springframework.boot.loader.archive.JarFileArchive
                 // and for spring boot ,Exploded model ,all jar file will be file pattern. @see org.springframework.boot.loader.archive.ExplodedArchive
                 if (content instanceof JarFile) {
-                    visitJarFile((JarFile) content, basePackages, classVisitor);
+                    visitJarFile((JarFile) content, packageSearchNode, classVisitor);
                 }
             } catch (IOException e) {
                 //do nothing
@@ -243,40 +249,27 @@ public class ClassScanner {
         }
     }
 
-    private static void visitJarFile(JarFile jarFile, Collection<String> basePackages, ClassVisitor classVisitor) {
+    private static void visitJarFile(JarFile jarFile, PackageSearchNode packageSearchNode, ClassVisitor classVisitor) {
         Enumeration<JarEntry> entries = jarFile.entries();
         while (entries.hasMoreElements()) {
             JarEntry jarEntry = entries.nextElement();
             String entryName = jarEntry.getName();
             if (!jarEntry.isDirectory() && entryName.endsWith(".class")) {
                 String className = entryName.replace("/", ".").substring(0, entryName.length() - 6);
-                visitClass(className, basePackages, classVisitor);
+                visitClass(className, packageSearchNode, classVisitor);
             }
         }
     }
 
 
-    private static <T> void visitClass(String className, Collection<String> basePackages,
+    private static <T> void visitClass(String className, PackageSearchNode packageSearchNode,
                                        ClassVisitor<T> classVisitor) {
-        if (basePackages.size() == 0) {
-            Class<T> clazz = classForName(className);
-            if (clazz != null) {
-                classVisitor.visit(clazz);
-            }
-        } else {
-            boolean needVisit = false;
-            for (String basePackage : basePackages) {
-                if (className.startsWith(basePackage)) {
-                    needVisit = true;
-                    break;
-                }
-            }
-            if (needVisit) {
-                Class<T> clazz = classForName(className);
-                if (clazz != null) {
-                    classVisitor.visit(clazz);
-                }
-            }
+        if(!packageSearchNode.isSubPackage(className)){
+            return;
+        }
+        Class<T> clazz = classForName(className);
+        if (clazz != null) {
+            classVisitor.visit(clazz);
         }
     }
 
