@@ -3,30 +3,30 @@
 ## 1.爬虫操作相关
 
 ### 1.1 在线添加一个爬虫
-api: ``/crawler/uploadJar``
-method:``post``
-param:``file``
-response:
-desc:``上传一个文件,文件参数名字为file``
+api: ``/crawler/uploadJar``  
+method:``post``  
+param:``file``  
+response:  
+desc:``上传一个文件,文件参数名字为file``  
 
 ### 1.2 启动一个爬虫
-api: ``/crawler/startCrawler``
-method:``post|get``
-param:``crawlerName``
-response:
-desc:``crawlerName是爬虫的id``
+api: ``/crawler/startCrawler``  
+method:``post|get``  
+param:``crawlerName``  
+response:  
+desc:``crawlerName是爬虫的id``  
 
 ### 1.3 停止一个爬虫
-api: ``/crawler/stopCrawler``
-method:``post|get``
-param:``crawlerName``
-response:
-desc:``crawlerName是爬虫的id``
+api: ``/crawler/stopCrawler``  
+method:``post|get``  
+param:``crawlerName``  
+response:  
+desc:``crawlerName是爬虫的id``  
 
 ### 1.3  查看所有爬虫状态
-api: ``/crawler/crawlerStatus``
-method:``post|get``
-param:``none``
+api: ``/crawler/crawlerStatus``  
+method:``post|get``  
+param:``none``  
 response:
 ```
 {
@@ -48,24 +48,24 @@ desc:``crawlerName是爬虫的id``
 
 ## 2.资源操作接口
 ### 2.1 重新加载账号数据
-api: ``/resource/reloadAccount``
-method:``post|get``
-param:``crawlerName``
-response:
-desc:``crawlerName是爬虫的id``
+api: ``/resource/reloadAccount``  
+method:``post|get``  
+param:``crawlerName``  
+response:  
+desc:``crawlerName是爬虫的id``  
 
 ### 2.2 重新加载资源数据
-api: ``/resource/reloadAccount``
-method:``post|get``
-param:``crawlerName&resourceName``
-response:
-desc:``crawlerName是爬虫的id;resourceName是该爬虫所关联的资源名字``
-ru
+api: ``/resource/reloadAccount``  
+method:``post|get``  
+param:``crawlerName&resourceName``  
+response:  
+desc:``crawlerName是爬虫的id;resourceName是该爬虫所关联的资源名字``  
+
 
 ### 2.3 查看资源状态
-api: ``/resource/resourceStatus``
-method:``post|get``
-param:``crawlerName&resourceName``
+api: ``/resource/resourceStatus``  
+method:``post|get``  
+param:``crawlerName&resourceName``  
 response:
 ```
 {
@@ -84,12 +84,12 @@ response:
 		"forbiddenQueue": []
 	}
 }
-```
-desc:``crawlerName是爬虫的id;resourceName是该爬虫所关联的资源名字``
+```  
+desc:``crawlerName是爬虫的id;resourceName是该爬虫所关联的资源名字``  
 
 ## 3 抓取测试,(备注,请求内容是json  ``application/json;charset=UTF-8``)
-api: ``/grab``
-method:``post``
+api: ``/grab``  
+method:``post``  
 param:
 ```
 {
