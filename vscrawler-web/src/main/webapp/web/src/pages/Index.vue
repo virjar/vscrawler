@@ -30,6 +30,11 @@
                 color: #03a9f4;
             }
         }
+        .active {
+            a {
+                color: #03a9f4;
+            }
+        }
     }
 </style>
 
@@ -38,10 +43,10 @@
         <header class="header">
             <a href=""><img src="../assets/logo.png" alt="logo"></a>
             <ul class="infos">
-                <li>
+                <li :class="{'active': this.$route.path == '/list'}">
                     <a @click="() => this.$router.push('/list')">爬虫列表</a>
                 </li>
-                <li>
+                <li :class="{'active': this.$route.path == '/test'}">
                     <a @click="() => this.$router.push('/test')">抓取测试</a>
                 </li>
                 <li>

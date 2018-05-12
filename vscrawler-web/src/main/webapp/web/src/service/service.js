@@ -24,6 +24,12 @@ let request = {
 
     getCrawler: () => getService(`${url}/crawler/crawlerStatus`),
 
+    postGrad: (data) => postService(`${url}/grab`, data),
+
+    getStart: (name) => getService(`${url}/crawler/startCrawler?crawlerName=${name}`),
+
+    getStop: (name) => getService(`${url}/crawler/stopCrawler?crawlerName=${name}`),
+
 }
 
 export default request

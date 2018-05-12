@@ -41,6 +41,7 @@
 
 <script>
     import cTable from '../components/table'
+    import cTest from './Test'
     export default {
         components: {
             cTable,
@@ -63,24 +64,114 @@
                 }, {
                     title: '状态',
                     width: 120,
-                    key: 'status'
+                    render: (h, params) => {
+                        return h('span', [
+                            h('span', {
+                                style: {
+                                    color: this.getStatusColor(params.row.status),
+                                    'margin-right': '5px',
+                                    'font-size': '17px'
+                                }
+                            }, '●'),
+                            h('span', {
+                                style: {
+                                    color: this.getStatusColor(params.row.status)
+                                }
+                            }, params.row.status),
+                        ])
+                    }
                 }, {
                     title: '操作',
                     width: 200,
                     render: (h, params) => {
+                        let btnType
+                        let btnText
+                        switch (params.row.status) {
+                            case '初始化':
+                                btnType = {
+                                    type: 'primary'
+                                }
+                                btnText = '启用'
+                                break
+                            case '已停止':
+                                btnType = {
+                                    type: 'primary'
+                                }
+                                btnText = '启用'
+                                break
+                            case '运行中':
+                                btnType = {
+                                    type: 'error'
+                                }
+                                btnText = '停用'
+                                break
+                            case '启动中':
+                                btnType = {
+                                    type: 'info',
+                                    disabled: true,
+                                    loading: true
+                                }
+                                btnText = '爬取中...'
+                                break
+                            default:
+                                break
+                        }
                         return h('span', [
-                            h('a', {
+                            h('Poptip', {
+                                props: {
+                                    title: 'jar地址',
+                                    content: params.row.jarPath || '-',
+                                    trigger: 'hover'
+                                }
+                            }, [h('Button', {
+                                props: {
+                                    type: 'info',
+                                    size: 'small',
+                                    icon: 'briefcase'
+                                },
+                            }, 'jar包')]),
+                            h('Button', {
+                                style: {
+                                    margin: '0 5px'
+                                },
+                                props: {
+                                    type: 'primary',
+                                    size: 'small',
+                                    icon: 'upload'
+                                },
                                 on: {
                                     click: () => {
-                                        window.open(params.row.jarPath)
+                                        this.$router.push({
+                                            path: '/test',
+                                            query: {
+                                                name: params.row.crawlerName
+                                            }
+                                        })
                                     }
                                 }
-                            }, '下载jar包'),
-                            h('span', ' | '),
+                            }, '测试'),
                             h('Poptip', {
                                 on: {
                                     'on-ok': () => {
-                                        this.doDelete(params.row)
+                                        if (btnText == '启用') {
+                                            this.service.getStart(params.row.crawlerName).then(res => {
+                                                if (res.status == 0) {
+                                                    this.getCrawler()
+                                                    this.$Message.success('启用成功', 2)
+                                                } else {
+                                                    this.$Message.error(res.message, 2)
+                                                }
+                                            })
+                                        } else if (btnText == '停用') {
+                                            this.service.getStop(params.row.crawlerName).then(res => {
+                                                if (res.status == 0) {
+                                                    this.getCrawler()
+                                                    this.$Message.success('停用成功', 2)
+                                                } else {
+                                                    this.$Message.error(res.message, 2)
+                                                }
+                                            })
+                                        }
                                     },
                                     'on-cancel': () => {
                                         console.log('cancel')
@@ -88,9 +179,15 @@
                                 },
                                 props: {
                                     confirm: true,
-                                    title: '确认停用'
+                                    title: `确认${btnText}?`
                                 }
-                            }, [h('a', '停用')])
+                            }, [h('Button', {
+                                props: {
+                                    ...btnType,
+                                    size: 'small',
+                                    icon: 'flag'
+                                },
+                            }, btnText)])
                         ])
                     }
                 }],
@@ -127,6 +224,21 @@
             finishUpload() {
                 this.modal.show = false
                 this.getCrawler()
+            },
+            // 获取 status 颜色
+            getStatusColor(status) {
+                switch (status) {
+                    case '初始化':
+                        return 'gray'
+                    case '运行中':
+                        return 'green'
+                    case '已停止':
+                        return 'red'
+                    case '启动中':
+                        return 'gray'
+                    default:
+                        return 'gray'
+                }
             }
         }
     }
