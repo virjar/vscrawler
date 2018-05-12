@@ -3,7 +3,7 @@ import md5 from 'js-md5'
 
 let { getService, postService } = httpMethod
 
-const url = '/api'
+const url = ''
 
 let request = {
 
