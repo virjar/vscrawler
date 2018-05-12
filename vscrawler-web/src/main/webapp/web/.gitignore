@@ -11,5 +11,4 @@ package-lock.json
 
 # vscode settings
 .vscode/
-config/index.js
 .idea/
