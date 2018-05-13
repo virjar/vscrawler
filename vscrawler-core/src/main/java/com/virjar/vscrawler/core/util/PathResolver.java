@@ -194,4 +194,12 @@ public class PathResolver {
         }
         return targetFile.getAbsolutePath();
     }
+
+    public static String getFileName(String path) {
+        int index = path.lastIndexOf(File.separatorChar);
+        if (index < 0) {
+            return path;
+        }
+        return path.substring(index + 1);
+    }
 }

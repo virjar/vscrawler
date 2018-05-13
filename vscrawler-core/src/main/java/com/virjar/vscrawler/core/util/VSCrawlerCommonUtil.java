@@ -8,6 +8,7 @@ import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.seed.Seed;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by virjar on 17/5/16.
@@ -95,7 +96,7 @@ public class VSCrawlerCommonUtil {
         }
 
         LinkedList<T> ret = Lists.newLinkedList();
-        Random random = new Random();
+        Random random = ThreadLocalRandom.current();
         for (T t : input) {
             if ((random.nextInt() & 0x01) == 1) {
                 ret.addFirst(t);

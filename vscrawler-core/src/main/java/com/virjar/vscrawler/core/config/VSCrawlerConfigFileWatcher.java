@@ -64,6 +64,9 @@ public class VSCrawlerConfigFileWatcher implements CrawlerStartEvent {
                 //目录解析到jar包下面,证明用户使用all_in_one jar的方式,此方式没有热发文件,因为jar包不是可写文件
                 return;
             }
+            if (StringUtils.endsWithIgnoreCase(dir, "classes!")) {
+                return;
+            }
             DirectoryWatcher.WatcherCallback watcherCallback = new DirectoryWatcher.WatcherCallback() {
                 private long lastExecute = System.currentTimeMillis();
 

@@ -2,6 +2,8 @@ package com.virjar.vscrawler.web.service;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.util.ClassScanner;
 import com.virjar.vscrawler.core.util.PathResolver;
@@ -10,6 +12,7 @@ import com.virjar.vscrawler.web.crawlerloader.VSCrawlerClassLoader;
 import com.virjar.vscrawler.web.model.CrawlerBean;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
@@ -20,16 +23,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * Created by virjar on 2018/1/17.<br>
@@ -73,30 +73,171 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
         hasInit = true;
     }
 
-    private void moveEmbedCrawler(File jarDir) {
-        ClassLoader classLoader = VSCrawlerManager.class.getClassLoader();
-
-        URL resource = classLoader.getResource("crawlers");
-        System.out.println(resource);
+    private String getFileSign(InputStream inputStream) {
+        byte[] buff = new byte[1024];
+        byte[] sign = new byte[32];
+        for (int i = 0; i < sign.length; i++) {
+            sign[i] = 0;
+        }
         try {
-            System.out.println(resource.getContent());
-            System.out.println(resource.getContent() instanceof JarFile);
-            System.out.println(resource.getContent().getClass().getSuperclass());
-
-
-            URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
-            URL[] urLs = urlClassLoader.getURLs();
-            for (URL url : urLs) {
-                System.out.println(url.toString());
-                System.out.println(url.getContent());
+            int readSize;
+            //不要一个字节一个字节的读,这样会因为堆栈开销影响性能,读取需要批量读,然后再同一个栈帧内循环处理数据
+            while ((readSize = inputStream.read(buff)) > 0) {
+                for (int i = 0; i < readSize; i++) {
+                    sign[i % sign.length] ^= (buff[i] + i);
+                }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn("failed to read jar file", e);
+            return "";
         }
-//        Set<URL> jars = ClassScanner.findJars(classLoader);
-//        for (URL url : jars) {
-//            System.out.println(url);
-//        }
+        StringBuilder stringBuilder = new StringBuilder(sign.length * 2);
+        for (byte by : sign) {
+            stringBuilder.append(Integer.toHexString(by));
+        }
+        return stringBuilder.toString();
+    }
+
+    private String getFileSign(File file) {
+        if (file == null || !file.isFile()) {
+            return "";
+        }
+        FileInputStream fileInputStream = null;
+        try {
+            fileInputStream = new FileInputStream(file);
+            return getFileSign(fileInputStream);
+        } catch (IOException e) {
+            log.warn("failed to read jar file", e);
+            return "";
+        } finally {
+            IOUtils.closeQuietly(fileInputStream);
+        }
+    }
+
+    private void moveEmbedCrawler(File jarDir) {
+
+        ClassLoader classLoader = VSCrawlerManager.class.getClassLoader();
+        URL resource = classLoader.getResource("crawlers");
+        if (resource == null) {
+            log.warn("can not load default crawlers folder");
+            return;
+        }
+
+        Set<String> existFileSign = Sets.newHashSet();
+        Set<String> existFileNames = Sets.newHashSet();
+        //load all exits crawler, to avoid duplicate move
+        for (File jarFile : jarDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return StringUtils.endsWith(name, ".jar");
+            }
+        })) {
+            existFileSign.add(getFileSign(jarFile));
+            existFileNames.add(jarFile.getName());
+        }
+
+        //普通文件夹的方式,该方式可能为war包,也可能是springBoot的main函数执行的方式(没有打jar包)
+        if (StringUtils.startsWithIgnoreCase(resource.toString(), "file:")) {
+            File fromDir = new File(resource.getPath());
+            if (!fromDir.isDirectory()) {
+                return;
+            }
+            for (File jarFile : fromDir.listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return StringUtils.endsWith(name, ".jar");
+                }
+            })) {
+                if (existFileSign.contains(getFileSign(jarFile))) {
+                    continue;
+                }
+                String originFileName = jarFile.getName();
+                File toFile = judgeCopyTargetFile(originFileName, existFileNames, jarDir);
+                try {
+                    Files.copy(jarFile, toFile);
+                } catch (IOException e) {
+                    log.warn("failed to copy file,from :{}  to:{}", jarFile, toFile);
+                }
+            }
+            return;
+        }
+
+        if (StringUtils.startsWithIgnoreCase(resource.toString(), "jar:file:")) {
+            //the fucking SpringBoot
+            String urlPath = resource.toString().substring("jar:file:".length());
+            int separatorIndex = urlPath.indexOf("!");
+            String containerJarPath = urlPath.substring(0, separatorIndex);
+            String entryName = trimSlash(urlPath.substring(separatorIndex).replaceAll("!", ""));
+
+            ZipFile containerJarFile = null;
+            try {
+                containerJarFile = new ZipFile(containerJarPath);
+                Enumeration<? extends ZipEntry> entries = containerJarFile.entries();
+                while (entries.hasMoreElements()) {
+                    ZipEntry zipEntry = entries.nextElement();
+                    String zipEntryName = trimSlash(zipEntry.getName());
+
+                    if (StringUtils.equals(zipEntryName, entryName)) {
+                        continue;
+                    }
+                    if (!StringUtils.startsWith(zipEntryName, entryName)) {
+                        continue;
+                    }
+                    if (!StringUtils.endsWith(zipEntryName, ".jar")) {
+                        continue;
+                    }
+                    InputStream inputStream = containerJarFile.getInputStream(zipEntry);
+                    String fileSign = getFileSign(inputStream);
+                    IOUtils.closeQuietly(inputStream);
+                    if (existFileSign.contains(fileSign)) {
+                        continue;
+                    }
+                    String originFileName = PathResolver.getFileName(zipEntryName);
+                    File toFile = judgeCopyTargetFile(originFileName, existFileNames, jarDir);
+                    FileOutputStream fileOutputStream = null;
+                    try {
+                        fileOutputStream = new FileOutputStream(toFile);
+                        inputStream = containerJarFile.getInputStream(zipEntry);
+                        IOUtils.copy(inputStream, fileOutputStream);
+                    } catch (IOException e) {
+                        log.warn("failed to copy file,from :{}  to:{}", zipEntry.getName(), toFile);
+                    } finally {
+                        IOUtils.closeQuietly(inputStream);
+                        IOUtils.closeQuietly(fileOutputStream);
+                    }
+                }
+
+            } catch (IOException e) {
+                log.warn("failed to load embed crawler:{}", urlPath, e);
+            } finally {
+                IOUtils.closeQuietly(containerJarFile);
+            }
+            return;
+        }
+        log.warn("can not locate embed crawler :{}", resource.toString());
+    }
+
+    private String trimSlash(String path) {
+        if (StringUtils.startsWith(path, "/")) {
+            path = path.substring(1);
+        }
+        if (StringUtils.endsWith(path, "/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return path;
+    }
+
+    private File judgeCopyTargetFile(String originFileName, Set<String> existFileNames, File jarDir) {
+        File toFile = new File(jarDir, originFileName);
+        if (!existFileNames.contains(originFileName)) {
+            return toFile;
+        }
+        int i = 0;
+        while (true) {
+            if (!existFileNames.contains(i + originFileName)) {
+                return new File(jarDir, i + originFileName);
+            }
+        }
     }
 
     private void loadHotJar(File dir) {
