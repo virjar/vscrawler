@@ -150,3 +150,7 @@ public class SampleHotCrawler implements CrawlerBuilder {
 
 ### 关于爬虫仓库
 目前,我新建了一个爬虫仓库,计划在里面实现基于vscrawler的各类爬虫代码,该项目也是maven工程,每个module都是是个单独的爬虫,可以打包为一个jar包丢到vscrawler-web平台。当然也欢迎有同学可以和我一起维护这个仓库,仓库地址为:[基于vscrawler的爬虫仓库](https://gitee.com/virjar/vscrawler-crawler-repository)
+
+### 关于前端工程
+前端是使用vue写的,考虑不是所有java程序员都有node环境,为了降低整个工程build的难度。我单独将前端项目抽离出了一个独立项目(放到这里的话,由于npm依赖问题,容易让后端编译器卡蹦)
+前端项目地址为:[https://gitee.com/virjar/vscrawler-frontend](https://gitee.com/virjar/vscrawler-frontend) 有兴趣的同学可以自己去build
