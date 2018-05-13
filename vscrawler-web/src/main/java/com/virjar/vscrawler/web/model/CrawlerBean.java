@@ -22,6 +22,9 @@ public class CrawlerBean {
     @Getter
     private boolean reloadAble = false;
 
+    @Getter
+    private String codeUrl;
+
     public CrawlerBean(VSCrawler crawler) {
         this.crawler = crawler;
     }
