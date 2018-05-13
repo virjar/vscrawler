@@ -44,7 +44,7 @@ public class CrawlerController {
         }
     }
 
-    @RequestMapping("/startCrawler")
+    @RequestMapping("git git/startCrawler")
     @ResponseBody
     public WebJsonResponse<String> start(@RequestParam("crawlerName") String crawlerName) {
         VSCrawler vsCrawler = crawlerManager.get(crawlerName);
