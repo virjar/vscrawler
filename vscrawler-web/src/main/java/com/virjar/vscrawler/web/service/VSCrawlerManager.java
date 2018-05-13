@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.VSCrawler;
 import com.virjar.vscrawler.core.util.ClassScanner;
+import com.virjar.vscrawler.core.util.PathResolver;
 import com.virjar.vscrawler.web.api.CrawlerBuilder;
 import com.virjar.vscrawler.web.crawlerloader.VSCrawlerClassLoader;
 import com.virjar.vscrawler.web.model.CrawlerBean;
@@ -21,9 +22,13 @@ import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarFile;
 
 /**
@@ -62,8 +67,36 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
 
         //load jar file
         //find jar file root dir
-        loadHotJar(new File(calcHotJarDir()));
+        File jarDir = new File(calcHotJarDir());
+        moveEmbedCrawler(jarDir);
+        loadHotJar(jarDir);
         hasInit = true;
+    }
+
+    private void moveEmbedCrawler(File jarDir) {
+        ClassLoader classLoader = VSCrawlerManager.class.getClassLoader();
+
+        URL resource = classLoader.getResource("crawlers");
+        System.out.println(resource);
+        try {
+            System.out.println(resource.getContent());
+            System.out.println(resource.getContent() instanceof JarFile);
+            System.out.println(resource.getContent().getClass().getSuperclass());
+
+
+            URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
+            URL[] urLs = urlClassLoader.getURLs();
+            for (URL url : urLs) {
+                System.out.println(url.toString());
+                System.out.println(url.getContent());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+//        Set<URL> jars = ClassScanner.findJars(classLoader);
+//        for (URL url : jars) {
+//            System.out.println(url);
+//        }
     }
 
     private void loadHotJar(File dir) {
@@ -147,7 +180,7 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
     private WebApplicationContext webApplicationContext;
 
     private String calcHotJarDir() {
-        File hotJarDir = new File(webAppPath, "WEB-INF/vscrawler_hot_jar");
+        File hotJarDir = new File(PathResolver.resolveAbsolutePath("file:~/.vscrawler/crawlers/"));
         if (!hotJarDir.exists()) {
             if (!hotJarDir.mkdirs()) {
                 log.warn("cat not create director for vscrawler hot jar lib ");

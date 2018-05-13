@@ -238,8 +238,8 @@ public class ClassScanner {
         } else {
             try {
                 Object content = url.getContent();
-                // for spring boot, all in one jar launcher will be jarfile. @see org.springframework.boot.loader.archive.JarFileArchive
-                // and for spring boot ,Exploded model ,all jar file will be file pattern. @see org.springframework.boot.loader.archive.ExplodedArchive
+                // for spring boot, all in one jar launcher will be jarfile. @see com.virjar.vscrawler.web.springboot.archive.JarFileArchive
+                // and for spring boot ,Exploded model ,all jar file will be file pattern. @see com.virjar.vscrawler.web.springboot.archive.ExplodedArchive
                 if (content instanceof JarFile) {
                     visitJarFile((JarFile) content, packageSearchNode, classVisitor);
                 }
