@@ -49,8 +49,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
     private SegmentResolver segmentResolver;
 
-    private Map<String, BloomFilter<Seed>> bloomFilters = Maps.newConcurrentMap();
-
     private DatabaseConfig databaseConfig;
 
 
@@ -104,9 +102,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
 
         // 初始化分段数据库
         loadSegments();
-
-        // 布隆过滤器数据还原
-        buildBloomFilterInfo();
 
         // 监听消息
         vsCrawlerContext.getAutoEventRegistry().registerObserver(this);
@@ -237,88 +232,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
             return poll;
         }
-    }
-
-    private boolean saveBloomFilterInfo() {
-        boolean ret = true;
-        for (Long segment : allSegments) {
-            if (!saveBloomFilterInfo(String.valueOf(segment)) && ret) {
-                ret = false;
-            }
-        }
-        if (!saveBloomFilterInfo(defaultSegment) && ret) {
-            ret = false;
-        }
-        return ret;
-    }
-
-    private boolean saveBloomFilterInfo(String segment) {
-        File bloomData = new File(vsCrawlerContext.getWorkPath(), segment + ".bloom");
-        if (!bloomData.exists()) {
-            try {
-                if (!bloomData.createNewFile()) {
-                    return false;
-                }
-            } catch (IOException ioe) {
-                log.error("cannot serialize bloomFilter data", ioe);
-                return false;
-            }
-        }
-
-        FileOutputStream fileOutputStream = null;
-        try {
-            fileOutputStream = new FileOutputStream(bloomData);
-            bloomFilters.get(segment).writeTo(fileOutputStream);
-            return true;
-        } catch (IOException ioe) {
-            log.warn("不能写入取BloomFilter数据,消重逻辑可能转移到数据库,性能可能受到影响", ioe);
-            return false;
-        } finally {
-            IOUtils.closeQuietly(fileOutputStream);
-        }
-    }
-
-    private void buildBloomFilterInfo() {
-        for (Long segment : allSegments) {
-            String s = String.valueOf(segment);
-            bloomFilters.put(s, buildBloomFilterInfo(s));
-        }
-        bloomFilters.put(defaultSegment, buildBloomFilterInfo(defaultSegment));
-    }
-
-    private BloomFilter<Seed> buildBloomFilterInfo(String segment) {
-        File bloomData = new File(vsCrawlerContext.getWorkPath(), segment + ".bloom");
-        if (bloomData.exists()) {
-            FileInputStream inputStream = null;
-            try {
-                inputStream = new FileInputStream(bloomData);
-                return BloomFilter.readFrom(inputStream, new Funnel<Seed>() {
-                    @Override
-                    public void funnel(Seed from, PrimitiveSink into) {
-                        into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
-                    }
-                });
-            } catch (IOException ioe) {
-                log.warn("不能读取BloomFilter数据,消重逻辑可能转移到数据库,性能可能受到影响", ioe);
-                if (!bloomData.delete()) {
-                    log.warn("delete bloom failed:{}", bloomData.getAbsoluteFile());
-                }
-            } finally {
-                IOUtils.closeQuietly(inputStream);
-            }
-        }
-
-        long expectedNumber = NumberUtils.toLong(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties()
-                .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
-
-        // any way, build a filter instance if not exist
-        return BloomFilter.create(new Funnel<Seed>() {
-            @Override
-            public void funnel(Seed from, PrimitiveSink into) {
-                into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
-            }
-        }, expectedNumber);
-
     }
 
     private void configEnv() {
@@ -475,16 +388,11 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         int realAddSeedNumber = 0;
         // 处理各自的段
         for (Map.Entry<String, Collection<Seed>> entry : segmentSeeds.asMap().entrySet()) {
-            BloomFilter<Seed> bloomFilter = getOrCreate(entry.getKey());
             try {
                 lockDBOperate();
                 Database runningSeedDatabase = createOrGetDataBase(RUNNING_SEGMENT_PREFIX + entry.getKey());// env.openDatabase(null, RUNNING_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
                 Database finishedSeedDatabase = createOrGetDataBase(FINISHED_SEGMENT_PREFIX + entry.getKey());// env.openDatabase(null, FINISHED_SEGMENT_PREFIX + entry.getKey(), databaseConfig);
                 for (Seed seed : entry.getValue()) {
-                    if (bloomFilter.mightContain(seed)) {
-                        continue;
-                    }
-
                     /**
                      * 处理新增加的段
                      */
@@ -505,8 +413,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                     DatabaseEntry value = new DatabaseEntry(VSCrawlerCommonUtil.transferSeedToString(seed).getBytes());
                     runningSeedDatabase.putNoOverwrite(null, key, value);
                     realAddSeedNumber++;
-                    // runningSeedDatabase.put(null, key, value);
-                    bloomFilter.put(seed);
                     if (isSeedEmpty.compareAndSet(true, false)) {
                         if (seed.getActiveTimeStamp() == null) {
                             vsCrawlerContext.getAutoEventRegistry().findEventDeclaring(FirstSeedPushEvent.class)
@@ -525,33 +431,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
         }
 
-    }
-
-    private BloomFilter<Seed> getOrCreate(String segment) {
-        BloomFilter<Seed> seedBloomFilter = bloomFilters.get(segment);
-        if (seedBloomFilter != null) {
-            return seedBloomFilter;
-        }
-        synchronized (segment.intern()) {
-            seedBloomFilter = bloomFilters.get(segment);
-            if (seedBloomFilter != null) {
-                return seedBloomFilter;
-            }
-
-            long expectedNumber = NumberUtils.toLong(VSCrawlerContext.vsCrawlerConfigFileWatcher.loadedProperties()
-                    .getProperty(VSCrawlerConstant.VSCRAWLER_SEED_MANAGER_EXPECTED_SEED_NUMBER), 1000000L);
-
-            // any way, build a filter instance if not exist
-            seedBloomFilter = BloomFilter.create(new Funnel<Seed>() {
-                @Override
-                public void funnel(Seed from, PrimitiveSink into) {
-                    into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
-                }
-            }, expectedNumber);
-
-            bloomFilters.put(segment, seedBloomFilter);
-        }
-        return seedBloomFilter;
     }
 
     private void resolveDBFile() {
@@ -607,7 +486,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
             dbLock.unlock();
         }
-        log.info("存储bloomFilter的数据:{}", saveBloomFilterInfo());
     }
 
     public void clear() {
@@ -626,13 +504,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
                 if (databaseNames.contains(segmentName)) {
                     env.removeDatabase(null, segmentName);
                 }
-
-                bloomFilters.put(String.valueOf(segment), BloomFilter.create(new Funnel<Seed>() {
-                    @Override
-                    public void funnel(Seed from, PrimitiveSink into) {
-                        into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
-                    }
-                }, expectedNumber));
             }
 
             // default segment
@@ -647,12 +518,6 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
             }
 
         }
-        bloomFilters.put(defaultSegment, BloomFilter.create(new Funnel<Seed>() {
-            @Override
-            public void funnel(Seed from, PrimitiveSink into) {
-                into.putString(seedKeyResolver.resolveSeedKey(from), Charset.defaultCharset());
-            }
-        }, expectedNumber));
     }
 
     public long finishedSeed() {
