@@ -321,7 +321,7 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
     private WebApplicationContext webApplicationContext;
 
     private String calcHotJarDir() {
-        File hotJarDir = new File(PathResolver.resolveAbsolutePath("file:~/.vscrawler/crawlers/"));
+        File hotJarDir = new File(PathResolver.resolveAbsolutePath("file:~/.vscrawler/jar_crawlers/"));
         if (!hotJarDir.exists()) {
             if (!hotJarDir.mkdirs()) {
                 log.warn("cat not create director for vscrawler hot jar lib ");
@@ -338,33 +338,31 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
         if (StringUtils.isBlank(fileName)) {
             fileName = String.valueOf(System.currentTimeMillis()) + ".jar";
         }
+
         File hotJarDir = new File(calcHotJarDir());
-
-        //calc a jar file name
-        int slashIndex = fileName.lastIndexOf("/");
-        if (slashIndex > 0) {
-            fileName = fileName.substring(slashIndex);
-        }
-        slashIndex = fileName.lastIndexOf(".");
-        if (slashIndex > 0) {
-            fileName = fileName.substring(0, slashIndex);
-        }
-
-        // get a file path
-        String finalFileName;
-        while (true) {
-            finalFileName = fileName + "_" + System.currentTimeMillis() + ".jar";
-            if (!new File(hotJarDir, finalFileName).exists()) {
-                break;
+        Set<String> existFileSign = Sets.newHashSet();
+        Set<String> existFileNames = Sets.newHashSet();
+        //load all exits crawler, to avoid duplicate move
+        for (File jarFile : hotJarDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return StringUtils.endsWith(name, ".jar");
             }
+        })) {
+            existFileSign.add(getFileSign(jarFile));
+            existFileNames.add(jarFile.getName());
         }
-        //save file to file system
-        File jarFile = new File(hotJarDir, finalFileName);
-        multipartFile.transferTo(jarFile);
+        fileName = PathResolver.getFileName(fileName);
+        File targetFile = judgeCopyTargetFile(fileName, existFileNames, hotJarDir);
+        multipartFile.transferTo(targetFile);
+        if (existFileSign.contains(getFileSign(targetFile))) {
+            deleteJarIfJarIllegal(targetFile);
+            return;
+        }
 
         try {
             //scan and load crawler
-            CrawlerBean crawlerBean = loadJarFile(jarFile);
+            CrawlerBean crawlerBean = loadJarFile(targetFile);
             if (crawlerBean == null) {
                 throw new IllegalStateException("not crawler defined in this jar file");
             }
@@ -383,7 +381,7 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
             //register new crawler
             allCrawler.put(crawlerName, crawlerBean);
         } catch (Exception e) {
-            deleteJarIfJarIllegal(jarFile);
+            deleteJarIfJarIllegal(targetFile);
             throw e;
         }
     }
