@@ -19,7 +19,7 @@ import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.event.systemevent.*;
-import com.virjar.vscrawler.core.log.LogIdGenarator;
+import com.virjar.vscrawler.core.log.LogIdGenerator;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.core.processor.GrabResult;
@@ -252,7 +252,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
      */
     public GrabResult grabSync(Seed seed) {
         try {
-            MDC.put("grabID", LogIdGenarator.genGrabTransactionID(vsCrawlerContext.getCrawlerName()));
+            MDC.put("grabID", LogIdGenerator.genGrabTransactionID(vsCrawlerContext.getCrawlerName()));
             VSCrawlerCommonUtil.setGrabStartTimeStampThreadLocal(System.currentTimeMillis());
             // start component
             if (!hasComponentInit) {
@@ -302,7 +302,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         @Override
         public void run() {
             try {
-                MDC.put("grabID", LogIdGenarator.genGrabTransactionID(vsCrawlerContext.getCrawlerName()));
+                MDC.put("grabID", LogIdGenerator.genGrabTransactionID(vsCrawlerContext.getCrawlerName()));
                 activeTasks.incrementAndGet();
                 // 为了性能,不打印json
                 log.info("handle seed: {}", seed.getData());

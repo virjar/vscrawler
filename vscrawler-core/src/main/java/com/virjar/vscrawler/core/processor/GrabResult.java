@@ -5,10 +5,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by virjar on 2018/1/20.
@@ -61,7 +58,12 @@ public class GrabResult extends CrawlResult {
     }
 
     public List<Object> allEntityResult() {
-        return Lists.newArrayList(entityResult);
+        if (fieldMap.size() == 0) {
+            return Lists.newArrayList(entityResult);
+        }
+        LinkedList<Object> objects = Lists.newLinkedList(entityResult);
+        objects.add(fieldMap);
+        return objects;
     }
 
     public Object getFiled(String key) {
