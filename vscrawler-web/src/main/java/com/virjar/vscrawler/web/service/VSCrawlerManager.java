@@ -25,7 +25,6 @@ import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import java.io.*;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.*;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -114,8 +113,8 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
         }
     }
 
-    private void moveEmbedCrawler(File jarDir) {
 
+    private void moveEmbedCrawler(File jarDir) {
         ClassLoader classLoader = VSCrawlerManager.class.getClassLoader();
         URL resource = classLoader.getResource("crawlers");
         if (resource == null) {
@@ -138,83 +137,90 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
 
         //普通文件夹的方式,该方式可能为war包,也可能是springBoot的main函数执行的方式(没有打jar包)
         if (StringUtils.startsWithIgnoreCase(resource.toString(), "file:")) {
-            File fromDir = new File(resource.getPath());
-            if (!fromDir.isDirectory()) {
-                return;
-            }
-            for (File jarFile : fromDir.listFiles(new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return StringUtils.endsWith(name, ".jar");
-                }
-            })) {
-                if (existFileSign.contains(getFileSign(jarFile))) {
-                    continue;
-                }
-                String originFileName = jarFile.getName();
-                File toFile = judgeCopyTargetFile(originFileName, existFileNames, jarDir);
-                try {
-                    Files.copy(jarFile, toFile);
-                } catch (IOException e) {
-                    log.warn("failed to copy file,from :{}  to:{}", jarFile, toFile);
-                }
-            }
+            dealWithPlainResource(resource, existFileSign, existFileNames, jarDir);
             return;
         }
 
         if (StringUtils.startsWithIgnoreCase(resource.toString(), "jar:file:")) {
             //the fucking SpringBoot
-            String urlPath = resource.toString().substring("jar:file:".length());
-            int separatorIndex = urlPath.indexOf("!");
-            String containerJarPath = urlPath.substring(0, separatorIndex);
-            String entryName = trimSlash(urlPath.substring(separatorIndex).replaceAll("!", ""));
-
-            ZipFile containerJarFile = null;
-            try {
-                containerJarFile = new ZipFile(containerJarPath);
-                Enumeration<? extends ZipEntry> entries = containerJarFile.entries();
-                while (entries.hasMoreElements()) {
-                    ZipEntry zipEntry = entries.nextElement();
-                    String zipEntryName = trimSlash(zipEntry.getName());
-
-                    if (StringUtils.equals(zipEntryName, entryName)) {
-                        continue;
-                    }
-                    if (!StringUtils.startsWith(zipEntryName, entryName)) {
-                        continue;
-                    }
-                    if (!StringUtils.endsWith(zipEntryName, ".jar")) {
-                        continue;
-                    }
-                    InputStream inputStream = containerJarFile.getInputStream(zipEntry);
-                    String fileSign = getFileSign(inputStream);
-                    IOUtils.closeQuietly(inputStream);
-                    if (existFileSign.contains(fileSign)) {
-                        continue;
-                    }
-                    String originFileName = PathResolver.getFileName(zipEntryName);
-                    File toFile = judgeCopyTargetFile(originFileName, existFileNames, jarDir);
-                    FileOutputStream fileOutputStream = null;
-                    try {
-                        fileOutputStream = new FileOutputStream(toFile);
-                        inputStream = containerJarFile.getInputStream(zipEntry);
-                        IOUtils.copy(inputStream, fileOutputStream);
-                    } catch (IOException e) {
-                        log.warn("failed to copy file,from :{}  to:{}", zipEntry.getName(), toFile);
-                    } finally {
-                        IOUtils.closeQuietly(inputStream);
-                        IOUtils.closeQuietly(fileOutputStream);
-                    }
-                }
-
-            } catch (IOException e) {
-                log.warn("failed to load embed crawler:{}", urlPath, e);
-            } finally {
-                IOUtils.closeQuietly(containerJarFile);
-            }
+            dealWithSpringBootJarPackage(resource, existFileSign, existFileNames, jarDir);
             return;
         }
         log.warn("can not locate embed crawler :{}", resource.toString());
+    }
+
+    private void dealWithPlainResource(URL resource, Set<String> existFileSign, Set<String> existFileNames, File jarDir) {
+        File fromDir = new File(resource.getPath());
+        if (!fromDir.isDirectory()) {
+            return;
+        }
+        for (File jarFile : fromDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return StringUtils.endsWith(name, ".jar");
+            }
+        })) {
+            if (existFileSign.contains(getFileSign(jarFile))) {
+                continue;
+            }
+            String originFileName = jarFile.getName();
+            File toFile = judgeCopyTargetFile(originFileName, existFileNames, jarDir);
+            try {
+                Files.copy(jarFile, toFile);
+            } catch (IOException e) {
+                log.warn("failed to copy file,from :{}  to:{}", jarFile, toFile);
+            }
+        }
+    }
+
+    private void dealWithSpringBootJarPackage(URL resource, Set<String> existFileSign, Set<String> existFileNames, File jarDir) {
+        String urlPath = resource.toString().substring("jar:file:".length());
+        int separatorIndex = urlPath.indexOf("!");
+        String containerJarPath = urlPath.substring(0, separatorIndex);
+        String entryName = trimSlash(urlPath.substring(separatorIndex).replaceAll("!", ""));
+
+        ZipFile containerJarFile = null;
+        try {
+            containerJarFile = new ZipFile(containerJarPath);
+            Enumeration<? extends ZipEntry> entries = containerJarFile.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry zipEntry = entries.nextElement();
+                String zipEntryName = trimSlash(zipEntry.getName());
+
+                if (StringUtils.equals(zipEntryName, entryName)) {
+                    continue;
+                }
+                if (!StringUtils.startsWith(zipEntryName, entryName)) {
+                    continue;
+                }
+                if (!StringUtils.endsWith(zipEntryName, ".jar")) {
+                    continue;
+                }
+                InputStream inputStream = containerJarFile.getInputStream(zipEntry);
+                String fileSign = getFileSign(inputStream);
+                IOUtils.closeQuietly(inputStream);
+                if (existFileSign.contains(fileSign)) {
+                    continue;
+                }
+                String originFileName = PathResolver.getFileName(zipEntryName);
+                File toFile = judgeCopyTargetFile(originFileName, existFileNames, jarDir);
+                FileOutputStream fileOutputStream = null;
+                try {
+                    fileOutputStream = new FileOutputStream(toFile);
+                    inputStream = containerJarFile.getInputStream(zipEntry);
+                    IOUtils.copy(inputStream, fileOutputStream);
+                } catch (IOException e) {
+                    log.warn("failed to copy file,from :{}  to:{}", zipEntry.getName(), toFile);
+                } finally {
+                    IOUtils.closeQuietly(inputStream);
+                    IOUtils.closeQuietly(fileOutputStream);
+                }
+            }
+        } catch (IOException e) {
+            log.warn("failed to load embed crawler:{}", urlPath, e);
+        } finally {
+            IOUtils.closeQuietly(containerJarFile);
+        }
     }
 
     private String trimSlash(String path) {
