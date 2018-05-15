@@ -58,6 +58,10 @@ public class GrabResult extends CrawlResult {
     }
 
     public List<Object> allEntityResult() {
+        return Lists.newArrayList(entityResult);
+    }
+
+    public List<Object> allObjectResult() {
         if (fieldMap.size() == 0) {
             return Lists.newArrayList(entityResult);
         }

@@ -38,10 +38,8 @@ public class GrabController {
 
             Seed seed = new Seed(JSONObject.toJSONString(grabRequestBean));
             GrabResult crawlResult = vsCrawler.grabSync(seed);
-            List<Object> strings = crawlResult.allEntityResult();
-            if (strings.size() == 1) {
-                return ReturnUtil.success(strings.get(0));
-            } else if (strings.size() == 0 && seed.getRetry() > 0) {
+            List<Object> strings = crawlResult.allObjectResult();
+            if (strings.size() == 0 && seed.getRetry() > 0) {
                 return ReturnUtil.failed("timeOut", ReturnUtil.status_timeout);
             } else {
                 return ReturnUtil.success(strings);
