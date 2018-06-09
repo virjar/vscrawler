@@ -43,16 +43,15 @@ public class AutoLoginPlugin implements SessionCreateEvent, SessionDestroyEvent 
             return;
         }
         UserStatus userStatus = user.getUserStatus();
-        boolean loginSuccess = false;
         try {
-            loginSuccess = loginHandler.onLogin(user, crawlerSession.getCookieStore(),
+            boolean loginSuccess = loginHandler.onLogin(user, crawlerSession.getCookieStore(),
                     crawlerSession.getCrawlerHttpClient());
+            if (loginSuccess) {
+                UserUtil.setUser(crawlerSession, user);
+                return;
+            }
         } catch (Exception e) {
             log.error("登录发生异常", e);
-        }
-        if (loginSuccess) {
-            UserUtil.setUser(crawlerSession, user);
-            return;
         }
         crawlerSession.setValid(false);
         if (user.getUserStatus() == userStatus) {
