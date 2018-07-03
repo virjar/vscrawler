@@ -452,6 +452,11 @@ public class VSCrawlerBuilder {
                     }
                 }
             });
+            for (Object observer : eventObservers) {
+                if (observer instanceof VSCrawler.CrawlerStartCallBack) {
+                    vsCrawler.addCrawlerStartCallBack((VSCrawler.CrawlerStartCallBack) observer);
+                }
+            }
         }
 
         return vsCrawler;

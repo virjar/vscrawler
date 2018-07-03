@@ -38,7 +38,7 @@ public class EventLoop implements CrawlerEndEvent {
             return;
         }
         if (event.isSync()) {
-            disPatch(event);
+            postImmediately(event);
             return;
         }
         //程序停止后,同步事件仍然可以投递,异步事件表示事件不需要可靠性保证
@@ -88,6 +88,20 @@ public class EventLoop implements CrawlerEndEvent {
             };
             loopThread.setDaemon(true);
             loopThread.start();
+        }
+    }
+
+    /**
+     * 同步事件直接投递,不能吞掉异常
+     *
+     * @param event 将要被投递的异常
+     */
+    private void postImmediately(Event event) {
+        for (EventHandler eventHandler : allHandlers.get(event.getTopic())) {
+            eventHandler.handEvent(event);
+            if (event.isHandled()) {
+                break;
+            }
         }
     }
 

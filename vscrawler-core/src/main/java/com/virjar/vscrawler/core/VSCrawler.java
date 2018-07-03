@@ -280,7 +280,12 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
                 // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
                 VSCrawlerCommonUtil.clearCrawlerSession();
                 crawlerSessionPool.recycle(session);
-                MDC.clear();
+                try {
+                    MDC.remove("grabID");
+                } catch (Exception e) {
+                    // this exception is unimportant
+                    log.error("failed to remove MDC variable", e);
+                }
             }
         } finally {
             VSCrawlerCommonUtil.clearGrabTimeOutControl();
