@@ -6,6 +6,7 @@ import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.event.systemevent.*;
 import com.virjar.vscrawler.core.log.LogIdGenerator;
+import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.CrawlerSessionPool;
 import com.virjar.vscrawler.core.processor.GrabResult;
@@ -263,6 +264,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
             // 30秒资源请求超时,防止线程阻塞
             CrawlerSession session = crawlerSessionPool.borrowOne(VSCrawlerCommonUtil.grabTaskLessTime(), true);
             if (session == null) {
+                VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_borrowSession_failed");
                 crawlResult.setGrabSuccess(false);
                 crawlResult.setErrorMessage("can not allocate session resource from session pool");
                 return crawlResult;
@@ -288,6 +290,8 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
                 }
             }
         } finally {
+            Long grabStartTimeStampThreadLocal = VSCrawlerCommonUtil.getGrabStartTimeStampThreadLocal();
+            VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_grab", grabStartTimeStampThreadLocal);
             VSCrawlerCommonUtil.clearGrabTimeOutControl();
         }
     }

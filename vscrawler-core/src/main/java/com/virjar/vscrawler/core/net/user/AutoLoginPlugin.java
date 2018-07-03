@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
+import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.LoginHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class AutoLoginPlugin implements SessionCreateEvent, SessionDestroyEvent 
 
         User user = userManager.allocateUser();
         if (user == null) {
+            VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_allocate_account_failed");
             log.warn("不能分发账户数据");
             crawlerSession.setValid(false);
             return;
@@ -48,11 +50,13 @@ public class AutoLoginPlugin implements SessionCreateEvent, SessionDestroyEvent 
                     crawlerSession.getCrawlerHttpClient());
             if (loginSuccess) {
                 UserUtil.setUser(crawlerSession, user);
+                VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_login_success");
                 return;
             }
         } catch (Exception e) {
             log.error("登录发生异常", e);
         }
+        VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_login_failed");
         crawlerSession.setValid(false);
         if (user.getUserStatus() == userStatus) {
             user.setUserStatus(UserStatus.BLOCK);

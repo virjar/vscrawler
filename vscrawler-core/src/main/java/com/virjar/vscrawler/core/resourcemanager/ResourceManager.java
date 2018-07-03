@@ -2,6 +2,7 @@ package com.virjar.vscrawler.core.resourcemanager;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.resourcemanager.model.AllResourceItems;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.service.ResourceQueue;
@@ -23,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 @AllArgsConstructor
 public class ResourceManager {
 
+    private static final String resourceMangerTag = "vscrawler_resource_manager_";
     private ConcurrentMap<String, ResourceQueue> resourceQueueConcurrentMap = Maps.newConcurrentMap();
 
     public void registry(ResourceQueue resourceQueue) {
@@ -45,7 +47,9 @@ public class ResourceManager {
             log.error("no resource for tag:{}", tag);
             return null;
         }
-        return queue.allocate();
+        ResourceItem ret = queue.allocate();
+        VSCrawlerMonitor.recordOne(resourceMangerTag + tag + "_allocate_" + (ret != null ? "success" : "failed"));
+        return ret;
     }
 
     /**

@@ -2,6 +2,7 @@ package com.virjar.vscrawler.core.net.user;
 
 import com.alibaba.fastjson.JSONObject;
 import com.virjar.vscrawler.core.VSCrawlerContext;
+import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.resourcemanager.ResourceManager;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import lombok.Getter;
@@ -35,8 +36,10 @@ public class UserManager2 implements IUserManager {
     public void returnUser(User user) {
         UserStatus userStatus = user.getUserStatus();
         if (userStatus == UserStatus.PASSWORDERROR || userStatus == UserStatus.NOTEXIST) {
+            VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_account_recycle_status_error");
             resourceManager.forbidden(vsCrawlerContext.makeUserResourceTag(), user.getUserID());
         } else {
+            VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_account_recycle_status_ok");
             resourceManager.feedBack(vsCrawlerContext.makeUserResourceTag(), user.getUserID(), userStatus == UserStatus.OK);
         }
 

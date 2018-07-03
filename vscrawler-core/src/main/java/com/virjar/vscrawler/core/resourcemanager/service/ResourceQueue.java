@@ -6,11 +6,14 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.virjar.vscrawler.core.monitor.MetricCollectorTask;
+import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.resourcemanager.model.AllResourceItems;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
 import com.virjar.vscrawler.core.util.CatchRegexPattern;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -23,7 +26,9 @@ import java.util.Set;
  * @author virjar
  * @since 0.2.2
  */
+@Slf4j
 public class ResourceQueue {
+    private static final String resourceQueueMonitorTag = "vscrawler_resource_";
     @Getter
     private String tag;
     private static final String polling = "vscrawler_resourceManager_polling_";
@@ -35,13 +40,24 @@ public class ResourceQueue {
     private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
     private ResourceLoader resourceLoader;
 
-    public ResourceQueue(String tag, QueueStore queue, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
+    private MetricCollectorTask.MetricCollector metricCollector = new MetricCollectorTask.MetricCollector() {
+        @Override
+        public void doCollect() {
+            VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "pollingQueueSize", queue.size(makePollingQueueID()));
+            VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "leaveQueueSize", queue.size(makeLeaveQueueID()));
+            VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "forbiddenQueueSize", queue.size(makeForbiddenQueueID()));
+        }
+    };
+
+    public ResourceQueue(final String tag, QueueStore queue, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
         Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z0-9_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
         this.tag = tag;
         this.queue = queue;
         this.resourceSetting = resourceSetting;
         this.resourceLoader = resourceLoader;
+        MetricCollectorTask.register(metricCollector);
     }
+
 
     public void addResourceLoader(ResourceLoader resourceLoader) {
         ResourceLoader oldResourceLoader = this.resourceLoader;
@@ -86,6 +102,7 @@ public class ResourceQueue {
     }
 
     public void loadResource() {
+        VSCrawlerMonitor.recordOne(resourceQueueMonitorTag + tag + "_load_resource");
         Set<ResourceItem> collection = Sets.newHashSet();
         boolean hasNext = resourceLoader.loadResource(collection);
         importNewData(collection);
@@ -157,6 +174,7 @@ public class ResourceQueue {
             }
             //check
             if (resourceItem.getValidTimeStamp() > System.currentTimeMillis()) {
+                VSCrawlerMonitor.recordOne(resourceQueueMonitorTag + tag + "_resource_use_too_frequently");
                 queue.addLast(makeLeaveQueueID(), resourceItem);
                 continue;
             }
@@ -194,6 +212,7 @@ public class ResourceQueue {
             inLeaveQueue = true;
         }
         if (resourceItem == null) {
+            VSCrawlerMonitor.recordOne(resourceQueueMonitorTag + "feedback_findKey_failed");
             //can not find resource for key,for resource always forbidden
             return;
         }
@@ -221,8 +240,8 @@ public class ResourceQueue {
         try {
             addSuccess = queue.addIndex(makePollingQueueID(), index, resourceItem);
         } catch (Exception e) {
-            //ignore
-            //TODO log
+            VSCrawlerMonitor.recordOne(resourceQueueMonitorTag + tag + "relocate_resource_sequence_failed");
+            log.error("relocate resource sequence failed", e);
         }
         if (!addSuccess) {
             queue.addLast(makePollingQueueID(), resourceItem);
@@ -253,7 +272,8 @@ public class ResourceQueue {
     public void unForbidden(String key) {
         ResourceItem resourceItem = queue.get(makeForbiddenQueueID(), key);
         if (resourceItem == null) {
-            //TODO log
+            VSCrawlerMonitor.recordOne(resourceQueueMonitorTag + tag + "_find_resource_meta_failed");
+            log.warn("can not find resource meta data for tag:{} key:{}", tag, key);
             return;
         }
         resourceItem.setScore(0.5);

@@ -25,12 +25,11 @@ public class EventLoop implements CrawlerEndEvent {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
 
     private ConcurrentMap<String, Set<EventHandler>> allHandlers = Maps.newConcurrentMap();
+    private DelayQueue<Event> eventQueue = new DelayQueue<>();
 
     public EventLoop() {
 
     }
-
-    private DelayQueue<Event> eventQueue = new DelayQueue<>();
 
     public void offerEvent(final Event event) {
         if (!allHandlers.containsKey(event.getTopic()) || allHandlers.get(event.getTopic()).size() < 0) {
