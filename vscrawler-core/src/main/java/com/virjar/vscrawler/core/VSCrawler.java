@@ -1,19 +1,5 @@
 package com.virjar.vscrawler.core;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.slf4j.MDC;
-
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
@@ -30,9 +16,21 @@ import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
 import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.slf4j.MDC;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by virjar on 17/4/16. <br/>
@@ -109,8 +107,8 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
     }
 
     VSCrawler(VSCrawlerContext vsCrawlerContext, CrawlerSessionPool crawlerSessionPool,
-            BerkeleyDBSeedManager berkeleyDBSeedManager, SeedProcessor seedProcessor, List<Pipeline> pipeline,
-            int threadNum, boolean slowStart, long slowStartDuration) {
+              BerkeleyDBSeedManager berkeleyDBSeedManager, SeedProcessor seedProcessor, List<Pipeline> pipeline,
+              int threadNum, boolean slowStart, long slowStartDuration) {
         // super("VSCrawler-Dispatch");
         // setDaemon(false);
         this.vsCrawlerContext = vsCrawlerContext;
@@ -261,14 +259,15 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
 
             // set vsCrawlerContext into ThreadLocal ,for support event loop
             VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
+            GrabResult crawlResult = new GrabResult();
             // 30秒资源请求超时,防止线程阻塞
             CrawlerSession session = crawlerSessionPool.borrowOne(VSCrawlerCommonUtil.grabTaskLessTime(), true);
             if (session == null) {
-                // TODO store in crawlResult
-                throw new IllegalStateException("can not allocate session resource from session pool");
+                crawlResult.setGrabSuccess(false);
+                crawlResult.setErrorMessage("can not allocate session resource from session pool");
+                return crawlResult;
             }
 
-            GrabResult crawlResult = new GrabResult();
             try {
                 seed.setStatus(Seed.STATUS_RUNNING);
                 VSCrawlerCommonUtil.setCrawlerSession(session);

@@ -1,5 +1,6 @@
 package com.virjar.vscrawler.core.resourcemanager;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.resourcemanager.model.AllResourceItems;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
@@ -8,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -126,5 +128,9 @@ public class ResourceManager {
             return null;
         }
         return queue.allResource();
+    }
+
+    public List<String> tagList() {
+        return Lists.newArrayList(resourceQueueConcurrentMap.keySet());
     }
 }

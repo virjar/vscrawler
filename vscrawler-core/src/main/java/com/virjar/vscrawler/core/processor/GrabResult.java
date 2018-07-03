@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.*;
 
@@ -16,6 +18,12 @@ import java.util.*;
  * @since 0.2.6
  */
 public class GrabResult extends CrawlResult {
+    @Getter
+    @Setter
+    private boolean grabSuccess = true;
+    @Getter
+    @Setter
+    private String errorMessage;
     private List<Object> entityResult = Lists.newLinkedList();
     private Map<String, Object> fieldMap = Maps.newHashMap();
 
