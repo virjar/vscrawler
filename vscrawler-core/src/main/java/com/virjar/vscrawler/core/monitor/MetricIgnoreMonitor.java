@@ -4,8 +4,8 @@ package com.virjar.vscrawler.core.monitor;
  * Created by virjar on 2018/7/3.<br>
  * vscrawler框架本身不接入任何监控平台,所以这里空实现
  *
- * @since 0.3.1
  * @author virjar
+ * @since 0.3.1
  */
 class MetricIgnoreMonitor implements MetricRecorder {
     @Override

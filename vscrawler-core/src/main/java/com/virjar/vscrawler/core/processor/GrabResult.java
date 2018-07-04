@@ -22,8 +22,13 @@ public class GrabResult extends CrawlResult {
     @Setter
     private boolean grabSuccess = true;
     @Getter
-    @Setter
     private String errorMessage;
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+        grabSuccess = false;
+    }
+
     private List<Object> entityResult = Lists.newLinkedList();
     private Map<String, Object> fieldMap = Maps.newHashMap();
 

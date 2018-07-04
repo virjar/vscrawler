@@ -10,8 +10,8 @@ package com.virjar.vscrawler.core.monitor;
 public class VSCrawlerMonitor {
     private static MetricRecorder metricRecorder = new MetricIgnoreMonitor();
 
-    private static void replaceCrawlerMonitorComponent(MetricIgnoreMonitor metricIgnoreMonitor) {
-        VSCrawlerMonitor.metricRecorder = metricIgnoreMonitor;
+    public static void replaceCrawlerMonitorComponent(MetricRecorder metricRecorder) {
+        VSCrawlerMonitor.metricRecorder = metricRecorder;
     }
 
     public static void recordMany(String name, long count, long time, boolean saveSample) {

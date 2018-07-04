@@ -250,6 +250,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
      * @return 抓取结果
      */
     public GrabResult grabSync(Seed seed) {
+        GrabResult crawlResult = new GrabResult();
         try {
             MDC.put("grabID", LogIdGenerator.genGrabTransactionID(vsCrawlerContext.getCrawlerName()));
             VSCrawlerCommonUtil.setGrabStartTimeStampThreadLocal(System.currentTimeMillis());
@@ -260,7 +261,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
 
             // set vsCrawlerContext into ThreadLocal ,for support event loop
             VSCrawlerCommonUtil.setVSCrawlerContext(vsCrawlerContext);
-            GrabResult crawlResult = new GrabResult();
+
             // 30秒资源请求超时,防止线程阻塞
             CrawlerSession session = crawlerSessionPool.borrowOne(VSCrawlerCommonUtil.grabTaskLessTime(), true);
             if (session == null) {
@@ -292,6 +293,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         } finally {
             Long grabStartTimeStampThreadLocal = VSCrawlerCommonUtil.getGrabStartTimeStampThreadLocal();
             VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_grab", grabStartTimeStampThreadLocal);
+            VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_grab_result_" + (crawlResult.isGrabSuccess() ? "success" : "failed"));
             VSCrawlerCommonUtil.clearGrabTimeOutControl();
         }
     }
