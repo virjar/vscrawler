@@ -153,6 +153,11 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
         } else {
             VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_create_session_failed");
             createNewSessionStatus = false;
+            try {
+                crawlerSession.destroy();
+            } catch (RuntimeException e) {
+                log.error("failed to destroy a session resource", e);
+            }
             return null;
         }
     }

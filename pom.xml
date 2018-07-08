@@ -4,7 +4,7 @@
     <groupId>com.virjar</groupId>
     <artifactId>vscrawler</artifactId>
     <packaging>pom</packaging>
-    <version>0.3.1</version>
+    <version>0.3.2</version>
     <modules>
         <module>vscrawler-core</module>
         <module>vscrawler-web</module>

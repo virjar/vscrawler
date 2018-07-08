@@ -75,5 +75,6 @@ public class AutoLoginPlugin implements SessionCreateEvent, SessionDestroyEvent 
             user.setUserStatus(UserStatus.BLOCK);
         }
         userManager.returnUser(user);
+        UserUtil.setUser(crawlerSession, null);
     }
 }
