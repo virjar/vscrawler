@@ -66,9 +66,11 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
     private VSCrawlerContext vsCrawlerContext;
     private volatile boolean createNewSessionStatus = true;
 
+    private boolean autoCreateSession = true;
+
     public CrawlerSessionPool(VSCrawlerContext vsCrawlerContext, CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,
                               IPPool ipPool, ProxyPlanner proxyPlanner, int maxSize, int coreSize, int initialSize, long reuseDuration,
-                              long maxOnlineDuration) {
+                              long maxOnlineDuration, boolean autoCreateSession) {
         this.vsCrawlerContext = vsCrawlerContext;
         this.crawlerHttpClientGenerator = crawlerHttpClientGenerator;
         this.proxyStrategy = proxyStrategy;
@@ -79,6 +81,7 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
         this.initialSize = initialSize;
         this.reuseDuration = reuseDuration;
         this.maxOnlineDuration = maxOnlineDuration;
+        this.autoCreateSession = autoCreateSession;
     }
 
     public void init() {
@@ -125,8 +128,10 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
                 }
             }
 
-            sessionDaemonThread = new SessionDaemonThread();
-            sessionDaemonThread.start();
+            if (autoCreateSession) {
+                sessionDaemonThread = new SessionDaemonThread();
+                sessionDaemonThread.start();
+            }
 
             vsCrawlerContext.getAutoEventRegistry().registerObserver(this);
         } finally {

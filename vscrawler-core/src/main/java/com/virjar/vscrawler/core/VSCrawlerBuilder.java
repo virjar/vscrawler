@@ -158,6 +158,11 @@ public class VSCrawlerBuilder {
 
     private Set<Object> eventObservers = Sets.newHashSet();
 
+    /**
+     * 自动创建session
+     */
+    private boolean autoCreateSession = true;
+
     public static VSCrawlerBuilder create() {
         return new VSCrawlerBuilder();
     }
@@ -331,6 +336,12 @@ public class VSCrawlerBuilder {
         return this;
     }
 
+
+    public VSCrawlerBuilder autoCreateSession(boolean autoCreateSession) {
+        this.autoCreateSession = autoCreateSession;
+        return this;
+    }
+
     public VSCrawler build() {
 
         final VSCrawlerContext vsCrawlerContext = VSCrawlerContext.create(crawlerName);
@@ -349,7 +360,7 @@ public class VSCrawlerBuilder {
 
         CrawlerSessionPool crawlerSessionPool = new CrawlerSessionPool(vsCrawlerContext, crawlerHttpClientGenerator, proxyStrategy,
                 ipPool, proxyPlanner, sessionPoolMaxSize, sessionPoolCoreSize, sessionPoolInitialSize,
-                sessionPoolReuseDuration, sessionPoolMaxOnlineDuration);
+                sessionPoolReuseDuration, sessionPoolMaxOnlineDuration, autoCreateSession);
 
         if (initSeedSource == null) {
             initSeedSource = new LocalFileSeedSource();

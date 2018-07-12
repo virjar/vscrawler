@@ -33,14 +33,16 @@ public class ResourceManagerTest {
                         return false;
                     }
                 })).build();
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             ResourceItem resourceItem = resourceManager.allocate(tag);
             String data = "null";
             if (resourceItem != null) {
-                feedBackRandom(tag, resourceManager, resourceItem);
+                //feedBackRandom(tag, resourceManager, resourceItem);
                 data = resourceItem.getData();
             }
-            System.out.println(data);
+            if (i % 100 == 0) {
+                printQueueStatus(resourceManager, tag);
+            }
 
         }
 
