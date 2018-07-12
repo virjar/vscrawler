@@ -1,12 +1,12 @@
 package com.virjar.vscrawler.core.net.user;
 
-import com.alibaba.fastjson.JSONObject;
 import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.systemevent.SessionCreateEvent;
 import com.virjar.vscrawler.core.event.systemevent.SessionDestroyEvent;
 import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.net.session.CrawlerSession;
 import com.virjar.vscrawler.core.net.session.LoginHandler;
+import com.virjar.vscrawler.core.util.JSONViewWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -62,7 +62,7 @@ public class AutoLoginPlugin implements SessionCreateEvent, SessionDestroyEvent 
             user.setUserStatus(UserStatus.BLOCK);
         }
         userManager.returnUser(user);
-        log.warn("用户:{} 登录失败", JSONObject.toJSONString(user));
+        log.warn("用户:{} 登录失败", JSONViewWrapper.wrap(user));
     }
 
     @Override

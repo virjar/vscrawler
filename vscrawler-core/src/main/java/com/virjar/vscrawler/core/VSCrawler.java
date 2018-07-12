@@ -1,6 +1,5 @@
 package com.virjar.vscrawler.core;
 
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.virjar.dungproxy.client.ningclient.concurrent.NamedThreadFactory;
 import com.virjar.dungproxy.client.util.CommonUtil;
@@ -15,6 +14,7 @@ import com.virjar.vscrawler.core.seed.BerkeleyDBSeedManager;
 import com.virjar.vscrawler.core.seed.Seed;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
+import com.virjar.vscrawler.core.util.JSONViewWrapper;
 import com.virjar.vscrawler.core.util.VSCrawlerCommonUtil;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import lombok.Getter;
@@ -277,7 +277,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
                 seedProcessor.process(seed, session, crawlResult);
                 return crawlResult;
             } catch (Exception e) {
-                log.error("error when grab seed:{}", JSONObject.toJSONString(seed), e);
+                log.error("error when grab seed:{}", JSONViewWrapper.wrap(seed), e);
                 throw e;
             } finally {
                 // 归还一个session,session有并发控制,feedback之后session才能被其他任务复用
@@ -318,7 +318,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
                 log.info("handle seed: {}", seed.getData());
                 processSeed(seed);
             } catch (Exception e) {
-                log.error("process request {} error", JSONObject.toJSONString(seed), e);
+                log.error("process request {} error", JSONViewWrapper.wrap(seed), e);
             } finally {
                 if (activeTasks.decrementAndGet() < threadPool.getMaximumPoolSize()) {
                     activeDispatchThread();
