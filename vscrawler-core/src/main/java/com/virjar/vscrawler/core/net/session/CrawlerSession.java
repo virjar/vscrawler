@@ -63,6 +63,10 @@ public class CrawlerSession {
 
     private boolean isDestroy = false;
 
+    public void invalidSession() {
+        setValid(false);
+    }
+
     private Map<String, Object> ext = Maps.newHashMap();
 
     public CrawlerSession(CrawlerHttpClientGenerator crawlerHttpClientGenerator, ProxyStrategy proxyStrategy,

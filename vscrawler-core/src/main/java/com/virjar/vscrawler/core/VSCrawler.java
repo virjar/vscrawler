@@ -168,7 +168,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
         initComponent();
         log.info("Spider  started!");
         while (!Thread.currentThread().isInterrupted() && stat.get() == STAT_RUNNING) {
-            Seed seed = berkeleyDBSeedManager.pool();
+            Seed seed = berkeleyDBSeedManager.poll();
 
             // 种子为空处理
             if (seed == null) {
@@ -267,7 +267,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
             if (session == null) {
                 VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_borrowSession_failed");
                 crawlResult.setGrabSuccess(false);
-                crawlResult.setErrorMessage("can not allocate session resource from session pool");
+                crawlResult.setErrorMessage("can not allocate session resource from session poll");
                 return crawlResult;
             }
 

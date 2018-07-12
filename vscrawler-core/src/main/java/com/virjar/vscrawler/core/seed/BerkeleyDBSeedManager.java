@@ -215,7 +215,7 @@ public class BerkeleyDBSeedManager implements CrawlerConfigChangeEvent, NewSeedA
         return loadSize;
     }
 
-    public synchronized Seed pool() {
+    public synchronized Seed poll() {
         if (isClosed) {
             return null;
         }

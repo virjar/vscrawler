@@ -62,7 +62,7 @@ public class UserManager implements UserStateChangeEvent, IUserManager {
     }
 
     /**
-     * recycle user resource to user resources pool, must make user instance detach from session
+     * recycle user resource to user resources poll, must make user instance detach from session
      *
      * @param user user instance
      */
