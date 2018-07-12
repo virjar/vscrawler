@@ -285,7 +285,9 @@ public class CrawlerSessionPool implements CrawlerEndEvent {
 
     @Override
     public void crawlerEnd(VSCrawlerContext vsCrawlerContext) {
-        sessionDaemonThread.interrupt();
+        if (sessionDaemonThread != null && !sessionDaemonThread.isInterrupted()) {
+            sessionDaemonThread.interrupt();
+        }
         log.info("关闭所有session....");
         for (SessionHolder crawlerSession : idleSessionQueue) {
             crawlerSession.crawlerSession.destroy();
