@@ -23,7 +23,11 @@ public class JSONViewWrapper {
             return theStringView;
         }
         synchronized (this) {
-            theStringView = JSON.toJSONString(model);
+            if (model instanceof CharSequence) {
+                theStringView = model.toString();
+            } else {
+                theStringView = JSON.toJSONString(model);
+            }
         }
         return theStringView;
     }
