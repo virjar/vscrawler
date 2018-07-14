@@ -797,6 +797,10 @@ public class SortedList<T> {
 
     public List<T> toList() {
         throwIfMerging();
-        return Lists.newArrayList(mData);
+        List<T> ret = Lists.newArrayListWithExpectedSize(size());
+        for (int i = 0; i < size(); i++) {
+            ret.add(get(i));
+        }
+        return ret;
     }
 }

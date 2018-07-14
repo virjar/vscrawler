@@ -36,7 +36,8 @@ public class ResourceManagerTest {
             ResourceItem resourceItem = resourceManager.allocate(tag);
             String data = "null";
             if (resourceItem != null) {
-                //feedBackRandom(tag, resourceManager, resourceItem);
+                feedBackRandom(tag, resourceManager, resourceItem);
+                //feedBackAlways(tag, resourceManager, resourceItem);
                 data = resourceItem.getData();
             }
             if (i % 100 == 0) {
@@ -49,13 +50,17 @@ public class ResourceManagerTest {
 
     }
 
+    private static void feedBackAlways(String tag, ResourceManager resourceManager, ResourceItem resourceItem) {
+        int i = ThreadLocalRandom.current().nextInt(10);
+        resourceManager.feedBack(tag, resourceItem.getKey(), i > 8);
+    }
+
     private static void feedBackRandom(String tag, ResourceManager resourceManager, ResourceItem resourceItem) {
         int i = ThreadLocalRandom.current().nextInt(10);
-        if (i > 4) {
+        if (i > 8) {
             return;
         }
-        i = ThreadLocalRandom.current().nextInt(10);
-        resourceManager.feedBack(tag, resourceItem.getKey(), i > 8);
+        feedBackAlways(tag, resourceManager, resourceItem);
     }
 
     private static void printQueueStatus(ResourceManager resourceManager, String tag) {
