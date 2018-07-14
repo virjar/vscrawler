@@ -13,6 +13,9 @@ import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
 import com.virjar.vscrawler.core.resourcemanager.service.CombineResourceLoader;
 import com.virjar.vscrawler.core.resourcemanager.service.ResourceLoader;
+import com.virjar.vscrawler.core.resourcemanager.storage.BlockingQueueStore;
+import com.virjar.vscrawler.core.resourcemanager.storage.ForbiddenQueueStore;
+import com.virjar.vscrawler.core.resourcemanager.storage.QueueStorePlanner;
 import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
 import com.virjar.vscrawler.core.util.CatchRegexPattern;
 import lombok.Getter;
@@ -34,27 +37,39 @@ public class ResourceQueue {
     private static final String resourceQueueMonitorTag = "vscrawler_resource_";
     @Getter
     private String tag;
-    private static final String polling = "vscrawler_resourceManager_polling_";
-    private static final String leave = "vscrawler_resourceManager_leave_";
-    private static final String forbidden = "vscrawler_resourceManager_forbidden_";
-    private ScoredQueueStore queue;
+    private static final String polling = "vscrawler_resourceManager_polling_v2_";
+    private static final String leave = "vscrawler_resourceManager_leave_v2_";
+    private static final String forbidden = "vscrawler_resourceManager_forbidden_v2_";
+    private ScoredQueueStore scoredQueueStore;
+    private BlockingQueueStore blockingQueueStore;
+    private ForbiddenQueueStore forbiddenQueueStore;
+
     private ResourceSetting resourceSetting;
-    private static final long nextCheckLeaveQueueDuration = 1000 * 60 * 30;
-    private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
+
     private ResourceLoader resourceLoader;
 
-    public ResourceQueue(final String tag, final ScoredQueueStore queue, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
+    public ResourceQueue(String tag, QueueStorePlanner queueStorePlanner, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
+        this(tag, queueStorePlanner.getScoredQueueStore(), queueStorePlanner.getBlockingQueueStore(), queueStorePlanner.getForbiddenQueueStore(), resourceSetting, resourceLoader);
+    }
+
+    public ResourceQueue(final String tag,
+                         ScoredQueueStore scoredQueueStore,
+                         BlockingQueueStore blockingQueueStore,
+                         ForbiddenQueueStore forbiddenQueueStore,
+                         ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
         Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z0-9_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
         this.tag = tag;
-        this.queue = queue;
+        this.scoredQueueStore = scoredQueueStore;
+        this.blockingQueueStore = blockingQueueStore;
+        this.forbiddenQueueStore = forbiddenQueueStore;
         this.resourceSetting = resourceSetting;
         this.resourceLoader = resourceLoader;
         MetricCollectorTask.MetricCollector metricCollector = new MetricCollectorTask.MetricCollector() {
             @Override
             public void doCollect() {
-                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "pollingQueueSize", queue.size(makePollingQueueID()));
-                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "leaveQueueSize", queue.size(makeLeaveQueueID()));
-                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "forbiddenQueueSize", queue.size(makeForbiddenQueueID()));
+                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "pollingQueueSize", ResourceQueue.this.scoredQueueStore.size(makePollingQueueID()));
+                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "leaveQueueSize", ResourceQueue.this.blockingQueueStore.size(makeLeaveQueueID()));
+                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "forbiddenQueueSize", ResourceQueue.this.forbiddenQueueStore.size(makeForbiddenQueueID()));
             }
         };
         MetricCollectorTask.register(metricCollector);
@@ -84,11 +99,11 @@ public class ResourceQueue {
                 return input.getKey();
             }
         }));
-        resourceKeys = queue.notExisted(makePollingQueueID(), resourceKeys);
-        resourceKeys = queue.notExisted(makeLeaveQueueID(), resourceKeys);
-        resourceKeys = queue.notExisted(makeForbiddenQueueID(), resourceKeys);
+        resourceKeys = scoredQueueStore.notExisted(makePollingQueueID(), resourceKeys);
+        resourceKeys = blockingQueueStore.notExisted(makeLeaveQueueID(), resourceKeys);
+        resourceKeys = forbiddenQueueStore.notExisted(makeForbiddenQueueID(), resourceKeys);
         final Set<String> canImportKey = resourceKeys;
-        queue.addBatch(makePollingQueueID(), Sets.filter(resourceItems, new Predicate<ResourceItem>() {
+        scoredQueueStore.addBatch(makePollingQueueID(), Sets.filter(resourceItems, new Predicate<ResourceItem>() {
             @Override
             public boolean apply(ResourceItem input) {
                 return canImportKey.contains(input.getKey());
@@ -97,9 +112,9 @@ public class ResourceQueue {
     }
 
     public void reloadResource() {
-        queue.clear(makeForbiddenQueueID());
-        queue.clear(makePollingQueueID());
-        queue.clear(makeLeaveQueueID());
+        scoredQueueStore.clear(makeForbiddenQueueID());
+        scoredQueueStore.clear(makePollingQueueID());
+        scoredQueueStore.clear(makeLeaveQueueID());
         loadResource();
     }
 
@@ -127,28 +142,6 @@ public class ResourceQueue {
         return leave + tag;
     }
 
-    private int recoveryFromLeaveQueue() {
-        ResourceItem resourceItem = queue.poll(makeLeaveQueueID());
-        if (resourceItem == null) {
-            return 0;
-        }
-        int recoveryItemsSize = 0;
-        String headerKey = resourceItem.getKey();
-        do {
-            if (resourceItem.getValidTimeStamp() < System.currentTimeMillis()) {
-                recoveryItemsSize++;
-                queue.addFirst(makePollingQueueID(), resourceItem);
-            } else {
-                queue.addLast(makeLeaveQueueID(), resourceItem);
-            }
-            resourceItem = queue.poll(makeLeaveQueueID());
-        } while (resourceItem != null && !StringUtils.equals(headerKey, resourceItem.getKey()));
-        nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
-        if (resourceItem != null) {
-            queue.addFirst(makePollingQueueID(), resourceItem);
-        }
-        return recoveryItemsSize;
-    }
 
     /**
      * 得到一个资源
@@ -156,28 +149,27 @@ public class ResourceQueue {
      * @return 资源管理器当前分发的资源, 如果系统不能分发资源, 则该返回可能为null
      */
     public ResourceItem allocate() {
+        boolean hasQueryBlockingQueue = false;
         while (true) {
-            ResourceItem resourceItem = queue.poll(makePollingQueueID());
-            if (resourceItem == null || nextCheckLeaveQueue < System.currentTimeMillis()) {
-                int recoverySize = recoveryFromLeaveQueue();
-                if (recoverySize > 0 && resourceItem == null) {
-                    resourceItem = queue.poll(makePollingQueueID());
-                }
+            ResourceItem resourceItem = scoredQueueStore.pop(makePollingQueueID());
+            if (resourceItem == null && !hasQueryBlockingQueue) {
+                resourceItem = blockingQueueStore.pop(makeLeaveQueueID());
+                hasQueryBlockingQueue = true;
             }
 
-            if (resourceItem == null && queue.size(makePollingQueueID()) == 0 && queue.size(makeLeaveQueueID()) == 0 && queue.size(makeForbiddenQueueID()) == 0) {
+            if (resourceItem == null && scoredQueueStore.size(makePollingQueueID()) == 0 && blockingQueueStore.size(makeLeaveQueueID()) == 0 && forbiddenQueueStore.size(makeForbiddenQueueID()) == 0) {
                 loadResource();
-                resourceItem = queue.poll(makePollingQueueID());
+                resourceItem = scoredQueueStore.pop(makePollingQueueID());
             }
 
             if (resourceItem == null) {
                 //can not get available resource
                 return null;
             }
-            //check
+
+            //check 该资源在未来才会生效,放置到blockingQueue
             if (resourceItem.getValidTimeStamp() > System.currentTimeMillis()) {
-                VSCrawlerMonitor.recordOne(resourceQueueMonitorTag + tag + "_resource_use_too_frequently");
-                queue.addLast(makeLeaveQueueID(), resourceItem);
+                blockingQueueStore.zadd(makeLeaveQueueID(), resourceItem);
                 continue;
             }
 
@@ -186,15 +178,15 @@ public class ResourceQueue {
                 resourceItem.setValidTimeStamp(System.currentTimeMillis() + resourceSetting.getLockForceLeaseDuration());
             }
 
-            long queueSize = queue.size(makePollingQueueID());
+            long queueSize = scoredQueueStore.size(makePollingQueueID());
             if (queueSize <= 3) {
-                queue.addLast(makePollingQueueID(), resourceItem);
+                scoredQueueStore.addLast(makePollingQueueID(), resourceItem);
             } else {
                 long index = (long) (resourceSetting.getScoreRatio() * queueSize);
                 if (index > queueSize - 1) {
                     index = queueSize - 1;
                 }
-                queue.addIndex(makePollingQueueID(), index, resourceItem);
+                scoredQueueStore.addIndex(makePollingQueueID(), index, resourceItem);
             }
             return resourceItem;
         }
@@ -208,9 +200,9 @@ public class ResourceQueue {
      */
     public void feedBack(String key, boolean isOK) {
         boolean inLeaveQueue = false;
-        ResourceItem resourceItem = queue.get(makePollingQueueID(), key);
+        ResourceItem resourceItem = scoredQueueStore.get(makePollingQueueID(), key);
         if (resourceItem == null) {
-            resourceItem = queue.get(makeLeaveQueueID(), key);
+            resourceItem = blockingQueueStore.get(makeLeaveQueueID(), key);
             inLeaveQueue = true;
         }
         if (resourceItem == null) {
@@ -225,28 +217,28 @@ public class ResourceQueue {
         resourceItem.setKey(key);
 
         if (inLeaveQueue) {
-            queue.remove(makeLeaveQueueID(), key);
-            queue.addFirst(makePollingQueueID(), resourceItem);
+            forbiddenQueueStore.remove(makeLeaveQueueID(), key);
+            scoredQueueStore.addFirst(makePollingQueueID(), resourceItem);
             return;
         }
         if (isOK) {
-            queue.update(makePollingQueueID(), resourceItem);
+            scoredQueueStore.update(makePollingQueueID(), resourceItem);
             return;
         }
 
-        long queueSize = queue.size(makePollingQueueID()) - 1;
+        long queueSize = scoredQueueStore.size(makePollingQueueID()) - 1;
         long index = (long) ((queueSize) * (resourceSetting.getScoreRatio() + (1 - resourceSetting.getScoreRatio()) * (1 - resourceItem.getScore())));
 
-        queue.remove(makePollingQueueID(), key);
+        scoredQueueStore.remove(makePollingQueueID(), key);
         boolean addSuccess = false;
         try {
-            addSuccess = queue.addIndex(makePollingQueueID(), index, resourceItem);
+            addSuccess = scoredQueueStore.addIndex(makePollingQueueID(), index, resourceItem);
         } catch (Exception e) {
             VSCrawlerMonitor.recordOne(resourceQueueMonitorTag + tag + "relocate_resource_sequence_failed");
             log.error("relocate resource sequence failed", e);
         }
         if (!addSuccess) {
-            queue.addLast(makePollingQueueID(), resourceItem);
+            scoredQueueStore.addLast(makePollingQueueID(), resourceItem);
         }
     }
 
@@ -256,13 +248,14 @@ public class ResourceQueue {
      * @param key 每个资源都应该有一个key
      */
     public void forbidden(String key) {
-        ResourceItem resourceItem = queue.remove(makePollingQueueID(), key);
+        ResourceItem resourceItem = scoredQueueStore.remove(makePollingQueueID(), key);
         if (resourceItem != null) {
-            queue.addLast(makeForbiddenQueueID(), resourceItem);
+            forbiddenQueueStore.add(makeForbiddenQueueID(), resourceItem);
+            return;
         }
-        resourceItem = queue.remove(makeLeaveQueueID(), key);
+        resourceItem = blockingQueueStore.remove(makeLeaveQueueID(), key);
         if (resourceItem != null) {
-            queue.addLast(makeForbiddenQueueID(), resourceItem);
+            forbiddenQueueStore.add(makeForbiddenQueueID(), resourceItem);
         }
     }
 
@@ -272,40 +265,40 @@ public class ResourceQueue {
      * @param key 每个资源都应该有一个key
      */
     public void unForbidden(String key) {
-        ResourceItem resourceItem = queue.get(makeForbiddenQueueID(), key);
+        ResourceItem resourceItem = forbiddenQueueStore.get(makeForbiddenQueueID(), key);
         if (resourceItem == null) {
             VSCrawlerMonitor.recordOne(resourceQueueMonitorTag + tag + "_find_resource_meta_failed");
             log.warn("can not find resource meta data for tag:{} key:{}", tag, key);
             return;
         }
         resourceItem.setScore(0.5);
-        queue.addFirst(makePollingQueueID(), resourceItem);
+        scoredQueueStore.addFirst(makePollingQueueID(), resourceItem);
     }
 
     public void updateResource(ResourceItem resourceItem) {
         String key = resourceItem.getKey();
-        ResourceItem resourceItem1 = queue.get(makePollingQueueID(), key);
+        ResourceItem resourceItem1 = scoredQueueStore.get(makePollingQueueID(), key);
         if (resourceItem1 != null) {
             resourceItem1.setData(resourceItem.getData());
-            queue.update(makePollingQueueID(), resourceItem1);
+            scoredQueueStore.update(makePollingQueueID(), resourceItem1);
             return;
         }
 
-        resourceItem1 = queue.get(makeLeaveQueueID(), key);
+        resourceItem1 = blockingQueueStore.get(makeLeaveQueueID(), key);
         if (resourceItem1 != null) {
             resourceItem1.setData(resourceItem.getData());
-            queue.update(makePollingQueueID(), resourceItem1);
+            blockingQueueStore.update(makePollingQueueID(), resourceItem1);
             return;
         }
 
-        resourceItem1 = queue.get(makeForbiddenQueueID(), key);
+        resourceItem1 = forbiddenQueueStore.get(makeForbiddenQueueID(), key);
         if (resourceItem1 != null) {
             resourceItem1.setData(resourceItem.getData());
-            queue.update(makeForbiddenQueueID(), resourceItem1);
+            forbiddenQueueStore.update(makeForbiddenQueueID(), resourceItem1);
         }
     }
 
     public AllResourceItems allResource() {
-        return new AllResourceItems(queue.queryAll(makePollingQueueID()), queue.queryAll(makeLeaveQueueID()), queue.queryAll(makeForbiddenQueueID()));
+        return new AllResourceItems(scoredQueueStore.queryAll(makePollingQueueID()), blockingQueueStore.queryAll(makeLeaveQueueID()), forbiddenQueueStore.queryAll(makeForbiddenQueueID()));
     }
 }

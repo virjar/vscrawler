@@ -1,9 +1,9 @@
 package com.virjar.vscrawler.core.resourcemanager;
 
 import com.google.common.collect.Maps;
-import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
-import com.virjar.vscrawler.core.resourcemanager.service.ResourceLoader;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
+import com.virjar.vscrawler.core.resourcemanager.service.ResourceLoader;
+import com.virjar.vscrawler.core.resourcemanager.storage.QueueStorePlanner;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -21,8 +21,11 @@ public class ResourceManagerFactory {
         return new ResourceManager(resourceQueueMap);
     }
 
-    public ResourceManagerFactory registryResourceQueue(String tag, ResourceSetting resourceSetting, ScoredQueueStore scoredQueueStore, ResourceLoader resourceLoader) {
-        resourceQueueMap.put(tag, new ResourceQueue(tag, scoredQueueStore, resourceSetting, resourceLoader));
+    public ResourceManagerFactory registryResourceQueue(String tag,
+                                                        ResourceSetting resourceSetting,
+                                                        QueueStorePlanner queueStorePlanner,
+                                                        ResourceLoader resourceLoader) {
+        resourceQueueMap.put(tag, new ResourceQueue(tag, queueStorePlanner, resourceSetting, resourceLoader));
         return this;
     }
 

@@ -19,19 +19,11 @@ public interface ScoredQueueStore extends BaseStorage {
 
     boolean addIndex(String queueID, long index, ResourceItem e);
 
-    ResourceItem poll(String queueID);
-
-    ResourceItem get(String queueID, String key);
+    ResourceItem pop(String queueID);
 
     long index(String queueID, String key);
 
-    boolean update(String queueID, ResourceItem e);
-
-    ResourceItem remove(String queueID, String key);
-
     void addBatch(String queueID, Set<ResourceItem> resourceItems);
-
-    Set<String> notExisted(String queueID, Set<String> resourceItemKeys);
 
 
 }

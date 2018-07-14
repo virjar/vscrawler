@@ -3,6 +3,7 @@ package com.virjar.vscrawler.core.resourcemanager.storage;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by virjar on 2018/7/14.<br>
@@ -34,4 +35,11 @@ public interface BaseStorage {
      */
     List<ResourceItem> queryAll(String queueID);
 
+    ResourceItem remove(String queueID, String key);
+
+    ResourceItem get(String queueID, String key);
+
+    boolean update(String queueID, ResourceItem e);
+
+    Set<String> notExisted(String queueID, Set<String> resourceItemKeys);
 }

@@ -1,6 +1,9 @@
 package com.virjar.vscrawler.core.resourcemanager.storage.jedis;
 
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.storage.ForbiddenQueueStore;
 import org.apache.commons.io.IOUtils;
@@ -9,6 +12,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by virjar on 2018/7/14.<br>
@@ -72,6 +76,7 @@ public class JedisForbiddenQueueStore extends BaseJedisOperationQueueStore imple
         }
     }
 
+
     @Override
     public void clear(String queueID) {
         if (!lockQueue(queueID)) {
@@ -88,6 +93,32 @@ public class JedisForbiddenQueueStore extends BaseJedisOperationQueueStore imple
 
     @Override
     public List<ResourceItem> queryAll(String queueID) {
+        Jedis jedis = jedisPool.getResource();
+        try {
+            return Lists.newLinkedList(Iterables.transform(jedis.hgetAll(makeDataKey(queueID)).values(), new Function<String, ResourceItem>() {
+                @Override
+                public ResourceItem apply(String input) {
+                    return JSONObject.toJavaObject(JSONObject.parseObject(input), ResourceItem.class);
+                }
+            }));
+        } finally {
+            IOUtils.closeQuietly(jedis);
+        }
+    }
+
+    @Override
+    public ResourceItem get(String queueID, String key) {
         return null;
     }
+
+    @Override
+    public boolean update(String queueID, ResourceItem e) {
+        return false;
+    }
+
+    @Override
+    public Set<String> notExisted(String queueID, Set<String> resourceItemKeys) {
+        return null;
+    }
+
 }

@@ -31,7 +31,7 @@ import com.virjar.vscrawler.core.selector.string.function.awk.util.AwkSettings;
  * consuming input from stdin, it can cause your script to loop
  * through all of the action rule conditions repeatedly, consuming
  * CPU without bounds. To guard against this, the extension should
- * provide some sort of poll or block call to avoid
+ * provide some sort of pop or block call to avoid
  * out-of-control CPU resource consumption.
  * </blockquote>
  * </p>

@@ -11,6 +11,4 @@ import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
  */
 public interface ForbiddenQueueStore extends BaseStorage {
     void add(String queueID, ResourceItem resourceItem);
-
-    ResourceItem remove(String queueID, String key);
 }

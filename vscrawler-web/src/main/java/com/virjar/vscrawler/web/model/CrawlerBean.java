@@ -16,11 +16,11 @@ public class CrawlerBean {
 
     /**
      * a crawler implement in web application class context,vscrawler framework reject reload grab rule
-     * for this crawler,the reason is this crawler java class is not write able,framework can not load newest
+     * for this crawler,the reason is this crawler java class is not writeable,framework can not load newest
      * class when program restart next time, for jar hot load please upload crawler class to webapp lib directory with jar format file
      */
     @Getter
-    private boolean reloadAble = false;
+    private boolean reloadable = false;
 
     @Getter
     private String codeUrl;
@@ -29,9 +29,9 @@ public class CrawlerBean {
         this.crawler = crawler;
     }
 
-    public CrawlerBean(VSCrawler crawler, boolean reloadAble, VSCrawlerClassLoader vsCrawlerClassLoader) {
+    public CrawlerBean(VSCrawler crawler, boolean reloadable, VSCrawlerClassLoader vsCrawlerClassLoader) {
         this.crawler = crawler;
-        this.reloadAble = reloadAble;
+        this.reloadable = reloadable;
         this.vsCrawlerClassLoader = vsCrawlerClassLoader;
     }
 

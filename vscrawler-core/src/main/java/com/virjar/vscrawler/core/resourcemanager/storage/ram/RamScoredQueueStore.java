@@ -186,7 +186,7 @@ public class RamScoredQueueStore implements ScoredQueueStore {
     }
 
     @Override
-    public ResourceItem poll(String queueID) {
+    public ResourceItem pop(String queueID) {
         return createOrGet(queueID).removeFirst();
     }
 

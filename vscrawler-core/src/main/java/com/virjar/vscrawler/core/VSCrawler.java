@@ -267,7 +267,7 @@ public class VSCrawler implements CrawlerConfigChangeEvent, FirstSeedPushEvent, 
             if (session == null) {
                 VSCrawlerMonitor.recordOne(vsCrawlerContext.getCrawlerName() + "_borrowSession_failed");
                 crawlResult.setGrabSuccess(false);
-                crawlResult.setErrorMessage("can not allocate session resource from session poll");
+                crawlResult.setErrorMessage("can not allocate session resource from session pop");
                 return crawlResult;
             }
 

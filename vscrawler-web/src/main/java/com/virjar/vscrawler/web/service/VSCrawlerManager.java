@@ -377,7 +377,7 @@ public class VSCrawlerManager implements ApplicationListener<ContextRefreshedEve
             String crawlerName = crawlerBean.getCrawler().getVsCrawlerContext().getCrawlerName();
             CrawlerBean oldVSCrawler = allCrawler.get(crawlerName);
             if (oldVSCrawler != null) {
-                if (!oldVSCrawler.isReloadAble()) {
+                if (!oldVSCrawler.isReloadable()) {
                     throw new IllegalStateException("can not reload crawler " + crawlerName + " ,this crawler defined in servlet context,not defined in vscrawler context ");
                 }
                 // 这里可能比较耗时

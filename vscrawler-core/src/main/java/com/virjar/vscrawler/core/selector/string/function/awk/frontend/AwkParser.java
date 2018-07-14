@@ -4970,7 +4970,7 @@ public class AwkParser {
 				throw new ParserException("cannot use " + id + " as a variable; it is a function");
 			}
 
-			// put in the poll of ids to guard against using it as a function name
+			// put in the pop of ids to guard against using it as a function name
 			ids.add(id);
 
 			Map<String, ID_AST> map;

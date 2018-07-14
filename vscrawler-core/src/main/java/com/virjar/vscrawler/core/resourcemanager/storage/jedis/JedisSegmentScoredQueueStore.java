@@ -212,7 +212,7 @@ public class JedisSegmentScoredQueueStore implements ScoredQueueStore {
     }
 
     @Override
-    public ResourceItem poll(String queueID) {
+    public ResourceItem pop(String queueID) {
         if (!lockQueue(queueID)) {
             return null;
         }

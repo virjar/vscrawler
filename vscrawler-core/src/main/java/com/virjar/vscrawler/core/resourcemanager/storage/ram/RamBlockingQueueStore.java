@@ -1,5 +1,7 @@
 package com.virjar.vscrawler.core.resourcemanager.storage.ram;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.storage.BlockingQueueStore;
@@ -8,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by virjar on 2018/7/14.<br>
@@ -20,17 +23,17 @@ public class RamBlockingQueueStore implements BlockingQueueStore {
     private Map<String, SortedList<ResourceItemHolder>> queueMaps = Maps.newConcurrentMap();
 
     private SortedList<ResourceItemHolder> createOrGet(String queueID) {
-        SortedList<ResourceItemHolder> holderSortedSet = queueMaps.get(queueID);
-        if (holderSortedSet != null) {
-            return holderSortedSet;
+        SortedList<ResourceItemHolder> sortedList = queueMaps.get(queueID);
+        if (sortedList != null) {
+            return sortedList;
         }
         synchronized (this) {
             if (queueMaps.containsKey(queueID)) {
                 return queueMaps.get(queueID);
             }
-            holderSortedSet = new SortedList<>(ResourceItemHolder.class, callback);
-            queueMaps.put(queueID, holderSortedSet);
-            return holderSortedSet;
+            sortedList = new SortedList<>(ResourceItemHolder.class, callback);
+            queueMaps.put(queueID, sortedList);
+            return sortedList;
         }
     }
 
@@ -69,8 +72,38 @@ public class RamBlockingQueueStore implements BlockingQueueStore {
 
     @Override
     public List<ResourceItem> queryAll(String queueID) {
+        return Lists.transform(createOrGet(queueID).toList(), new Function<ResourceItemHolder, ResourceItem>() {
+            @Override
+            public ResourceItem apply(ResourceItemHolder input) {
+                return input.resourceItem;
+            }
+        });
+
+    }
+
+    @Override
+    public ResourceItem remove(String queueID, String key) {
         return null;
     }
+
+    @Override
+    public ResourceItem get(String queueID, String key) {
+        return null;
+    }
+
+    @Override
+    public boolean update(String queueID, ResourceItem e) {
+        return false;
+    }
+
+    @Override
+    public Set<String> notExisted(String queueID, Set<String> resourceItemKeys) {
+        return null;
+    }
+
+
+
+
 
     private SortedList.Callback<ResourceItemHolder> callback = new SortedList.Callback<ResourceItemHolder>() {
         @Override

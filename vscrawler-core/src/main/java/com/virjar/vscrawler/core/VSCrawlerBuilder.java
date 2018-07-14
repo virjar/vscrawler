@@ -19,14 +19,15 @@ import com.virjar.vscrawler.core.processor.RouteProcessor;
 import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.resourcemanager.ResourceManager;
 import com.virjar.vscrawler.core.resourcemanager.ResourceManagerFactory;
-import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
-import com.virjar.vscrawler.core.resourcemanager.storage.ram.RamScoredQueueStore;
 import com.virjar.vscrawler.core.resourcemanager.ResourceQueue;
-import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
+import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
+import com.virjar.vscrawler.core.resourcemanager.storage.QueueStorePlanner;
+import com.virjar.vscrawler.core.resourcemanager.storage.ram.RamQueueStorePlanner;
 import com.virjar.vscrawler.core.seed.*;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Set;
@@ -38,6 +39,7 @@ import java.util.Set;
  * @author virjar
  * @since 0.0.1
  */
+@Slf4j
 public class VSCrawlerBuilder {
     /**
      * httpclient构造器,可能需要定制自己的httpclient
@@ -152,7 +154,13 @@ public class VSCrawlerBuilder {
 
     private ResourceManager resourceManager;
 
-    private ScoredQueueStore defaultScoredQueueStore;
+
+    public VSCrawlerBuilder setQueueStorePlanner(QueueStorePlanner queueStorePlanner) {
+        this.queueStorePlanner = queueStorePlanner;
+        return this;
+    }
+
+    private QueueStorePlanner queueStorePlanner;
 
     private ResourceSetting defaultResourceSetting;
 
@@ -321,11 +329,6 @@ public class VSCrawlerBuilder {
         return this;
     }
 
-    public VSCrawlerBuilder setDefaultScoredQueueStore(ScoredQueueStore defaultScoredQueueStore) {
-        this.defaultScoredQueueStore = defaultScoredQueueStore;
-        return this;
-    }
-
     public VSCrawlerBuilder setDefaultResourceSetting(ResourceSetting defaultResourceSetting) {
         this.defaultResourceSetting = defaultResourceSetting;
         return this;
@@ -407,10 +410,13 @@ public class VSCrawlerBuilder {
             resourceManager = ResourceManagerFactory.create().build();
         }
         vsCrawlerContext.setResourceManager(resourceManager);
-        if (defaultScoredQueueStore == null) {
-            defaultScoredQueueStore = new RamScoredQueueStore();
+
+        if (queueStorePlanner == null) {
+            queueStorePlanner = new RamQueueStorePlanner();
         }
-        vsCrawlerContext.setScoredQueueStore(defaultScoredQueueStore);
+
+        vsCrawlerContext.setQueueStorePlanner(queueStorePlanner);
+
         if (defaultResourceSetting == null) {
             defaultResourceSetting = ResourceSetting.create().setLock(true);
         }
@@ -424,7 +430,9 @@ public class VSCrawlerBuilder {
             if (resourceQueue != null) {
                 resourceQueue.addResourceLoader(new UserManager2ResourceLoader(userResourceFacade));
             } else {
-                resourceManager.registry(new ResourceQueue(vsCrawlerContext.makeUserResourceTag(), defaultScoredQueueStore, defaultResourceSetting, new UserManager2ResourceLoader(userResourceFacade)));
+                resourceManager.registry(new ResourceQueue(vsCrawlerContext.makeUserResourceTag(),
+                        queueStorePlanner,
+                        defaultResourceSetting, new UserManager2ResourceLoader(userResourceFacade)));
             }
             addEventObserver(new AutoLoginPlugin(loginHandler, new UserManager2(resourceManager, vsCrawlerContext)));
         }
@@ -438,7 +446,7 @@ public class VSCrawlerBuilder {
                     // 15s之后检查活跃线程数,发现为0,证明连续10s都没用任务执行了
                     if (finalVSCrawler.activeWorker() == 0
                             && (System.currentTimeMillis() - finalVSCrawler.getLastActiveTime()) > 10000) {
-                        System.out.println((stopWhileTaskEmptyDuration / 1000) + "秒没收到爬虫任务,自动爬虫关闭器,尝试停止爬虫");
+                        log.info((stopWhileTaskEmptyDuration / 1000) + "秒没收到爬虫任务,自动爬虫关闭器,尝试停止爬虫");
                         finalVSCrawler.stopCrawler();
                     }
                 }

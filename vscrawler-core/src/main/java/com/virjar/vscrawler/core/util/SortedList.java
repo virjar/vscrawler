@@ -1,9 +1,12 @@
 package com.virjar.vscrawler.core.util;
 
+import com.google.common.collect.Lists;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * A Sorted list implementation that can keep items in order and also notify for changes in the
@@ -164,7 +167,7 @@ public class SortedList<T> {
         addAll(items.toArray(copy), true);
     }
 
-    private void addAllInternal(T[] newItems) {
+    private synchronized void addAllInternal(T[] newItems) {
         final boolean forceBatchedUpdates = !(mCallback instanceof BatchedCallback);
         if (forceBatchedUpdates) {
             beginBatchedUpdates();
@@ -614,7 +617,7 @@ public class SortedList<T> {
         return INVALID_POSITION;
     }
 
-    private void addToData(int index, T item) {
+    private synchronized void addToData(int index, T item) {
         if (index > mSize) {
             throw new IndexOutOfBoundsException(
                     "cannot add item to " + index + " because size is " + mSize);
@@ -790,5 +793,10 @@ public class SortedList<T> {
         public void dispatchLastEvent() {
             mBatchingListUpdateCallback.dispatchLastEvent();
         }
+    }
+
+    public List<T> toList() {
+        throwIfMerging();
+        return Lists.newArrayList(mData);
     }
 }

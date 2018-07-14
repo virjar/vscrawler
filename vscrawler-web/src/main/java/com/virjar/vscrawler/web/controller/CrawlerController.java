@@ -74,7 +74,7 @@ public class CrawlerController {
             public CrawlerVO apply(CrawlerBean input) {
                 CrawlerVO crawlerVO = new CrawlerVO();
                 crawlerVO.setCrawlerName(input.crawlerName());
-                if (input.isReloadAble()) {
+                if (input.isReloadable()) {
                     crawlerVO.setJarPath(input.getVsCrawlerClassLoader().getJarFile().getAbsolutePath());
                     crawlerVO.setReloadAble(true);
                 }

@@ -2,13 +2,19 @@ package com.virjar.vscrawler.core.resourcemanager.storage.jedis;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.storage.BlockingQueueStore;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -70,7 +76,13 @@ public class JedisBlockingQueueStore extends BaseJedisOperationQueueStore implem
             if (zrange.size() == 0) {
                 return null;
             }
-            return JSONObject.toJavaObject(JSON.parseObject(zrange.iterator().next()), ResourceItem.class);
+            String key = zrange.iterator().next();
+            String data = jedis.hget(makeDataKey(queueID), key);
+            if (StringUtils.isBlank(data)) {
+                VSCrawlerMonitor.recordOne(queueID + "_find_meta_data_failed");
+                return null;
+            }
+            return JSONObject.toJavaObject(JSON.parseObject(data), ResourceItem.class);
         } finally {
             IOUtils.closeQuietly(jedis);
         }
@@ -112,6 +124,39 @@ public class JedisBlockingQueueStore extends BaseJedisOperationQueueStore implem
 
     @Override
     public List<ResourceItem> queryAll(String queueID) {
+        lockQueue(queueID);
+        Jedis jedis = jedisPool.getResource();
+        try {
+            final Map<String, String> map = jedis.hgetAll(makeDataKey(queueID));
+            return Lists.newLinkedList(Iterables.transform(jedis.zrange(makePoolQueueKey(queueID), 0, -1), new Function<String, ResourceItem>() {
+                @Override
+                public ResourceItem apply(String input) {
+                    return JSONObject.toJavaObject(JSONObject.parseObject(map.get(input)), ResourceItem.class);
+                }
+            }));
+        } finally {
+            IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
+        }
+    }
+
+    @Override
+    public ResourceItem remove(String queueID, String key) {
+        return null;
+    }
+
+    @Override
+    public ResourceItem get(String queueID, String key) {
+        return null;
+    }
+
+    @Override
+    public boolean update(String queueID, ResourceItem e) {
+        return false;
+    }
+
+    @Override
+    public Set<String> notExisted(String queueID, Set<String> resourceItemKeys) {
         return null;
     }
 }
