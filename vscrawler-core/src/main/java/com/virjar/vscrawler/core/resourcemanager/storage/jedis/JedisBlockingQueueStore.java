@@ -3,8 +3,10 @@ package com.virjar.vscrawler.core.resourcemanager.storage.jedis;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.storage.BlockingQueueStore;
@@ -13,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -142,21 +145,62 @@ public class JedisBlockingQueueStore extends BaseJedisOperationQueueStore implem
 
     @Override
     public ResourceItem remove(String queueID, String key) {
-        return null;
+        lockQueue(queueID);
+        Jedis jedis = jedisPool.getResource();
+        try {
+            String data = jedis.hget(makeDataKey(queueID), key);
+            if (StringUtils.isBlank(data)) {
+                VSCrawlerMonitor.recordOne(queueID + "_find_meta_data_failed");
+                return null;
+            }
+            ResourceItem ret = JSONObject.toJavaObject(JSON.parseObject(data), ResourceItem.class);
+            jedis.hdel(makePoolQueueKey(queueID), key);
+            jedis.zrem(makePoolQueueKey(queueID), key);
+            return ret;
+        } finally {
+            IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
+        }
     }
 
     @Override
     public ResourceItem get(String queueID, String key) {
-        return null;
+        Jedis jedis = jedisPool.getResource();
+        try {
+            String data = jedis.hget(makeDataKey(queueID), key);
+            if (StringUtils.isBlank(data)) {
+                VSCrawlerMonitor.recordOne(queueID + "_find_meta_data_failed");
+                return null;
+            }
+            return JSONObject.toJavaObject(JSON.parseObject(data), ResourceItem.class);
+        } finally {
+            IOUtils.closeQuietly(jedis);
+        }
     }
 
     @Override
-    public boolean update(String queueID, ResourceItem e) {
-        return false;
+    public boolean update(String queueID, ResourceItem resourceItem) {
+        zadd(queueID, resourceItem);
+        return true;
     }
 
     @Override
     public Set<String> notExisted(String queueID, Set<String> resourceItemKeys) {
-        return null;
+        if (!lockQueue(queueID)) {
+            return Collections.emptySet();
+        }
+        Jedis jedis = jedisPool.getResource();
+        try {
+            final Set<String> keys = jedis.zrange(makePoolQueueKey(queueID), 0, -1);
+            return Sets.filter(resourceItemKeys, new Predicate<String>() {
+                @Override
+                public boolean apply(String input) {
+                    return !keys.contains(input);
+                }
+            });
+        } finally {
+            IOUtils.closeQuietly(jedis);
+            unLockQueue(queueID);
+        }
     }
 }

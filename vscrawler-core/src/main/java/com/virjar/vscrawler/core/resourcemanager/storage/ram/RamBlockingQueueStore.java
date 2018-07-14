@@ -3,6 +3,7 @@ package com.virjar.vscrawler.core.resourcemanager.storage.ram;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.storage.BlockingQueueStore;
 import com.virjar.vscrawler.core.util.SortedList;
@@ -83,26 +84,42 @@ public class RamBlockingQueueStore implements BlockingQueueStore {
 
     @Override
     public ResourceItem remove(String queueID, String key) {
-        return null;
+        ResourceItem resourceItem = get(queueID, key);
+        if (resourceItem == null) {
+            return null;
+        }
+        SortedList<ResourceItemHolder> sortedList = createOrGet(queueID);
+        ResourceItemHolder query = new ResourceItemHolder(resourceItem);
+        sortedList.remove(query);
+        return resourceItem;
     }
 
     @Override
     public ResourceItem get(String queueID, String key) {
+        SortedList<ResourceItemHolder> sortedList = createOrGet(queueID);
+        for (ResourceItemHolder resourceItemHolder : sortedList.toList()) {
+            if (StringUtils.equals(key, resourceItemHolder.resourceItem.getKey())) {
+                return resourceItemHolder.resourceItem;
+            }
+        }
         return null;
     }
 
     @Override
     public boolean update(String queueID, ResourceItem e) {
-        return false;
+        //zadd(queueID, e);
+        return true;
     }
 
     @Override
     public Set<String> notExisted(String queueID, Set<String> resourceItemKeys) {
-        return null;
+        List<ResourceItemHolder> resourceItemHolders = createOrGet(queueID).toList();
+        Set<String> notExistedKeys = Sets.newHashSet(resourceItemKeys);
+        for (ResourceItemHolder resourceItemHolder : resourceItemHolders) {
+            notExistedKeys.remove(resourceItemHolder.resourceItem.getKey());
+        }
+        return notExistedKeys;
     }
-
-
-
 
 
     private SortedList.Callback<ResourceItemHolder> callback = new SortedList.Callback<ResourceItemHolder>() {
@@ -118,12 +135,12 @@ public class RamBlockingQueueStore implements BlockingQueueStore {
 
         @Override
         public boolean areContentsTheSame(ResourceItemHolder oldItem, ResourceItemHolder newItem) {
-            return oldItem.resourceItem.getKey().equals(newItem.resourceItem.getKey());
+            return oldItem.resourceItem.getData().equals(newItem.resourceItem.getData());
         }
 
         @Override
         public boolean areItemsTheSame(ResourceItemHolder item1, ResourceItemHolder item2) {
-            return StringUtils.equalsIgnoreCase(item1.resourceItem.getData(), item2.resourceItem.getData());
+            return StringUtils.equalsIgnoreCase(item1.resourceItem.getKey(), item2.resourceItem.getKey());
         }
 
         @Override

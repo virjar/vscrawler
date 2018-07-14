@@ -1,7 +1,9 @@
 package com.virjar.vscrawler.core.resourcemanager.storage.ram;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.storage.ForbiddenQueueStore;
 
@@ -10,7 +12,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Created by virjar on 2018/7/14.
+ * Created by virjar on 2018/7/14.<br>
+ *
+ * @author virjar
+ * @since 0.3.2
  */
 public class RamForbiddenQueueStore implements ForbiddenQueueStore {
 
@@ -48,17 +53,24 @@ public class RamForbiddenQueueStore implements ForbiddenQueueStore {
 
     @Override
     public ResourceItem get(String queueID, String key) {
-        return null;
+        return createOrGet(queueID).get(key);
     }
 
     @Override
     public boolean update(String queueID, ResourceItem e) {
-        return false;
+        //createOrGet(queueID).put(e.getKey(), e);
+        return true;
     }
 
     @Override
     public Set<String> notExisted(String queueID, Set<String> resourceItemKeys) {
-        return null;
+        final Map<String, ResourceItem> maps = createOrGet(queueID);
+        return Sets.filter(resourceItemKeys, new Predicate<String>() {
+            @Override
+            public boolean apply(String input) {
+                return !maps.containsKey(input);
+            }
+        });
     }
 
 
