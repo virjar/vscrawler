@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -22,10 +23,27 @@ public class EventSendProxyHandler implements InvocationHandler {
     @NonNull
     private VSCrawlerContext vsCrawlerContext;
 
+    @NonNull
+    private Class interfaze;
+
+    @NonNull
+    private Collection<Method> methods;
+
+    @Override
+    public String toString() {
+        return "EventSendProxyHandler{" +
+                "interfaze=" + interfaze +
+                ", methods=" + methods +
+                '}';
+    }
 
     @Override
     @SuppressWarnings("unchecked")
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        if (!methods.contains(method)) {
+            return method.invoke(this, args);
+        }
+
         AutoEvent annotation = method.getAnnotation(AutoEvent.class);
         if (annotation == null) {
             throw new IllegalStateException("can not make " + method.getName() + "  to be a event");

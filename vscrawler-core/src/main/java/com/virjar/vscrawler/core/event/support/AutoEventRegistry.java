@@ -155,7 +155,7 @@ public class AutoEventRegistry {
             methodNameSet.add(method.getName());
         }
 
-        EventSendProxyHandler eventSendProxyHandler = new EventSendProxyHandler(vsCrawlerContext);
+        EventSendProxyHandler eventSendProxyHandler = new EventSendProxyHandler(vsCrawlerContext, interfaze, methods);
         Object o = Proxy.newProxyInstance(AutoEventRegistry.class.getClassLoader(), new Class[]{interfaze},
                 eventSendProxyHandler);
         allAutoEventMap.put(interfaze, o);
