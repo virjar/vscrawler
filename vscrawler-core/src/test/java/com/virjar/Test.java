@@ -1,16 +1,20 @@
 package com.virjar;
 
-import java.util.List;
-
 import com.google.common.collect.Lists;
 import com.googlecode.aviator.AviatorEvaluator;
+
+import java.util.List;
 
 /**
  * Created by virjar on 17/5/13.
  */
 public class Test {
     public static void main(String[] args) {
-        List<String> symble = Lists.newArrayList("+", "-", "*", "/","%","^");
+        System.out.println(Long.MAX_VALUE < Double.MAX_VALUE);
+    }
+
+    public static void main1(String[] args) {
+        List<String> symble = Lists.newArrayList("+", "-", "*", "/", "%", "^");
 
         for (String s1 : symble) {
             for (String s2 : symble) {

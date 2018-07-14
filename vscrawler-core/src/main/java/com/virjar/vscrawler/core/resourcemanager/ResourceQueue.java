@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -11,6 +11,9 @@ import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.resourcemanager.model.AllResourceItems;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
+import com.virjar.vscrawler.core.resourcemanager.service.CombineResourceLoader;
+import com.virjar.vscrawler.core.resourcemanager.service.ResourceLoader;
+import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
 import com.virjar.vscrawler.core.util.CatchRegexPattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,27 +37,26 @@ public class ResourceQueue {
     private static final String polling = "vscrawler_resourceManager_polling_";
     private static final String leave = "vscrawler_resourceManager_leave_";
     private static final String forbidden = "vscrawler_resourceManager_forbidden_";
-    private QueueStore queue;
+    private ScoredQueueStore queue;
     private ResourceSetting resourceSetting;
     private static final long nextCheckLeaveQueueDuration = 1000 * 60 * 30;
     private long nextCheckLeaveQueue = System.currentTimeMillis() + nextCheckLeaveQueueDuration;
     private ResourceLoader resourceLoader;
 
-    private MetricCollectorTask.MetricCollector metricCollector = new MetricCollectorTask.MetricCollector() {
-        @Override
-        public void doCollect() {
-            VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "pollingQueueSize", queue.size(makePollingQueueID()));
-            VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "leaveQueueSize", queue.size(makeLeaveQueueID()));
-            VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "forbiddenQueueSize", queue.size(makeForbiddenQueueID()));
-        }
-    };
-
-    public ResourceQueue(final String tag, QueueStore queue, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
+    public ResourceQueue(final String tag, final ScoredQueueStore queue, ResourceSetting resourceSetting, ResourceLoader resourceLoader) {
         Preconditions.checkArgument(CatchRegexPattern.compile("[a-zA-Z0-9_]+").matcher(tag).matches(), "tag pattern must be \"[a-zA-Z_]+\"");
         this.tag = tag;
         this.queue = queue;
         this.resourceSetting = resourceSetting;
         this.resourceLoader = resourceLoader;
+        MetricCollectorTask.MetricCollector metricCollector = new MetricCollectorTask.MetricCollector() {
+            @Override
+            public void doCollect() {
+                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "pollingQueueSize", queue.size(makePollingQueueID()));
+                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "leaveQueueSize", queue.size(makeLeaveQueueID()));
+                VSCrawlerMonitor.recordSize(resourceQueueMonitorTag + tag + "forbiddenQueueSize", queue.size(makeForbiddenQueueID()));
+            }
+        };
         MetricCollectorTask.register(metricCollector);
     }
 

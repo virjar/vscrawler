@@ -1,10 +1,11 @@
-package com.virjar.vscrawler.core.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager.storage.ram;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Created by virjar on 2018/1/7.<br/>基于内存的队列存储,满足各自队列并发加锁隔离,单个队列操作全程加锁
  */
-public class RamQueueStore implements QueueStore {
+public class RamScoredQueueStore implements ScoredQueueStore {
     private Map<String, InnerList> queueMaps = Maps.newConcurrentMap();
 
     private static class InnerList extends LinkedList<ResourceItem> {

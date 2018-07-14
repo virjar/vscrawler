@@ -5,7 +5,6 @@ import com.google.common.collect.Maps;
 import com.virjar.vscrawler.core.monitor.VSCrawlerMonitor;
 import com.virjar.vscrawler.core.resourcemanager.model.AllResourceItems;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
-import com.virjar.vscrawler.core.resourcemanager.service.ResourceQueue;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

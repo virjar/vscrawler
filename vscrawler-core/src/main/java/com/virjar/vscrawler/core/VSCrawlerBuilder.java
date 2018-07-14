@@ -20,9 +20,9 @@ import com.virjar.vscrawler.core.processor.SeedProcessor;
 import com.virjar.vscrawler.core.resourcemanager.ResourceManager;
 import com.virjar.vscrawler.core.resourcemanager.ResourceManagerFactory;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
-import com.virjar.vscrawler.core.resourcemanager.service.QueueStore;
-import com.virjar.vscrawler.core.resourcemanager.service.RamQueueStore;
-import com.virjar.vscrawler.core.resourcemanager.service.ResourceQueue;
+import com.virjar.vscrawler.core.resourcemanager.storage.ram.RamScoredQueueStore;
+import com.virjar.vscrawler.core.resourcemanager.ResourceQueue;
+import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
 import com.virjar.vscrawler.core.seed.*;
 import com.virjar.vscrawler.core.serialize.ConsolePipeline;
 import com.virjar.vscrawler.core.serialize.Pipeline;
@@ -152,7 +152,7 @@ public class VSCrawlerBuilder {
 
     private ResourceManager resourceManager;
 
-    private QueueStore defaultQueueStore;
+    private ScoredQueueStore defaultScoredQueueStore;
 
     private ResourceSetting defaultResourceSetting;
 
@@ -321,8 +321,8 @@ public class VSCrawlerBuilder {
         return this;
     }
 
-    public VSCrawlerBuilder setDefaultQueueStore(QueueStore defaultQueueStore) {
-        this.defaultQueueStore = defaultQueueStore;
+    public VSCrawlerBuilder setDefaultScoredQueueStore(ScoredQueueStore defaultScoredQueueStore) {
+        this.defaultScoredQueueStore = defaultScoredQueueStore;
         return this;
     }
 
@@ -407,10 +407,10 @@ public class VSCrawlerBuilder {
             resourceManager = ResourceManagerFactory.create().build();
         }
         vsCrawlerContext.setResourceManager(resourceManager);
-        if (defaultQueueStore == null) {
-            defaultQueueStore = new RamQueueStore();
+        if (defaultScoredQueueStore == null) {
+            defaultScoredQueueStore = new RamScoredQueueStore();
         }
-        vsCrawlerContext.setQueueStore(defaultQueueStore);
+        vsCrawlerContext.setScoredQueueStore(defaultScoredQueueStore);
         if (defaultResourceSetting == null) {
             defaultResourceSetting = ResourceSetting.create().setLock(true);
         }
@@ -424,7 +424,7 @@ public class VSCrawlerBuilder {
             if (resourceQueue != null) {
                 resourceQueue.addResourceLoader(new UserManager2ResourceLoader(userResourceFacade));
             } else {
-                resourceManager.registry(new ResourceQueue(vsCrawlerContext.makeUserResourceTag(), defaultQueueStore, defaultResourceSetting, new UserManager2ResourceLoader(userResourceFacade)));
+                resourceManager.registry(new ResourceQueue(vsCrawlerContext.makeUserResourceTag(), defaultScoredQueueStore, defaultResourceSetting, new UserManager2ResourceLoader(userResourceFacade)));
             }
             addEventObserver(new AutoLoginPlugin(loginHandler, new UserManager2(resourceManager, vsCrawlerContext)));
         }

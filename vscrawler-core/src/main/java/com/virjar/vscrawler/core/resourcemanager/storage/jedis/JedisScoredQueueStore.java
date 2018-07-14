@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager.storage.jedis;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -6,8 +6,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import redis.clients.jedis.BinaryClient;
@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by virjar on 2018/1/7.<br/>
@@ -26,19 +25,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author virjar
  * @since 0.2.2
  */
-public class JedisQueueStore implements QueueStore {
+public class JedisScoredQueueStore extends BaseJedisOperationQueueStore implements ScoredQueueStore {
     //存放key的轮询数据
     private static final String jedisPoolSuffix = "_jedis_polling";
     //存放数据
     private static final String jedisDataSuffix = "_jedis_data";
 
-    private static final String jedisLockKeySuffix = "_vscrawler_resourceManager_queue_lock";
-    private JedisPool jedisPool;
-
-    private static final long lockWaitTimeStamp = 1000 * 60 * 2;
-
-    public JedisQueueStore(JedisPool jedisPool) {
-        this.jedisPool = jedisPool;
+    public JedisScoredQueueStore(JedisPool jedisPool) {
+        super(jedisPool);
     }
 
     private String makePoolQueueKey(String queueID) {
@@ -49,64 +43,6 @@ public class JedisQueueStore implements QueueStore {
         return queueID + jedisDataSuffix;
     }
 
-    private InheritableThreadLocal<AtomicInteger> locked = new InheritableThreadLocal<>();
-
-    private String makeRedisLockKey(String queueID) {
-        return queueID + jedisLockKeySuffix;
-    }
-
-    private boolean lockQueue(String queueID) {
-        if (locked.get() == null) {
-            synchronized (this) {
-                if (locked.get() == null) {
-                    locked.set(new AtomicInteger(0));
-                }
-            }
-        }
-        if (locked.get().incrementAndGet() > 1) {
-            return true;
-        }
-        Jedis jedis = jedisPool.getResource();
-        try {
-            String redisLockKey = makeRedisLockKey(queueID);
-            long lockRequestTime = System.currentTimeMillis();
-            while (true) {
-                String result = jedis.set(redisLockKey, "lockTheQueue", "NX", "EX", 120);
-                if (StringUtils.isNotEmpty(result) && result.equalsIgnoreCase("OK")) {
-                    return true;
-                }
-                if (lockRequestTime + lockWaitTimeStamp > System.currentTimeMillis()) {
-                    locked.get().decrementAndGet();
-                    return false;
-                }
-                long sleepTime = jedis.ttl(redisLockKey) * 1000 - 10;
-                if (sleepTime > lockRequestTime) {
-                    return false;
-                }
-                if (sleepTime > 0) {
-                    CommonUtil.sleep(sleepTime / 4);
-                }
-            }
-        } finally {
-            IOUtils.closeQuietly(jedis);
-        }
-    }
-
-    private void unLockQueue(String queueID) {
-        if (locked.get() == null) {
-            return;
-        }
-        if (locked.get().decrementAndGet() > 0) {
-            return;
-        }
-        Jedis jedis = jedisPool.getResource();
-        try {
-            jedis.del(makeRedisLockKey(queueID));
-            locked.remove();
-        } finally {
-            IOUtils.closeQuietly(jedis);
-        }
-    }
 
     @Override
     public long size(String queueID) {

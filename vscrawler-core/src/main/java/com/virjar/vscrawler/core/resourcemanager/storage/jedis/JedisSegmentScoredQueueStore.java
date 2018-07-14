@@ -1,4 +1,4 @@
-package com.virjar.vscrawler.core.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager.storage.jedis;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.virjar.dungproxy.client.util.CommonUtil;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
+import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -25,9 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by virjar on 2018/1/14.<br>
  * 可以支持分段的redis存储队列,避免redis性能问题
+ * 不建议使用
  */
 @Slf4j
-public class JedisSegmentQueueStore implements QueueStore {
+@Deprecated
+public class JedisSegmentScoredQueueStore implements ScoredQueueStore {
     // 存放key的轮询数据
     private static final String jedisPoolSuffix = "_jedis_polling";
     // 存放数据
@@ -43,7 +46,7 @@ public class JedisSegmentQueueStore implements QueueStore {
 
     private JedisPool jedisPool;
 
-    public JedisSegmentQueueStore(JedisPool jedisPool) {
+    public JedisSegmentScoredQueueStore(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
     }
 

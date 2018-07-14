@@ -1,8 +1,7 @@
-package com.virjar.vscrawler.core.resourcemanager.service;
+package com.virjar.vscrawler.core.resourcemanager.storage;
 
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -12,8 +11,7 @@ import java.util.Set;
  * @since 0.2.2
  * 支持评分的队列,负责存储层
  */
-public interface QueueStore {
-    long size(String queueID);
+public interface ScoredQueueStore extends BaseStorage {
 
     boolean addFirst(String queueID, ResourceItem e);
 
@@ -35,7 +33,5 @@ public interface QueueStore {
 
     Set<String> notExisted(String queueID, Set<String> resourceItemKeys);
 
-    void clear(String queueID);
 
-    List<ResourceItem> queryAll(String queueID);
 }

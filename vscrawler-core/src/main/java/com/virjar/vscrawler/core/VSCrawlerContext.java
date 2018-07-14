@@ -7,7 +7,7 @@ import com.virjar.vscrawler.core.event.EventLoop;
 import com.virjar.vscrawler.core.event.support.AutoEventRegistry;
 import com.virjar.vscrawler.core.resourcemanager.ResourceManager;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
-import com.virjar.vscrawler.core.resourcemanager.service.QueueStore;
+import com.virjar.vscrawler.core.resourcemanager.storage.ScoredQueueStore;
 import com.virjar.vscrawler.core.util.PathResolver;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
 import lombok.Getter;
@@ -53,7 +53,7 @@ public class VSCrawlerContext {
 
     @Getter
     @Setter
-    private QueueStore queueStore;
+    private ScoredQueueStore scoredQueueStore;
 
     @Getter
     @Setter

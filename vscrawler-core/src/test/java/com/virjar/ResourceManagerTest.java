@@ -5,9 +5,9 @@ import com.virjar.vscrawler.core.resourcemanager.ResourceManagerFactory;
 import com.virjar.vscrawler.core.resourcemanager.model.AllResourceItems;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceItem;
 import com.virjar.vscrawler.core.resourcemanager.model.ResourceSetting;
-import com.virjar.vscrawler.core.resourcemanager.service.RamQueueStore;
+import com.virjar.vscrawler.core.resourcemanager.storage.ram.RamScoredQueueStore;
 import com.virjar.vscrawler.core.resourcemanager.service.ResourceLoader;
-import com.virjar.vscrawler.core.resourcemanager.service.ResourceQueue;
+import com.virjar.vscrawler.core.resourcemanager.ResourceQueue;
 
 import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
@@ -19,7 +19,7 @@ public class ResourceManagerTest {
     private static final String tag = "testTag";
 
     public static void main(String[] args) {
-        RamQueueStore ramQueueStore = new RamQueueStore();
+        RamScoredQueueStore ramQueueStore = new RamScoredQueueStore();
         ResourceManager resourceManager = ResourceManagerFactory.create().registryResourceQueue(
                 new ResourceQueue(tag, ramQueueStore, ResourceSetting.create().setLock(true).setLockForceLeaseDuration(100), new ResourceLoader() {
                     @Override
