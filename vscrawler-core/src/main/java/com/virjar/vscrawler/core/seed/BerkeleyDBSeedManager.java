@@ -1,9 +1,6 @@
 package com.virjar.vscrawler.core.seed;
 
 import com.google.common.collect.*;
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnel;
-import com.google.common.hash.PrimitiveSink;
 import com.sleepycat.je.*;
 import com.virjar.vscrawler.core.VSCrawlerContext;
 import com.virjar.vscrawler.core.event.systemevent.CrawlerConfigChangeEvent;
@@ -18,10 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
