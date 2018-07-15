@@ -10,6 +10,8 @@ import com.virjar.vscrawler.core.seed.Seed;
  * @since 0.0.1
  */
 public class ConsolePipeline implements Pipeline {
+    public static ConsolePipeline instance = new ConsolePipeline();
+
     @Override
     public void saveItem(GrabResult grabResult, Seed seed) {
         for (String str : grabResult.allResult()) {

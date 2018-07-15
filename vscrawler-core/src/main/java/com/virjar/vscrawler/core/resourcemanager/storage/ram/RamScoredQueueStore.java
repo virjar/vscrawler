@@ -22,12 +22,7 @@ public class RamScoredQueueStore implements ScoredQueueStore {
 
         @Override
         public int size() {
-            lock.lock();
-            try {
-                return super.size();
-            } finally {
-                lock.unlock();
-            }
+            return super.size();
         }
 
         private void removeFromList(String key) {

@@ -3,7 +3,6 @@ package com.virjar.vscrawler.core.seed;
 import com.google.common.collect.Lists;
 import com.google.common.io.LineReader;
 import com.virjar.vscrawler.core.VSCrawlerContext;
-import com.virjar.vscrawler.core.event.support.AutoEvent;
 import com.virjar.vscrawler.core.event.systemevent.NewSeedArrivalEvent;
 import com.virjar.vscrawler.core.util.PathResolver;
 import com.virjar.vscrawler.core.util.VSCrawlerConstant;
@@ -118,7 +117,7 @@ public class LocalFileSeedSource implements InitSeedSource, LoadNextBatchSeedEve
 }
 
 
-interface LoadNextBatchSeedEvent {
-    @AutoEvent
-    void nextBatch(VSCrawlerContext vsCrawlerContext);
-}
+//interface LoadNextBatchSeedEvent {
+//    @AutoEvent
+//    void nextBatch(VSCrawlerContext vsCrawlerContext);
+//}

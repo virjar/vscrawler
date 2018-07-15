@@ -395,7 +395,7 @@ public class VSCrawlerBuilder {
         }
 
         if (pipelineList.isEmpty()) {
-            pipelineList.add(new ConsolePipeline());
+            pipelineList.add(ConsolePipeline.instance);
         }
 
         VSCrawler vsCrawler = new VSCrawler(vsCrawlerContext, crawlerSessionPool, berkeleyDBSeedManager, processor, pipelineList,
